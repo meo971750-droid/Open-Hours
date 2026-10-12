@@ -1,0 +1,6 @@
+{
+  "name": "Open Hours",
+  "description": "Open Hours builds fast, enquiry-focused websites and Google profiles for builders and home-improvement trades in Ireland and Malta. Live in about 10 working days.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

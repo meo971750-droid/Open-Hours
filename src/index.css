@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+:root {
+  --color-teal: #1E4A5C;
+  --color-ink: #0F2A35;
+  --color-peach: #E3B896;
+  --color-cream: #F7F3EE;
+  --color-teal-tint: #DCE9EC;
+  --color-mist: #EEF3F4;
+  --color-muted: #5E6F77;
+  --color-hairline: rgba(15, 42, 53, 0.08);
+
+  --color-status-green: #2E9E6B;
+  --color-status-amber: #E8943A;
+  --color-status-red: #D9444A;
+
+  /* Tint Tokens */
+  --tint-teal: #DCE9EC;
+  --tint-peach: #F6E6D8;
+  --tint-sage: #E2EFE4;
+  --tint-sand: #F3EBDD;
+
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@theme {
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background-color: #FFFFFF;
+  overflow-x: clip;
+}
+
+html {
+  overflow-x: clip;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: var(--font-heading);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+/* Smooth scrolling for anchor jumps */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar suppression utilities (Windows, Firefox, Chrome) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* Marquee animations for sliding promises */
+@keyframes marquee-left {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marquee-right {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-marquee-left {
+  animation: marquee-left 28s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-right {
+  animation: marquee-right 34s linear infinite;
+  will-change: transform;
+}
+
+.pause-animation {
+  animation-play-state: paused !important;
+}
+
+/* Reduced motion overrides */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-marquee-left,
+  .animate-marquee-right {
+    animation: none !important;
+    transform: none !important;
+  }
+}
