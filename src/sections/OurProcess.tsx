@@ -144,6 +144,18 @@ export default function OurProcess() {
   const [tallestTextHeight, setTallestTextHeight] = useState<number>(175);
   const [isCompactText, setIsCompactText] = useState(false);
 
+  // Debug parameter helper (?debug=process)
+  const [isDebug, setIsDebug] = useState(false);
+  const [debugProgress, setDebugProgress] = useState(0);
+  const [debugScene, setDebugScene] = useState(0);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      setIsDebug(params.get('debug') === 'process');
+    }
+  }, []);
+
   // Measure tallest text to reserve space so description is never clipped
   const measureTallest = () => {
     if (!textMeasurerRef.current) return;
@@ -172,7 +184,7 @@ export default function OurProcess() {
     };
   }, [isCompactText]);
 
-  // ResizeObserver to scale the 960x480 canvas without overflow, minimum 0.68
+  // ResizeObserver on un-transformed container to scale the 960x480 canvas without overflow, minimum 0.68
   useEffect(() => {
     const node = visualAreaRef.current;
     if (!node) return;
@@ -195,28 +207,29 @@ export default function OurProcess() {
     return () => ro.disconnect();
   }, []);
 
-  // Master scroll progress p (0 to 1) smoothed with useSpring
-  const { scrollYProgress: rawProgress } = useScroll({
+  // Master scroll progress p (0 to 1) bound directly to container scroll without spring delay
+  const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end'],
   });
 
   // Strip WAAPI accelerate config to prevent invalid offset browser errors
-  delete (rawProgress as any).accelerate;
-
-  const scrollYProgress = useSpring(rawProgress, {
-    stiffness: 90,
-    damping: 30,
-    mass: 0.6,
-  });
   delete (scrollYProgress as any).accelerate;
 
   const [activeSceneIndex, setActiveSceneIndex] = useState(0);
 
   useMotionValueEvent(scrollYProgress, 'change', (latest) => {
     const idx = SCENE_RANGES.findIndex((r) => latest >= r.start && latest <= r.end);
-    if (idx !== -1 && idx !== activeSceneIndex) {
-      setActiveSceneIndex(idx);
+    if (idx !== -1) {
+      if (idx !== activeSceneIndex) {
+        setActiveSceneIndex(idx);
+      }
+      if (isDebug) {
+        setDebugScene(idx);
+      }
+    }
+    if (isDebug) {
+      setDebugProgress(latest);
     }
   });
 
@@ -267,6 +280,14 @@ export default function OurProcess() {
       >
         Skip this section &rarr;
       </a>
+
+      {/* Debug Helper: Only visible when ?debug=process */}
+      {isDebug && (
+        <div className="fixed bottom-4 left-4 z-50 px-3 py-1.5 rounded-lg bg-black/85 text-white font-mono text-xs shadow-lg border border-white/20 backdrop-blur-sm pointer-events-none flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#34D399]" />
+          <span>process: scene {debugScene + 1}/6 ({(debugProgress * 100).toFixed(1)}%) | scale {visualScale.toFixed(2)} | text {tallestTextHeight}px</span>
+        </div>
+      )}
 
       {/* 1. Header block ABOVE the pinned stage (normal flow, dark background, padding 96px top / 40px bottom) */}
       <div className="w-full max-w-5xl mx-auto px-6 pt-[96px] pb-[40px] text-center">

@@ -46,10 +46,7 @@ h1, h2, h3, h4, .font-heading {
   text-wrap: balance;
 }
 
-/* Smooth scrolling for anchor jumps */
-html {
-  scroll-behavior: smooth;
-}
+/* Smooth scrolling handled via window.scrollTo({ behavior: 'smooth' }) or element.scrollIntoView */
 
 /* Scrollbar suppression utilities (Windows, Firefox, Chrome) */
 .no-scrollbar::-webkit-scrollbar {
