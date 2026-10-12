@@ -1,25 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, Cookie } from 'lucide-react';
-import { getStoredConsent, setStoredConsent, ConsentStatus } from '../lib/cookieConsent';
+import { Cookie } from 'lucide-react';
+import { useConsent, setConsent } from '../lib/consent';
 
 interface CookieBannerProps {
   onOpenCookiesPage: () => void;
 }
 
 export default function CookieBanner({ onOpenCookiesPage }: CookieBannerProps) {
-  const [status, setStatus] = useState<ConsentStatus>('accepted'); // default until mounted
-
-  useEffect(() => {
-    setStatus(getStoredConsent());
-  }, []);
+  const consent = useConsent();
 
   const handleChoice = (decision: 'accepted' | 'rejected') => {
-    setStoredConsent(decision);
-    setStatus(decision);
+    if (decision === 'accepted') {
+      setConsent({
+        decided: true,
+        accepted: true,
+        thirdPartyReviews: true,
+        at: new Date().toISOString(),
+      });
+    } else {
+      setConsent({
+        decided: true,
+        accepted: false,
+        thirdPartyReviews: false,
+        at: new Date().toISOString(),
+      });
+    }
   };
 
-  if (status !== 'undecided') {
+  if (consent.decided) {
     return null;
   }
 
@@ -43,14 +52,17 @@ export default function CookieBanner({ onOpenCookiesPage }: CookieBannerProps) {
               Privacy &amp; Cookie Preferences
             </h4>
             <p className="text-[13px] text-[#5E6F77] leading-relaxed mt-1">
-              We only use strictly necessary cookies to keep this site working. No analytics or tracking scripts load without your explicit consent. Read our{' '}
-              <button
-                type="button"
-                onClick={onOpenCookiesPage}
+              We use essential storage to run this site. If you accept, we also load customer reviews from Senja (a third-party service), which may receive your IP address.{' '}
+              <a
+                href="/cookies"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onOpenCookiesPage();
+                }}
                 className="underline text-[#1E4A5C] hover:text-[#0F2A35]"
               >
                 Cookie Policy
-              </button>
+              </a>
               .
             </p>
           </div>
@@ -63,7 +75,7 @@ export default function CookieBanner({ onOpenCookiesPage }: CookieBannerProps) {
             onClick={() => handleChoice('rejected')}
             className="w-full h-[42px] rounded-full border border-[rgba(15,42,53,0.2)] text-[#0F2A35] text-[13px] font-medium hover:bg-[#EEF3F4] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C] cursor-pointer"
           >
-            Reject non-essential
+            Reject
           </button>
           <button
             type="button"

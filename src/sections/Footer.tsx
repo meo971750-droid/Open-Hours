@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Container from '../components/Container';
 import Logo from '../components/Logo';
 import { FOOTER_CONTENT } from '../content';
+import { setConsent } from '../lib/consent';
 
 interface FooterProps {
   onNavigatePage?: (page: 'home' | 'privacy' | 'cookies' | 'terms') => void;
@@ -173,8 +174,16 @@ export default function Footer({ onNavigatePage, currentPage }: FooterProps) {
 
         {/* Company line */}
         <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#5E6F77]">
-          <div>
-            © {new Date().getFullYear()} {FOOTER_CONTENT.companyLegal}. All rights reserved.
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>© {new Date().getFullYear()} {FOOTER_CONTENT.companyLegal}. All rights reserved.</span>
+            <span aria-hidden="true" className="opacity-40">·</span>
+            <button
+              type="button"
+              onClick={() => setConsent({ decided: false })}
+              className="text-[#5E6F77] hover:text-[#0F2A35] underline cursor-pointer"
+            >
+              Cookie settings
+            </button>
           </div>
           <div>
             {FOOTER_CONTENT.companyAddress}
