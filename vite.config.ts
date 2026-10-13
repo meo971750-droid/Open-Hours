@@ -4,7 +4,11 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  const buildId = new Date().toISOString();
   return {
+    define: {
+      __BUILD_ID__: JSON.stringify(buildId),
+    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
