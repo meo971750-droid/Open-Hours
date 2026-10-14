@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   motion,
   useScroll,
@@ -302,9 +302,108 @@ function PinnedConceptCard({
   );
 }
 
+interface PinnedStageStackProps {
+  stageRef: React.RefObject<HTMLDivElement | null>;
+  stageHeight: number;
+  totalScrollSvh: number;
+  cardHeight: number;
+  scale: number;
+  N: number;
+  usableStart: number;
+  segmentSize: number;
+  onOpenAudit?: (trade?: TradeName) => void;
+}
+
+function PinnedStageStack({
+  stageRef,
+  stageHeight,
+  totalScrollSvh,
+  cardHeight,
+  scale,
+  N,
+  usableStart,
+  segmentSize,
+  onOpenAudit,
+}: PinnedStageStackProps) {
+  const [targetNode, setTargetNode] = useState<HTMLDivElement | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const setWrapperRef = useCallback((node: HTMLDivElement | null) => {
+    wrapperRef.current = node;
+    setTargetNode(node);
+  }, []);
+
+  // Framer Motion useScroll on the .pin-wrapper (offset: start start to end end)
+  const { scrollYProgress: rawProgress } = useScroll(
+    targetNode
+      ? {
+          target: wrapperRef,
+          offset: ['start start', 'end end'],
+        }
+      : undefined
+  );
+
+  // Strip WAAPI accelerate config to prevent invalid offset browser errors
+  delete (rawProgress as any).accelerate;
+
+  const smoothProgress = useSpring(rawProgress, {
+    stiffness: 110,
+    damping: 30,
+    mass: 0.5,
+  });
+  delete (smoothProgress as any).accelerate;
+
+  return (
+    <div
+      ref={setWrapperRef}
+      className="pin-wrapper relative w-full"
+      style={{
+        height: `${totalScrollSvh}svh`, // 310svh
+      }}
+    >
+      {/* Sticky 100svh stage */}
+      <div
+        ref={stageRef}
+        className="pin-stage sticky top-0 h-[100svh] w-full overflow-hidden"
+      >
+        {/* Same max-width (1200px) and side padding as other sections */}
+        <div className="relative max-w-[1200px] mx-auto px-6 md:px-10 w-full h-full">
+          {CONCEPT_STUDIES.map((study, idx) => {
+            const slide = DESIGNS.find(
+              (d) => d.id === study.designId
+            ) as DesignSlide;
+            if (!slide) return null;
+
+            const restTop_i =
+              CONCEPT_PIN.stackTopPx + idx * CONCEPT_PIN.offsetPx;
+            const a_i = usableStart + (idx - 1) * segmentSize;
+            const b_i = usableStart + idx * segmentSize;
+
+            return (
+              <PinnedConceptCard
+                key={study.id}
+                study={study}
+                slide={slide}
+                index={idx}
+                totalCards={N}
+                smoothProgress={smoothProgress}
+                a_i={a_i}
+                b_i={b_i}
+                restTop={restTop_i}
+                cardHeight={cardHeight}
+                stageHeight={stageHeight}
+                scale={scale}
+                onOpenAudit={onOpenAudit}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ConceptStudies({ onOpenAudit }: ConceptStudiesProps) {
   const shouldReduceMotion = useReducedMotion();
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
   // Measured stage height cached via ResizeObserver
@@ -332,24 +431,6 @@ export default function ConceptStudies({ onOpenAudit }: ConceptStudiesProps) {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // ResizeObserver on the sticky stage to measure cached stageHeight
-  useEffect(() => {
-    const stageEl = stageRef.current;
-    if (!stageEl) return;
-
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const h = entry.contentRect.height;
-        if (h > 0) {
-          setStageHeight(h);
-        }
-      }
-    });
-
-    ro.observe(stageEl);
-    return () => ro.disconnect();
   }, []);
 
   // Geometry calculations according to Section 1
@@ -385,21 +466,23 @@ export default function ConceptStudies({ onOpenAudit }: ConceptStudiesProps) {
 
   const isStackMode = fallbackReason === '';
 
-  // Framer Motion useScroll on the .pin-wrapper (offset: start start to end end)
-  const { scrollYProgress: rawProgress } = useScroll({
-    target: wrapperRef,
-    offset: ['start start', 'end end'],
-  });
+  // ResizeObserver on the sticky stage to measure cached stageHeight
+  useEffect(() => {
+    const stageEl = stageRef.current;
+    if (!stageEl) return;
 
-  // Strip WAAPI accelerate config to prevent invalid offset browser errors
-  delete (rawProgress as any).accelerate;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = entry.contentRect.height;
+        if (h > 0) {
+          setStageHeight(h);
+        }
+      }
+    });
 
-  const smoothProgress = useSpring(rawProgress, {
-    stiffness: 110,
-    damping: 30,
-    mass: 0.5,
-  });
-  delete (smoothProgress as any).accelerate;
+    ro.observe(stageEl);
+    return () => ro.disconnect();
+  }, [isStackMode]);
 
   // Segment ranges for each card i >= 1
   const usableStart = CONCEPT_PIN.holdStart;
@@ -452,56 +535,17 @@ export default function ConceptStudies({ onOpenAudit }: ConceptStudiesProps) {
 
       {/* EITHER Pinned-Stage Stack Mode OR Normal Vertical List (never both at once) */}
       {isStackMode ? (
-        /* =========================================================================
-            PINNED STAGE MECHANISM (Desktop >= 768px, no reduced motion, scale >= 0.85)
-            Larger restored card sizes (480px to 680px)
-           ========================================================================= */
-        <div
-          ref={wrapperRef}
-          className="pin-wrapper relative w-full"
-          style={{
-            height: `${totalScrollSvh}svh`, // 310svh
-          }}
-        >
-          {/* Sticky 100svh stage */}
-          <div
-            ref={stageRef}
-            className="pin-stage sticky top-0 h-[100svh] w-full overflow-hidden"
-          >
-            {/* Same max-width (1200px) and side padding as other sections */}
-            <div className="relative max-w-[1200px] mx-auto px-6 md:px-10 w-full h-full">
-              {CONCEPT_STUDIES.map((study, idx) => {
-                const slide = DESIGNS.find(
-                  (d) => d.id === study.designId
-                ) as DesignSlide;
-                if (!slide) return null;
-
-                const restTop_i =
-                  CONCEPT_PIN.stackTopPx + idx * CONCEPT_PIN.offsetPx;
-                const a_i = usableStart + (idx - 1) * segmentSize;
-                const b_i = usableStart + idx * segmentSize;
-
-                return (
-                  <PinnedConceptCard
-                    key={study.id}
-                    study={study}
-                    slide={slide}
-                    index={idx}
-                    totalCards={N}
-                    smoothProgress={smoothProgress}
-                    a_i={a_i}
-                    b_i={b_i}
-                    restTop={restTop_i}
-                    cardHeight={cardHeight}
-                    stageHeight={stageHeight}
-                    scale={scale}
-                    onOpenAudit={onOpenAudit}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <PinnedStageStack
+          stageRef={stageRef}
+          stageHeight={stageHeight}
+          totalScrollSvh={totalScrollSvh}
+          cardHeight={cardHeight}
+          scale={scale}
+          N={N}
+          usableStart={usableStart}
+          segmentSize={segmentSize}
+          onOpenAudit={onOpenAudit}
+        />
       ) : (
         /* =========================================================================
             NORMAL VERTICAL LIST (Mobile < 768px, reduced motion, or scale < 0.85)

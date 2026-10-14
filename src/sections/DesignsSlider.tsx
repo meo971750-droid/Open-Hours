@@ -1,12 +1,57 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   LayoutTemplate,
   ArrowUpRight,
+  ImageIcon,
 } from 'lucide-react';
 import Container from '../components/Container';
 import Accent from '../components/Accent';
-import DesignPreview from '../components/DesignPreview';
-import { DESIGNS, DesignSlide, TradeName } from '../content';
+import { TradeName } from '../content';
+
+const ROOFING_CARDS = [
+  { id: 1, name: "XYZ Roofing",           image: "/roofing-sites/1-xyz-roofing.png",            domain: "xyzroofing.com",           trade: "Roofers", location: "[ADD LOCATION]", note: "Concept for a roofing business" },
+  { id: 2, name: "ABC Roofing",           image: "/roofing-sites/2-abc-roofing.png",            domain: "abcroofing.com",           trade: "Roofers", location: "[ADD LOCATION]", note: "Concept for a roofing business" },
+  { id: 3, name: "Alex Roofing",          image: "/roofing-sites/3-alex-roofing.png",           domain: "alexroofing.com",          trade: "Roofers", location: "[ADD LOCATION]", note: "Concept for a roofing business" },
+  { id: 4, name: "Roofen",                image: "/roofing-sites/4-roofen.png",                 domain: "roofen.com",               trade: "Roofers", location: "[ADD LOCATION]", note: "Concept for a roofing business" },
+  { id: 5, name: "Atlantic Slate Roofing", image: "/roofing-sites/5-atlantic-slate-roofing.png", domain: "atlanticslateroofing.com", trade: "Roofers", location: "[ADD LOCATION]", note: "Concept for a roofing business" }
+];
+
+function CardScreenshot({ card }: { card: typeof ROOFING_CARDS[number] }) {
+  const [hasError, setHasError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const filename = card.image.split('/').pop() || '';
+
+  return (
+    <div className="relative w-full aspect-[16/10] bg-[#0C1E28] overflow-hidden">
+      {hasError ? (
+        <div className="w-full h-full p-2 flex items-center justify-center bg-[#0C1E28]">
+          <div className="w-full h-full rounded-[4px] bg-[#0E2430] border border-dashed border-white/15 flex flex-col items-center justify-center p-3 text-center">
+            <ImageIcon className="w-4 h-4 text-white/40 mb-1.5" />
+            <span className="text-[12px] font-medium text-white/80">Drop screenshot here</span>
+            <span className="text-[11px] text-white/50 font-mono mt-0.5">
+              public/roofing-sites/{filename}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <img
+          src={card.image}
+          alt={`${card.name} website concept`}
+          width={1400}
+          height={875}
+          referrerPolicy="no-referrer"
+          className={`w-full h-full object-cover object-top select-none transition-opacity duration-200 ${
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setIsLoaded(true)}
+          onError={() => setHasError(true)}
+        />
+      )}
+    </div>
+  );
+}
 
 interface DesignsSliderProps {
   id?: string;
@@ -16,27 +61,9 @@ interface DesignsSliderProps {
 const BASE_TILTS = [-2.4, 1.8, -1.5, 2.2, -1.8, 1.4, -2.1, 2.0];
 
 export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSliderProps) {
-  // Filter valid slides: kind "Client project" requires permissionConfirmed === true
-  const validSlides = useMemo(() => {
-    return DESIGNS.filter((slide) => {
-      if (slide.kind === 'Client project') {
-        if (!slide.permissionConfirmed) {
-          if (import.meta.env.DEV) {
-            console.warn(
-              `[DESIGNS] Skipping slide "${slide.name}" because kind is "Client project" but permissionConfirmed is false.`
-            );
-          }
-          return false;
-        }
-      }
-      return true;
-    });
-  }, []);
-
-  const totalCards = validSlides.length;
-  const hasConcept = useMemo(() => {
-    return validSlides.some((s) => s.kind === 'Concept');
-  }, [validSlides]);
+  const cards = ROOFING_CARDS;
+  const totalCards = cards.length;
+  const hasConcept = true;
 
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -384,8 +411,8 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
     }
   };
 
-  // Active slide details for Info Bar
-  const activeSlide = validSlides[centeredIndex] || validSlides[0];
+  // Active card details for Info Bar
+  const activeCard = cards[centeredIndex] || cards[0];
 
   return (
     <section
@@ -437,7 +464,7 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
       >
         {/* Polite Screen Reader Live Announcement */}
         <div aria-live="polite" aria-atomic="true" className="sr-only">
-          {liveAnnouncement || `${activeSlide.name}, ${activeSlide.trade}`}
+          {liveAnnouncement || `${activeCard.name}, ${activeCard.trade}`}
         </div>
         {/* DEV ONLY Debug Chip */}
         {import.meta.env.DEV && (
@@ -479,9 +506,9 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
 
         {/* Single Row Cards Track (Slides automatically, clicks go directly to buttons) */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-          {validSlides.map((slide, idx) => (
+          {cards.map((card, idx) => (
             <div
-              key={slide.id}
+              key={card.id}
               ref={(el) => {
                 cardElsRef.current[idx] = el;
               }}
@@ -496,7 +523,7 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
             >
               <article
                 onClick={(e) => handleCardClick(idx, e)}
-                aria-label={`${slide.name}, ${slide.town} - ${slide.tagline}`}
+                aria-label={`${card.name}, ${card.location} - ${card.note}`}
                 className="group relative flex flex-col bg-white rounded-[7px] border border-[rgba(15,42,53,0.08)] p-3 pt-3.5 pb-3.5 shadow-[0_12px_28px_rgba(15,42,53,0.11),_0_2px_6px_rgba(15,42,53,0.05)] hover:shadow-[0_20px_42px_rgba(15,42,53,0.18),_0_4px_10px_rgba(15,42,53,0.08)] transition-all duration-200 select-none cursor-pointer"
               >
                 {/* WOODEN PEG: 14 x 32px rounded wooden clip (gradient #E3C59A to #C9A06B, 1px darker edge #B88A55, small centre slot line), subtle shadow 0 2px 3px */}
@@ -517,35 +544,46 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
                   <div className="absolute bottom-[3px] left-1/2 -translate-x-1/2 w-[1.5px] h-[8px] bg-[#8B5E3C]/70 rounded-full" />
                 </div>
 
-                {/* PHOTO FRAME: Aspect ratio preview with crisp inset border */}
-                <div className="w-full h-[180px] sm:h-[190px] rounded-[5px] border border-[rgba(15,42,53,0.10)] overflow-hidden relative bg-[#F4F6F8]">
-                  <DesignPreview slide={slide} />
+                {/* MINI BROWSER FRAME: Frame with 3 dots & domain text */}
+                <div className="w-full rounded-[5px] border border-[rgba(15,42,53,0.10)] overflow-hidden bg-white shadow-2xs">
+                  <div className="flex items-center justify-between px-2.5 py-1.5 bg-[#F4F6F8] border-b border-[rgba(15,42,53,0.08)] shrink-0">
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#E57373]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB74D]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#81C784]" />
+                    </div>
+                    <span className="text-[9px] font-mono text-[#5E6F77]/80 truncate max-w-[130px]">
+                      {card.domain}
+                    </span>
+                    <div className="w-3" />
+                  </div>
+
+                  {/* Screenshot container with aspect-ratio 16/10 and background #0C1E28 */}
+                  <CardScreenshot card={card} />
                 </div>
 
                 {/* POLAROID CHIN (Bottom details) */}
                 <div className="mt-2.5 flex flex-col gap-1 text-left">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[10px] sm:text-[11px] font-semibold text-[#8B5E3C] bg-[#F7EFE6] px-2 py-0.5 rounded-full">
-                      {slide.trade}
+                      {card.trade}
                     </span>
-                    {slide.kind === 'Concept' && (
-                      <span className="text-[10px] sm:text-[11px] font-medium text-[#1E4A5C] bg-[#DCE9EC] px-2 py-0.5 rounded-full">
-                        Concept
-                      </span>
-                    )}
+                    <span className="text-[10px] sm:text-[11px] font-medium text-[#1E4A5C] bg-[#DCE9EC] px-2 py-0.5 rounded-full">
+                      Concept
+                    </span>
                   </div>
 
                   <div className="flex items-baseline justify-between gap-1 mt-0.5">
                     <span className="text-[14px] sm:text-[15px] font-bold text-[#0F2A35] truncate">
-                      {slide.name}
+                      {card.name}
                     </span>
                     <span className="text-[12px] text-[#5E6F77] shrink-0">
-                      {slide.town}
+                      {card.location}
                     </span>
                   </div>
 
                   <p className="text-[11px] sm:text-[12px] text-[#5E6F77] line-clamp-1 italic">
-                    {slide.tagline}
+                    {card.note}
                   </p>
 
                   {/* Button: Pure instant click without any drag/swipe interference */}
@@ -553,7 +591,7 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleGetDesign(slide.trade);
+                      handleGetDesign(card.trade as TradeName);
                     }}
                     className="w-full mt-1.5 py-1.5 px-3 rounded-lg bg-[#0F2A35] hover:bg-[#1E4A5C] text-white text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
                   >
@@ -572,30 +610,30 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
         <div className="max-w-2xl mx-auto mt-6 flex flex-col items-center text-center">
           {/* Centered card info with 250ms crossfade */}
           <div
-            key={activeSlide.id}
+            key={activeCard.id}
             style={{ transition: 'opacity 250ms ease-out' }}
             className="flex flex-col items-center mb-2"
           >
-            {/* Counter e.g. "04 / 08" */}
+            {/* Counter e.g. "01 / 05" */}
             <div className="text-[13px] font-semibold text-[#1E4A5C] bg-[#F4F6F8] border border-[rgba(15,42,53,0.08)] px-3 py-0.5 rounded-full mb-2">
               {String(centeredIndex + 1).padStart(2, '0')} / {String(totalCards).padStart(2, '0')}
             </div>
 
             <h3 className="text-[20px] font-semibold text-[#0F2A35]">
-              {activeSlide.name} <span className="text-[#5E6F77] font-normal text-[16px]">({activeSlide.town})</span>
+              {activeCard.name} <span className="text-[#5E6F77] font-normal text-[16px]">({activeCard.location})</span>
             </h3>
 
             <p className="text-[14px] text-[#5E6F77] mt-1 italic">
-              {activeSlide.tagline}
+              {activeCard.note}
             </p>
 
             {/* Quick action link for current centered card */}
             <button
               type="button"
-              onClick={() => handleGetDesign(activeSlide.trade)}
+              onClick={() => handleGetDesign(activeCard.trade as TradeName)}
               className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#1E4A5C] hover:text-[#0F2A35] underline decoration-[#1E4A5C]/40 underline-offset-4 cursor-pointer"
             >
-              <span>Get a design like {activeSlide.name}</span>
+              <span>Get a design like {activeCard.name}</span>
               <ArrowUpRight className="w-4 h-4" />
             </button>
           </div>

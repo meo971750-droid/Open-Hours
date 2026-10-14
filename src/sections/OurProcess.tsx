@@ -1,43 +1,29 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { motion, useMotionValue, useTransform, MotionValue } from 'motion/react';
-import {
-  Search,
-  CheckCircle2,
-  AlertCircle,
-  Star,
-  Phone,
-  Mail,
-  Building2,
-  Globe,
-  Clock,
-  User,
-  ArrowRight,
-  ChevronDown,
-  MapPin,
-  MessageSquare,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { CTA } from '../content';
+import {
+  SCENES,
+  SCENE_WEIGHTS,
+  SCENE_RANGES,
+  PROCESS_SCENES_VERSION,
+  getSceneTransitionState,
+  totalWeight,
+} from '../components/process';
+
+export { SCENE_WEIGHTS, SCENE_RANGES, PROCESS_SCENES_VERSION, totalWeight };
 
 // Build ID declaration from Vite define (H10)
 declare const __BUILD_ID__: string;
 
-// Print build ID once to console on module load
+// Print build ID and process scenes version once to console on module load
 if (typeof window !== 'undefined') {
   console.log('OpenHours build: ' + (typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev-local'));
+  console.log('OpenHours process scenes: ' + PROCESS_SCENES_VERSION);
 }
 
 export const PROCESS_SCROLL_PER_WEIGHT_SVH_DESKTOP = 125;
 export const PROCESS_SCROLL_PER_WEIGHT_SVH_MOBILE = 100;
-export const SCENE_WEIGHTS = [1, 1, 1.2, 1.3, 1, 1.2];
-const totalWeight = SCENE_WEIGHTS.reduce((a, b) => a + b, 0);
-
-export const SCENE_RANGES = SCENE_WEIGHTS.reduce((acc, weight, i) => {
-  const start = i === 0 ? 0 : acc[i - 1].end;
-  const end = i === SCENE_WEIGHTS.length - 1 ? 1 : start + weight / totalWeight;
-  acc.push({ start, end });
-  return acc;
-}, [] as { start: number; end: number }[]);
 
 export const PROCESS_STEPS = [
   {
@@ -56,34 +42,33 @@ export const PROCESS_STEPS = [
   {
     id: 2,
     stepNum: '02',
-    navTitle: 'Review',
-    title: 'We check where enquiries get lost',
+    navTitle: 'Apply',
+    title: 'You apply for a package',
     titleRender: (
       <>
-        We check where <span className="text-[#E3B896]">enquiries get lost</span>
+        You <span className="text-[#E3B896]">apply</span> for a package
       </>
     ),
     description:
-      'We review your online presence, Google profile, reviews and contact routes to identify what is working and where potential jobs drop off.',
+      'Choose any package and send your business details through a short form. We confirm the next steps with you.',
   },
   {
     id: 3,
     stepNum: '03',
-    navTitle: 'Audit & Concept',
-    title: 'You receive a 2-minute video audit and a homepage concept',
+    navTitle: 'Portal',
+    title: 'Follow your project in a personal portal',
     titleRender: (
       <>
-        You receive a 2-minute <span className="text-[#E3B896]">video audit</span> and a{' '}
-        <span className="text-[#E3B896]">homepage concept</span>
+        Follow your project in a <span className="text-[#E3B896]">personal portal</span>
       </>
     ),
     description:
-      'A concise video walkthrough and a tailored homepage concept built around your real work. At no cost, with no obligation to proceed.',
+      "See what's done, what's next and what we need from you, all in one private place.",
   },
   {
     id: 4,
     stepNum: '04',
-    navTitle: 'Ready to be Found',
+    navTitle: 'Found',
     title: 'Your business is ready to be found',
     titleRender: (
       <>
@@ -96,7 +81,7 @@ export const PROCESS_STEPS = [
   {
     id: 5,
     stepNum: '05',
-    navTitle: 'Direct Enquiries',
+    navTitle: 'Enquiries',
     title: 'Enquiries arrive directly through your website',
     titleRender: (
       <>
@@ -109,7 +94,7 @@ export const PROCESS_STEPS = [
   {
     id: 6,
     stepNum: '06',
-    navTitle: 'Your silent salesman',
+    navTitle: 'Always on',
     title: 'Your website works while you are on site or off duty',
     titleRender: (
       <>
@@ -178,76 +163,14 @@ function parseDebugFlags(): DebugFlags {
   };
 }
 
-// H4 / Hardening 2: Normalized crossfade calculation with hard boundaries (8% crossfade window)
-// Ensures at most two scenes are visible simultaneously during crossfade; outside crossfade exactly one is visible.
-function getSceneTransitionState(p: number, index: number, onescene: boolean) {
-  const { start, end } = SCENE_RANGES[index];
 
-  if (onescene) {
-    const isCurrent = p >= start && p < (index === SCENE_RANGES.length - 1 ? 1.001 : end);
-    return {
-      isVisible: isCurrent,
-      opacity: isCurrent ? 1 : 0,
-      y: 0,
-      scale: 1,
-      pointerEvents: isCurrent ? ('auto' as const) : ('none' as const),
-    };
-  }
-
-  // Crossfade duration = 8% of neighbouring scene ranges
-  const prevRange = index > 0 ? SCENE_RANGES[index - 1] : null;
-  const nextRange = index < SCENE_RANGES.length - 1 ? SCENE_RANGES[index + 1] : null;
-
-  const fadePrev = prevRange ? 0.08 * Math.min(end - start, prevRange.end - prevRange.start) : 0;
-  const fadeNext = nextRange ? 0.08 * Math.min(end - start, nextRange.end - nextRange.start) : 0;
-
-  // Window bounds where this scene is rendered
-  const visibleStart = index === 0 ? 0 : start - fadePrev / 2;
-  const visibleEnd = index === SCENE_RANGES.length - 1 ? 1 : end + fadeNext / 2;
-
-  if (p < visibleStart || p > visibleEnd) {
-    return {
-      isVisible: false,
-      opacity: 0,
-      y: p < visibleStart ? 16 : -12,
-      scale: 0.98,
-      pointerEvents: 'none' as const,
-    };
-  }
-
-  let opacity = 1;
-  let y = 0;
-  let scale = 1;
-
-  // Incoming transition at start boundary
-  if (index > 0 && p < start + fadePrev / 2) {
-    const t = Math.max(0, Math.min(1, (p - visibleStart) / fadePrev));
-    opacity = t;
-    y = 16 * (1 - t);
-    scale = 0.98 + 0.02 * t;
-  }
-  // Outgoing transition at end boundary
-  else if (index < SCENE_RANGES.length - 1 && p > end - fadeNext / 2) {
-    const t = Math.max(0, Math.min(1, (p - (end - fadeNext / 2)) / fadeNext));
-    opacity = 1 - t;
-    y = -12 * t;
-    scale = 1 - 0.02 * t;
-  }
-
-  return {
-    isVisible: opacity > 0.001,
-    opacity: Math.max(0, Math.min(1, opacity)),
-    y,
-    scale,
-    pointerEvents: (opacity > 0.1 ? 'auto' : 'none') as 'auto' | 'none',
-  };
-}
 
 export default function OurProcess() {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const visualAreaRef = useRef<HTMLDivElement>(null);
-  const textMeasurerRef = useRef<HTMLDivElement>(null);
+  const textMeasurerNormalRef = useRef<HTMLDivElement>(null);
+  const textMeasurerCompactRef = useRef<HTMLDivElement>(null);
 
   // Diagnostic flags
   const flags = useMemo(() => parseDebugFlags(), []);
@@ -259,13 +182,18 @@ export default function OurProcess() {
   // Active scene index with 0.006 hysteresis (Hardening 4)
   const [activeSceneIndex, setActiveSceneIndex] = useState(0);
 
-  // Responsive scale & height state
+  // Responsive scale & height state (Requirement 1, 2, 3)
   const [visualScale, setVisualScale] = useState(1);
-  const [tallestTextHeight, setTallestTextHeight] = useState<number>(180);
   const [isCompactText, setIsCompactText] = useState(false);
+  const [normalTextHeight, setNormalTextHeight] = useState<number>(170);
+  const [compactTextHeight, setCompactTextHeight] = useState<number>(115);
+  const [visualAreaHeight, setVisualAreaHeight] = useState<number>(400);
+
   const isUpdatingScale = useRef(false); // Lock flag (Hardening 5)
   const lastScaleRef = useRef(1);
-  const lastMeasuredWidthRef = useRef(0);
+  const lastNormalMeasuredWidthRef = useRef(0);
+  const lastCompactMeasuredWidthRef = useRef(0);
+  const compactTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Diagnostic metrics
   const roCountRef = useRef(0);
@@ -277,47 +205,88 @@ export default function OurProcess() {
     wrapperTop: 0,
     wrapperHeight: 0,
     stageHeight: 0,
+    visualAreaHeight: 0,
+    appliedScale: 1,
+    isCompact: false,
     visibleScenesCount: 1,
     visibleTextsCount: 1,
   });
 
-  // H5 / Hardening 5: Measure tallest text block safely once after fonts load & on large width changes (> 2px)
-  const measureTallest = () => {
-    if (!textMeasurerRef.current) return;
-    const currentWidth = textMeasurerRef.current.offsetWidth;
-    if (Math.abs(currentWidth - lastMeasuredWidthRef.current) <= 2 && lastMeasuredWidthRef.current > 0) {
-      return;
+  // Requirement 3: Measure tallest text block in normal and compact states
+  const measureTexts = () => {
+    // Normal measurer
+    if (textMeasurerNormalRef.current) {
+      const currentWidth = textMeasurerNormalRef.current.offsetWidth;
+      if (Math.abs(currentWidth - lastNormalMeasuredWidthRef.current) > 2 || lastNormalMeasuredWidthRef.current === 0) {
+        lastNormalMeasuredWidthRef.current = currentWidth;
+        const children = Array.from(textMeasurerNormalRef.current.children) as HTMLElement[];
+        let maxH = 0;
+        children.forEach((child) => {
+          const h = child.offsetHeight;
+          if (h > maxH) maxH = h;
+        });
+        if (maxH > 0) {
+          const minReserve = typeof window !== 'undefined' && window.innerWidth < 768 ? 190 : 160;
+          setNormalTextHeight(Math.max(minReserve, Math.ceil(maxH)));
+        }
+      }
     }
-    lastMeasuredWidthRef.current = currentWidth;
 
-    const children = Array.from(textMeasurerRef.current.children) as HTMLElement[];
-    let maxH = 0;
-    children.forEach((child) => {
-      const h = child.offsetHeight;
-      if (h > maxH) maxH = h;
-    });
-    if (maxH > 0) {
-      // Per-breakpoint fallback reservation (mobile 190px, desktop 160px min)
-      const minReserve = typeof window !== 'undefined' && window.innerWidth < 768 ? 190 : 160;
-      setTallestTextHeight(Math.max(minReserve, Math.ceil(maxH)));
+    // Compact measurer
+    if (textMeasurerCompactRef.current) {
+      const currentWidth = textMeasurerCompactRef.current.offsetWidth;
+      if (Math.abs(currentWidth - lastCompactMeasuredWidthRef.current) > 2 || lastCompactMeasuredWidthRef.current === 0) {
+        lastCompactMeasuredWidthRef.current = currentWidth;
+        const children = Array.from(textMeasurerCompactRef.current.children) as HTMLElement[];
+        let maxH = 0;
+        children.forEach((child) => {
+          const h = child.offsetHeight;
+          if (h > maxH) maxH = h;
+        });
+        if (maxH > 0) {
+          const minReserve = typeof window !== 'undefined' && window.innerWidth < 768 ? 130 : 105;
+          setCompactTextHeight(Math.max(minReserve, Math.ceil(maxH)));
+        }
+      }
     }
   };
 
   useEffect(() => {
-    measureTallest();
+    measureTexts();
     const handleResize = () => {
-      measureTallest();
+      measureTexts();
     };
     window.addEventListener('resize', handleResize);
-    document.fonts?.ready?.then(() => measureTallest());
+    document.fonts?.ready?.then(() => measureTexts());
     window.addEventListener('load', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('load', handleResize);
+      if (compactTimeoutRef.current) {
+        clearTimeout(compactTimeoutRef.current);
+      }
     };
   }, []);
 
-  // H5 / Hardening 5: ResizeObserver to scale 960x480 canvas from un-scaled container with 0.5% deadband
+  // Requirement 3: Debounced compact mode decision (at most once per 250ms, never in same frame)
+  const scheduleCompactDecision = (s_uncomp: number) => {
+    if (compactTimeoutRef.current) return;
+    compactTimeoutRef.current = setTimeout(() => {
+      compactTimeoutRef.current = null;
+      setIsCompactText((currentCompact) => {
+        // Hysteresis: on when < 0.62, off when > 0.70
+        if (!currentCompact && s_uncomp < 0.62) {
+          return true;
+        }
+        if (currentCompact && s_uncomp > 0.70) {
+          return false;
+        }
+        return currentCompact;
+      });
+    }, 250);
+  };
+
+  // Requirement 2: Scale rule (hard min 0.4, step 0.005, 0.5% deadband, no 0.68 floor)
   useEffect(() => {
     const node = visualAreaRef.current;
     if (!node) return;
@@ -330,21 +299,34 @@ export default function OurProcess() {
       try {
         if (flags.fixedscale) {
           setVisualScale(1);
-          setIsCompactText(false);
           return;
         }
 
-        const { clientWidth, clientHeight } = node;
-        if (clientWidth === 0 || clientHeight === 0) return;
+        const areaW = node.clientWidth;
+        const areaH = node.clientHeight;
+        if (areaW === 0 || areaH === 0) return;
 
-        const rawScale = Math.min(clientWidth / 960, clientHeight / 480);
-        const clampedScale = Math.max(0.68, Math.min(1.05, rawScale));
+        setVisualAreaHeight(areaH);
 
-        // Threshold check: apply only if changed by >= 0.5%
-        if (Math.abs(clampedScale - lastScaleRef.current) / lastScaleRef.current >= 0.005) {
-          lastScaleRef.current = clampedScale;
-          setVisualScale(clampedScale);
-          setIsCompactText(clampedScale < 0.72);
+        // Requirement 3: s_uncompacted computed from NORMAL mode geometry
+        const stageH = stageRef.current ? stageRef.current.offsetHeight : areaH + 300;
+        const normalFixedOverhead = 40 + 56 + normalTextHeight + 20 + 48;
+        const normalAreaH = Math.max(0, stageH - normalFixedOverhead);
+        const s_uncompacted = Math.min(areaW / 960, Math.max(0, normalAreaH - 12) / 480);
+
+        scheduleCompactDecision(s_uncompacted);
+
+        // Available canvas height with 12px top padding and 12px bottom clearance
+        const availableH = Math.max(0, areaH - 24);
+        const rawScale = Math.min(areaW / 960, availableH / 480);
+        // Requirement 2: clamped to hard minimum of 0.4, rounded to 0.005 steps
+        const clampedScale = Math.max(0.4, Math.min(1.05, rawScale));
+        const roundedScale = Math.round(clampedScale / 0.005) * 0.005;
+
+        // Apply only when changed by at least 0.5%
+        if (Math.abs(roundedScale - lastScaleRef.current) / lastScaleRef.current >= 0.005) {
+          lastScaleRef.current = roundedScale;
+          setVisualScale(roundedScale);
         }
       } finally {
         isUpdatingScale.current = false;
@@ -355,7 +337,7 @@ export default function OurProcess() {
     const ro = new ResizeObserver(updateScale);
     ro.observe(node);
     return () => ro.disconnect();
-  }, [flags.fixedscale]);
+  }, [flags.fixedscale, normalTextHeight]);
 
   // RO Rate tracker (resets every second)
   useEffect(() => {
@@ -449,6 +431,9 @@ export default function OurProcess() {
           wrapperTop: rect.top,
           wrapperHeight: rect.height,
           stageHeight: stageH,
+          visualAreaHeight,
+          appliedScale: visualScale,
+          isCompact: isCompactText,
           visibleScenesCount: visScenes,
           visibleTextsCount: visTexts,
         });
@@ -471,7 +456,7 @@ export default function OurProcess() {
       io.disconnect();
       bodyRo.disconnect();
     };
-  }, [flags.raw, flags.onescene]);
+  }, [flags.raw, flags.onescene, visualAreaHeight, visualScale, isCompactText]);
 
   // Diagnostic console.table logger (flags.log)
   useEffect(() => {
@@ -584,9 +569,9 @@ export default function OurProcess() {
         ))}
       </ol>
 
-      {/* Off-screen measurement container to calculate tallest step height at current width */}
+      {/* Normal mode measurement container to calculate tallest step height at current width */}
       <div
-        ref={textMeasurerRef}
+        ref={textMeasurerNormalRef}
         aria-hidden="true"
         className="w-full max-w-[980px] absolute left-[-9999px] top-0 pointer-events-none opacity-0 invisible"
       >
@@ -595,16 +580,47 @@ export default function OurProcess() {
             <span className="font-mono text-[22px] font-bold text-[#E3B896] mb-1">
               {step.stepNum}
             </span>
-            <h3 className={`${isCompactText ? 'text-[clamp(24px,3vw,40px)]' : 'text-[clamp(26px,7vw,34px)] lg:text-[clamp(28px,3.4vw,48px)]'} font-semibold tracking-[-0.03em] leading-[1.08] text-white mb-2 max-w-4xl text-center`}>
+            <h3 className="text-[clamp(26px,7vw,34px)] lg:text-[clamp(28px,3.4vw,48px)] font-semibold tracking-[-0.03em] leading-[1.08] text-white mb-2 max-w-4xl text-center">
               {step.titleRender}
             </h3>
-            <p className={`${isCompactText ? 'text-[18px]' : 'text-[17px] lg:text-[clamp(18px,1.5vw,22px)]'} leading-[1.45] text-white/[0.88] max-w-3xl text-center`}>
+            <p className="text-[17px] lg:text-[clamp(18px,1.5vw,22px)] leading-[1.45] text-white/[0.88] max-w-3xl text-center">
               {step.description}
             </p>
             {idx === 5 && (
-              <div className="mt-2.5 flex items-center justify-center">
-                <span className="inline-flex items-center gap-2 bg-[#E3B896] text-[#0F2A35] font-semibold text-sm px-5 py-2 rounded-full">
-                  {CTA.label}
+              <div className="mt-3 flex flex-col items-center justify-center gap-1.5">
+                <span className="inline-flex items-center gap-2 bg-[#E3B896] text-[#0F2A35] font-semibold text-sm px-6 py-2.5 rounded-full">
+                  {CTA.version}
+                </span>
+                <span className="text-[12px] text-white/60">
+                  If it&apos;s not for you, we stop contacting you.
+                </span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Compact mode measurement container (Requirement 3: numeral hidden, title clamp max 34px, description 16-18px leading 1.35) */}
+      <div
+        ref={textMeasurerCompactRef}
+        aria-hidden="true"
+        className="w-full max-w-[980px] absolute left-[-9999px] top-0 pointer-events-none opacity-0 invisible"
+      >
+        {PROCESS_STEPS.map((step, idx) => (
+          <div key={step.id} className="flex flex-col items-center justify-center px-4 py-1">
+            <h3 className="text-[clamp(20px,3.2vw,34px)] font-semibold tracking-[-0.03em] leading-[1.08] text-white mb-1.5 max-w-4xl text-center">
+              {step.titleRender}
+            </h3>
+            <p className="text-[clamp(16px,1.8vw,18px)] leading-[1.35] text-white/[0.88] max-w-3xl text-center">
+              {step.description}
+            </p>
+            {idx === 5 && (
+              <div className="mt-2 flex flex-col items-center justify-center gap-1">
+                <span className="inline-flex items-center gap-2 bg-[#E3B896] text-[#0F2A35] font-semibold text-xs px-4 py-1.5 rounded-full">
+                  {CTA.version}
+                </span>
+                <span className="text-[10px] text-white/60">
+                  If it&apos;s not for you, we stop contacting you.
                 </span>
               </div>
             )}
@@ -618,13 +634,13 @@ export default function OurProcess() {
         className={`${
           flags.nosticky
             ? 'relative w-full py-12 flex flex-col gap-16 px-4 sm:px-6'
-            : 'sticky top-0 h-[100svh] w-full flex flex-col justify-between overflow-hidden bg-gradient-to-b from-[#0F2A35] via-[#133543] to-[#0F2A35] px-4 sm:px-6 py-5 z-10'
+            : 'sticky top-0 h-[100svh] w-full flex flex-col justify-between overflow-clip bg-gradient-to-b from-[#0F2A35] via-[#133543] to-[#0F2A35] px-4 sm:px-6 py-4 sm:py-5 z-10'
         }`}
       >
         {!flags.nosticky && (
           <>
-            {/* Stage Header: Compact top bar (~56px) */}
-            <header className="w-full max-w-7xl mx-auto flex items-center justify-between gap-4 pb-3 border-b border-white/10 shrink-0 h-[56px] relative">
+            {/* Stage Header: Compact top bar (~56px normal, ~48px compact) */}
+            <header className={`w-full max-w-7xl mx-auto flex items-center justify-between gap-4 border-b border-white/10 shrink-0 relative ${isCompactText ? 'h-[48px] pb-2 mb-2' : 'h-[56px] pb-3 mb-4'}`}>
               <div className="flex items-center gap-3 shrink-0">
                 <span className="text-[18px] font-bold text-[#E3B896] tracking-tight whitespace-nowrap">
                   The Way We Deliver
@@ -650,8 +666,8 @@ export default function OurProcess() {
 
             {/* Centred Text Block directly above the visual card (Hardening 1 & 2: Hard-hidden when inactive) */}
             <div
-              style={{ height: tallestTextHeight }}
-              className="w-full max-w-[980px] mx-auto text-center relative z-[2] mb-5 flex-none"
+              style={{ height: isCompactText ? compactTextHeight : normalTextHeight }}
+              className={`w-full max-w-[980px] mx-auto text-center relative z-[2] flex-none ${isCompactText ? 'mb-2.5' : 'mb-5'}`}
             >
               {PROCESS_STEPS.map((step, idx) => {
                 if (flags.onescene && idx !== activeSceneIndex) {
@@ -673,42 +689,50 @@ export default function OurProcess() {
             {/* Visual Area: logical 960 x 480 canvas */}
             <main
               ref={visualAreaRef}
-              className="w-full max-w-7xl mx-auto flex-1 flex items-center justify-center min-h-0 relative overflow-hidden"
+              className="w-full max-w-7xl mx-auto flex-1 min-h-0 relative overflow-visible pt-3 pb-4 px-2"
             >
+              {/* Scaled canvas box matching exact layout size logicalW * s and logicalH * s (Requirement 1) */}
               <div
                 style={{
-                  width: 960,
-                  height: 480,
-                  transform: `scale(${visualScale})`,
-                  transformOrigin: 'center center',
-                  flexShrink: 0,
+                  width: Math.round(960 * visualScale),
+                  height: Math.round(480 * visualScale),
                 }}
-                className="relative"
+                className="mx-auto relative overflow-visible"
                 aria-hidden="true"
               >
-                {(!flags.onescene || activeSceneIndex === 0) && (
-                  <Scene1Visual scrollYProgress={smoothProgress} onescene={flags.onescene} />
-                )}
-                {(!flags.onescene || activeSceneIndex === 1) && (
-                  <Scene2Visual scrollYProgress={smoothProgress} isActive={activeSceneIndex === 1} onescene={flags.onescene} />
-                )}
-                {(!flags.onescene || activeSceneIndex === 2) && (
-                  <Scene3Visual scrollYProgress={smoothProgress} onescene={flags.onescene} />
-                )}
-                {(!flags.onescene || activeSceneIndex === 3) && (
-                  <Scene4Visual scrollYProgress={smoothProgress} onescene={flags.onescene} />
-                )}
-                {(!flags.onescene || activeSceneIndex === 4) && (
-                  <Scene5Visual scrollYProgress={smoothProgress} onescene={flags.onescene} />
-                )}
-                {(!flags.onescene || activeSceneIndex === 5) && (
-                  <Scene6Visual scrollYProgress={smoothProgress} onescene={flags.onescene} />
-                )}
+                {/* Logical canvas pinned to top-left of the scaled layout box */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: 960,
+                    height: 480,
+                    transform: `scale(${visualScale})`,
+                    transformOrigin: 'top left',
+                  }}
+                  className="relative overflow-visible"
+                >
+                  {SCENES.map((SceneComponent, idx) => {
+                    if (flags.onescene && idx !== activeSceneIndex) {
+                      return null;
+                    }
+                    return (
+                      <SceneComponent
+                        key={idx}
+                        scrollYProgress={smoothProgress}
+                        onescene={flags.onescene}
+                        staticMode={false}
+                        isActive={activeSceneIndex === idx}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </main>
 
             {/* Stage Footer / Progress Strip */}
-            <footer className="w-full max-w-7xl mx-auto pt-2 border-t border-white/10 shrink-0 flex flex-col gap-2">
+            <footer className="w-full max-w-7xl mx-auto pt-2 border-t border-white/10 shrink-0 flex flex-col gap-2 mt-3">
               <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-[#E3B896]"
@@ -733,29 +757,46 @@ export default function OurProcess() {
         {/* Nosticky mode: plain vertical list of 6 scenes */}
         {flags.nosticky && (
           <div className="w-full max-w-5xl mx-auto flex flex-col gap-16">
-            {PROCESS_STEPS.map((step, idx) => (
-              <div key={step.id} className="flex flex-col items-center gap-6 pb-12 border-b border-white/10">
-                <div className="text-center max-w-3xl">
-                  <span className="font-mono text-[22px] font-bold text-[#E3B896] mb-1 block">
-                    {step.stepNum}
-                  </span>
-                  <h3 className="text-[28px] font-semibold text-white mb-2">
-                    {step.titleRender}
-                  </h3>
-                  <p className="text-[17px] text-white/80">
-                    {step.description}
-                  </p>
+            {PROCESS_STEPS.map((step, idx) => {
+              const SceneComponent = SCENES[idx];
+              return (
+                <div key={step.id} className="flex flex-col items-center gap-6 pb-12 border-b border-white/10">
+                  <div className="text-center max-w-3xl">
+                    <span className="font-mono text-[22px] font-bold text-[#E3B896] mb-1 block">
+                      {step.stepNum}
+                    </span>
+                    <h3 className="text-[28px] font-semibold text-white mb-2">
+                      {step.titleRender}
+                    </h3>
+                    <p className="text-[17px] text-white/80">
+                      {step.description}
+                    </p>
+                    {idx === 5 && (
+                      <div className="mt-4 flex flex-col items-center justify-center gap-1.5">
+                        <a
+                          href="#audit-form"
+                          className="inline-flex items-center gap-2 bg-[#E3B896] text-[#0F2A35] font-semibold text-[15px] px-6 py-2.5 rounded-full hover:bg-[#ebd0b9] shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#E3B896] focus:ring-offset-2 focus:ring-offset-[#0F2A35]"
+                        >
+                          <span>{CTA.version}</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </a>
+                        <span className="text-[13px] text-white/60">
+                          If it&apos;s not for you, we stop contacting you.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-[960px] max-w-full h-[480px] flex items-center justify-center">
+                    <SceneComponent
+                      scrollYProgress={smoothProgress}
+                      onescene={true}
+                      staticMode={true}
+                      isActive={true}
+                    />
+                  </div>
                 </div>
-                <div className="w-[960px] max-w-full h-[480px] flex items-center justify-center">
-                  {idx === 0 && <Scene1Visual scrollYProgress={smoothProgress} onescene={true} staticMode={true} />}
-                  {idx === 1 && <Scene2Visual scrollYProgress={smoothProgress} isActive={true} onescene={true} staticMode={true} />}
-                  {idx === 2 && <Scene3Visual scrollYProgress={smoothProgress} onescene={true} staticMode={true} />}
-                  {idx === 3 && <Scene4Visual scrollYProgress={smoothProgress} onescene={true} staticMode={true} />}
-                  {idx === 4 && <Scene5Visual scrollYProgress={smoothProgress} onescene={true} staticMode={true} />}
-                  {idx === 5 && <Scene6Visual scrollYProgress={smoothProgress} onescene={true} staticMode={true} />}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -811,6 +852,9 @@ function DebugOverlay({
     wrapperTop: number;
     wrapperHeight: number;
     stageHeight: number;
+    visualAreaHeight: number;
+    appliedScale: number;
+    isCompact: boolean;
     visibleScenesCount: number;
     visibleTextsCount: number;
   };
@@ -846,12 +890,16 @@ function DebugOverlay({
       </div>
       <div className="space-y-0.5">
         <div><span className="text-white/60">build:</span> {buildId.slice(0, 19)}</div>
+        <div><span className="text-white/60">scenes:</span> {PROCESS_SCENES_VERSION}</div>
         <div><span className="text-white/60">flags:</span> {activeFlags.length > 0 ? activeFlags.join(',') : 'none'}</div>
         <div><span className="text-white/60">progress:</span> {stats.raw.toFixed(4)} (raw) / {stats.smoothed.toFixed(4)} (s)</div>
         <div><span className="text-white/60">scene:</span> {stats.sceneIdx + 1} of 6</div>
         <div><span className="text-white/60">vis scenes/texts:</span> {stats.visibleScenesCount} / {stats.visibleTextsCount}</div>
         <div><span className="text-white/60">wrapper top/h:</span> {stats.wrapperTop.toFixed(0)}px / {stats.wrapperHeight.toFixed(0)}px</div>
         <div><span className="text-white/60">stage h:</span> {stats.stageHeight.toFixed(0)}px</div>
+        <div><span className="text-white/60">visual area h:</span> {stats.visualAreaHeight.toFixed(0)}px</div>
+        <div><span className="text-white/60">applied scale:</span> {stats.appliedScale.toFixed(3)}</div>
+        <div><span className="text-white/60">compact:</span> {stats.isCompact ? 'ON' : 'OFF'}</div>
         <div><span className="text-white/60">win/vv h:</span> {viewportStats.innerHeight}px / {viewportStats.visualViewportH}px</div>
         <div><span className="text-white/60">dpr / fonts:</span> {viewportStats.dpr}x / {viewportStats.fontStatus}</div>
         <div>
@@ -936,17 +984,19 @@ function ScrubbedStepText({
       aria-hidden={index !== 0}
       className="absolute inset-0 flex flex-col items-center justify-center px-4"
     >
-      <span className="font-mono text-[22px] font-bold text-[#E3B896] mb-1">
-        {step.stepNum}
-      </span>
-      <h3 className={`${isCompact ? 'text-[clamp(24px,3vw,40px)]' : 'text-[clamp(26px,7vw,34px)] lg:text-[clamp(28px,3.4vw,48px)]'} font-semibold tracking-[-0.03em] leading-[1.08] text-white mb-2 max-w-4xl text-center`}>
+      {!isCompact && (
+        <span className="font-mono text-[22px] font-bold text-[#E3B896] mb-1">
+          {step.stepNum}
+        </span>
+      )}
+      <h3 className={`${isCompact ? 'text-[clamp(20px,3.2vw,34px)] mb-1.5' : 'text-[clamp(26px,7vw,34px)] lg:text-[clamp(28px,3.4vw,48px)] mb-2'} font-semibold tracking-[-0.03em] leading-[1.08] text-white max-w-4xl text-center`}>
         {step.titleRender}
       </h3>
-      <p className={`${isCompact ? 'text-[18px]' : 'text-[17px] lg:text-[clamp(18px,1.5vw,22px)]'} leading-[1.45] text-white/[0.88] max-w-3xl text-center`}>
+      <p className={`${isCompact ? 'text-[clamp(16px,1.8vw,18px)] leading-[1.35]' : 'text-[17px] lg:text-[clamp(18px,1.5vw,22px)] leading-[1.45]'} text-white/[0.88] max-w-3xl text-center`}>
         {step.description}
       </p>
       {index === 5 && (
-        <div className="mt-2.5 flex items-center justify-center">
+        <div className="mt-3 flex flex-col items-center justify-center gap-1.5">
           <a
             href="#audit-form"
             onClick={(e) => {
@@ -954,911 +1004,16 @@ function ScrubbedStepText({
               const el = document.getElementById('audit-form') || document.querySelector('form');
               if (el) el.scrollIntoView({ behavior: 'auto' });
             }}
-            className="inline-flex items-center gap-2 bg-[#E3B896] text-[#0F2A35] font-semibold text-sm px-5 py-2 rounded-full hover:bg-[#ebd0b9] shadow-md ambient"
+            className="inline-flex items-center gap-2 bg-[#E3B896] text-[#0F2A35] font-semibold text-sm sm:text-[15px] px-6 py-2.5 rounded-full hover:bg-[#ebd0b9] shadow-md ambient transition-transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#E3B896] focus:ring-offset-2 focus:ring-offset-[#0F2A35]"
           >
-            {CTA.label}
+            <span>{CTA.version}</span>
             <ArrowRight className="w-4 h-4" />
           </a>
+          <span className="text-[12px] sm:text-[13px] text-white/60">
+            If it&apos;s not for you, we stop contacting you.
+          </span>
         </div>
       )}
-    </motion.div>
-  );
-}
-
-// Scene visibility hook returning exact transition values (H4 & Hardening 1 & 2)
-function useSceneVisibility(
-  scrollYProgress: MotionValue<number>,
-  sceneIndex: number,
-  onescene: boolean = false,
-  staticMode: boolean = false
-) {
-  const { start, end } = SCENE_RANGES[sceneIndex];
-
-  const state = useTransform(scrollYProgress, (p: number) => {
-    if (staticMode) {
-      return {
-        isVisible: true,
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        pointerEvents: 'auto' as const,
-      };
-    }
-    return getSceneTransitionState(p, sceneIndex, onescene);
-  });
-
-  const opacity = useTransform(state, (s) => s.opacity);
-  const y = useTransform(state, (s) => s.y);
-  const scale = useTransform(state, (s) => s.scale);
-  const pointerEvents = useTransform(state, (s) => s.pointerEvents);
-  const visibility = useTransform(state, (s) => (s.isVisible ? 'visible' : 'hidden'));
-
-  const sceneProgress = useTransform(scrollYProgress, (v: number) => {
-    if (staticMode) return 1;
-    return Math.min(1, Math.max(0, (v - start) / (end - start)));
-  });
-
-  return { opacity, y, scale, pointerEvents, visibility, sceneProgress, start, end };
-}
-
-// SCENE 1: SEARCH
-function Scene1Visual({
-  scrollYProgress,
-  onescene,
-  staticMode,
-}: {
-  scrollYProgress: MotionValue<number>;
-  onescene?: boolean;
-  staticMode?: boolean;
-}) {
-  const { opacity, y, scale, pointerEvents, visibility, sceneProgress } = useSceneVisibility(
-    scrollYProgress,
-    0,
-    onescene,
-    staticMode
-  );
-
-  const row1Opacity = useTransform(sceneProgress, [0.12, 0.28], [0, 1]);
-  const row2Opacity = useTransform(sceneProgress, [0.24, 0.40], [0, 1]);
-  const row3Opacity = useTransform(sceneProgress, [0.36, 0.52], [0, 1]);
-
-  const pin1Drop = useTransform(sceneProgress, [0.15, 0.28], [0, 1]);
-  const pin2Drop = useTransform(sceneProgress, [0.28, 0.41], [0, 1]);
-  const pin3Drop = useTransform(sceneProgress, [0.41, 0.54], [0, 1]);
-
-  return (
-    <motion.div
-      style={{
-        opacity,
-        y,
-        scale,
-        pointerEvents: pointerEvents as any,
-        visibility: visibility as any,
-      }}
-      className="absolute inset-0 flex items-center justify-center p-4"
-    >
-      <div className="w-[912px] h-[432px] bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col justify-between">
-        {/* Simulated Search Bar */}
-        <div className="w-full bg-white rounded-2xl p-3.5 flex items-center gap-3 shadow-md shrink-0">
-          <Search className="w-5 h-5 text-[#1E4A5C] shrink-0" />
-          <span className="text-[22px] font-semibold text-[#0F2A35]">
-            roofers in Galway
-          </span>
-          <span className="ml-auto text-xs font-semibold px-3 py-1 rounded-full bg-[#DCE9EC] text-[#1E4A5C]">
-            Live Search
-          </span>
-        </div>
-
-        {/* 2-Column Search Results & Clean Galway Mini-Map */}
-        <div className="grid grid-cols-2 gap-6 items-center flex-1 pt-4">
-          <div className="flex flex-col gap-3">
-            <motion.div
-              style={{ opacity: row1Opacity }}
-              className="bg-white rounded-xl p-3.5 text-[#0F2A35] shadow-xs flex items-center justify-between"
-            >
-              <div>
-                <h4 className="text-[18px] font-bold">Galway Roofing Services</h4>
-                <p className="text-[16px] text-[#5E6F77] mt-0.5">4.8 stars · 24 reviews</p>
-              </div>
-              <span className="text-[16px] font-semibold text-[#1E4A5C] bg-[#EEF3F4] px-3.5 py-1.5 rounded-lg">
-                Website
-              </span>
-            </motion.div>
-
-            <motion.div
-              style={{ opacity: row2Opacity }}
-              className="bg-white rounded-xl p-3.5 text-[#0F2A35] shadow-xs flex items-center justify-between"
-            >
-              <div>
-                <h4 className="text-[18px] font-bold">Corrib Slate & Tile</h4>
-                <p className="text-[16px] text-[#5E6F77] mt-0.5">4.9 stars · 38 reviews</p>
-              </div>
-              <span className="text-[16px] font-semibold text-[#1E4A5C] bg-[#EEF3F4] px-3.5 py-1.5 rounded-lg">
-                Website
-              </span>
-            </motion.div>
-
-            <motion.div
-              style={{ opacity: row3Opacity }}
-              className="bg-white rounded-xl p-3.5 text-[#0F2A35] border-2 border-[#E3B896] shadow-md flex items-center justify-between"
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="text-[18px] font-bold">Your business</h4>
-                  <span className="text-[16px] font-bold uppercase bg-[#E3B896]/20 text-[#0F2A35] px-2.5 py-0.5 rounded-sm">
-                    Phone only
-                  </span>
-                </div>
-                <p className="text-[16px] text-[#5E6F77] mt-0.5">
-                  4.8 stars · Missing website link
-                </p>
-              </div>
-              <span className="text-[16px] font-semibold text-[#5E6F77] italic">
-                No link
-              </span>
-            </motion.div>
-          </div>
-
-          <div className="bg-[#133543] rounded-2xl p-5 border border-white/10 flex flex-col justify-between h-full relative overflow-hidden">
-            <div className="absolute inset-0 opacity-100 pointer-events-none">
-              <svg className="w-full h-full" viewBox="0 0 400 240" fill="none">
-                <path d="M-20 60 C80 50, 140 100, 220 80 S340 120, 420 110" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-                <path d="M-10 170 C100 160, 180 130, 260 170 S360 180, 420 160" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-                <path d="M120 -10 C140 70, 110 150, 130 250" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-                <path d="M280 -10 C270 80, 290 160, 280 250" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-                <path d="M60 20 L340 220" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
-              </svg>
-            </div>
-
-            <div className="relative z-10 flex items-center justify-between">
-              <span className="text-[18px] font-semibold text-white/90 tracking-wide">
-                Galway
-              </span>
-            </div>
-
-            <div className="relative z-10 flex items-center justify-around my-auto">
-              <motion.div
-                style={{
-                  opacity: pin1Drop,
-                  y: useTransform(pin1Drop, [0, 1], [-24, 0]),
-                }}
-                className="flex flex-col items-center"
-              >
-                <MapPin className="w-[18px] h-[18px] text-[#E3B896] fill-[#E3B896]" />
-              </motion.div>
-
-              <motion.div
-                style={{
-                  opacity: pin2Drop,
-                  y: useTransform(pin2Drop, [0, 1], [-24, 0]),
-                }}
-                className="flex flex-col items-center"
-              >
-                <MapPin className="w-[18px] h-[18px] text-[#E3B896] fill-[#E3B896]" />
-              </motion.div>
-
-              <motion.div
-                style={{
-                  opacity: pin3Drop,
-                  y: useTransform(pin3Drop, [0, 1], [-24, 0]),
-                }}
-                className="flex flex-col items-center"
-              >
-                <MapPin className="w-[18px] h-[18px] text-[#E3B896] fill-[#E3B896]" />
-              </motion.div>
-            </div>
-
-            <div className="relative z-10" />
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// SCENE 2: REVIEW
-function Scene2Visual({
-  scrollYProgress,
-  isActive,
-  onescene,
-  staticMode,
-}: {
-  scrollYProgress: MotionValue<number>;
-  isActive: boolean;
-  onescene?: boolean;
-  staticMode?: boolean;
-}) {
-  const { opacity, y, scale, pointerEvents, visibility, sceneProgress } = useSceneVisibility(
-    scrollYProgress,
-    1,
-    onescene,
-    staticMode
-  );
-
-  const cardSlide = useTransform(sceneProgress, [0.15, 0.38], [-40, 0]);
-  const cardOpacity = useTransform(sceneProgress, [0.15, 0.32], [0, 1]);
-  const dashedBoxReveal = useTransform(sceneProgress, [0.32, 0.46], [0, 1]);
-  const redChipPop = useTransform(sceneProgress, [0.38, 0.50], [0, 1]);
-
-  return (
-    <motion.div
-      style={{
-        opacity,
-        y,
-        scale,
-        pointerEvents: pointerEvents as any,
-        visibility: visibility as any,
-      }}
-      className="absolute inset-0 flex items-center justify-center p-4"
-    >
-      <div className="w-[912px] h-[432px] bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col justify-center">
-        <div className="w-full max-w-[760px] mx-auto flex flex-col gap-3 relative">
-          <div className="bg-white rounded-xl p-3.5 text-[#0F2A35] shadow-sm flex items-center justify-between">
-            <div>
-              <h4 className="text-[18px] font-bold">Galway Roofing Services</h4>
-              <p className="text-[16px] text-[#5E6F77] mt-0.5">4.8 stars · 24 reviews</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[16px] font-semibold text-[#1E4A5C] bg-[#EEF3F4] px-4 py-2 rounded-lg">
-                Website
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-3.5 text-[#0F2A35] shadow-sm flex items-center justify-between">
-            <div>
-              <h4 className="text-[18px] font-bold">Corrib Slate & Tile</h4>
-              <p className="text-[16px] text-[#5E6F77] mt-0.5">4.9 stars · 38 reviews</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[16px] font-semibold text-[#1E4A5C] bg-[#EEF3F4] px-4 py-2 rounded-lg">
-                Website
-              </span>
-            </div>
-          </div>
-
-          <div className="relative pt-3">
-            <motion.div
-              style={{
-                opacity: redChipPop,
-                scale: useTransform(redChipPop, [0, 1], [0.8, 1]),
-              }}
-              className="absolute -top-7 right-4 z-20 flex flex-col items-center pointer-events-none"
-            >
-              <div className="bg-[#C23B3F] text-white text-[18px] font-bold rounded-full px-4 py-2 shadow-xl flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-white" />
-                <span>Missing website link</span>
-              </div>
-              <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[7px] border-t-[#C23B3F]" />
-            </motion.div>
-
-            <motion.div
-              style={{
-                x: cardSlide,
-                opacity: cardOpacity,
-              }}
-              className={`bg-white rounded-2xl p-4 text-[#0F2A35] border-[3px] border-[#D9444A] shadow-xl flex items-center justify-between relative z-10 ambient ${
-                isActive ? 'attention-pulse-active' : ''
-              }`}
-            >
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <h4 className="text-[24px] font-bold text-[#0F2A35]">Your business</h4>
-                  <span className="text-[16px] font-bold text-[#0F2A35] bg-[#FBE4E1] px-3 py-0.5 rounded-sm">
-                    PHONE ONLY
-                  </span>
-                </div>
-                <p className="text-[17px] font-medium text-[#0F2A35] mt-1">
-                  4.8 stars · Local contractor profile
-                </p>
-              </div>
-
-              <motion.div
-                style={{ opacity: dashedBoxReveal }}
-                className="border-2 border-dashed border-[#D9444A] rounded-xl px-4 py-2.5 flex items-center gap-2 bg-[#FBE4E1]/40"
-              >
-                <AlertCircle className="w-4 h-4 text-[#D9444A] shrink-0" />
-                <span className="text-[#D9444A] text-[17px] font-bold">
-                  Missing website link
-                </span>
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// SCENE 3: AUDIT & CONCEPT
-function Scene3Visual({
-  scrollYProgress,
-  onescene,
-  staticMode,
-}: {
-  scrollYProgress: MotionValue<number>;
-  onescene?: boolean;
-  staticMode?: boolean;
-}) {
-  const { opacity, y, scale, pointerEvents, visibility, sceneProgress } = useSceneVisibility(
-    scrollYProgress,
-    2,
-    onescene,
-    staticMode
-  );
-
-  const wobbleX = useTransform(sceneProgress, [0.20, 0.28, 0.35], [0, -6, 0]);
-  const cardSlideToPortal = useTransform(sceneProgress, [0.35, 0.65], [0, 220]);
-  const cardScaleDown = useTransform(sceneProgress, [0.35, 0.65], [1, 0.55]);
-  const cardFadeOut = useTransform(sceneProgress, [0.50, 0.68], [1, 0]);
-  const portalGlow = useTransform(sceneProgress, [0.55, 0.65, 0.75], [1, 1.8, 1]);
-
-  const webNav = useTransform(sceneProgress, [0.68, 0.76], [0, 1]);
-  const webHero = useTransform(sceneProgress, [0.74, 0.82], [0, 1]);
-  const webTiles = useTransform(sceneProgress, [0.80, 0.88], [0, 1]);
-  const webCta = useTransform(sceneProgress, [0.86, 0.94], [0, 1]);
-  const webBadge = useTransform(sceneProgress, [0.90, 0.98], [0, 1]);
-
-  return (
-    <motion.div
-      style={{
-        opacity,
-        y,
-        scale,
-        pointerEvents: pointerEvents as any,
-        visibility: visibility as any,
-      }}
-      className="absolute inset-0 flex items-center justify-center p-4"
-    >
-      <div className="w-[912px] h-[432px] bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-2xl flex items-center justify-between relative overflow-hidden">
-        {/* LEFT: Compact Google Business Profile card */}
-        <motion.div
-          style={{
-            opacity: cardFadeOut,
-            x: useTransform(cardSlideToPortal, (x) => x + (wobbleX as any).get()),
-            scale: cardScaleDown,
-          }}
-          className="w-[250px] bg-white rounded-2xl p-4 text-[#0F2A35] border-[3px] border-[#D9444A] shadow-xl flex flex-col justify-between h-[280px] shrink-0 z-20"
-        >
-          <div>
-            <span className="text-[16px] font-semibold text-[#5E6F77] block mb-1">
-              Google Business Profile
-            </span>
-            <h4 className="text-[22px] font-bold text-[#0F2A35]">Your business</h4>
-            <div className="flex items-center gap-1 text-[#E8943A] mt-1 text-[17px] font-semibold">
-              <Star className="w-4 h-4 fill-current" />
-              <span>4.8 stars</span>
-            </div>
-          </div>
-
-          <div className="bg-[#FBE4E1] border border-[#D9444A]/30 rounded-xl p-3 text-center">
-            <span className="text-[#D9444A] text-[17px] font-bold flex items-center justify-center gap-1.5">
-              <AlertCircle className="w-4 h-4" />
-              Missing website link
-            </span>
-          </div>
-
-          <div className="text-[16px] text-[#5E6F77] font-medium border-t border-black/5 pt-2">
-            Local Trade Listing
-          </div>
-        </motion.div>
-
-        {/* CENTRE: Open Hours portal */}
-        <motion.div
-          style={{
-            scale: portalGlow,
-          }}
-          className="w-[220px] h-[260px] rounded-3xl bg-[#0F2A35] border-2 border-[#1E4A5C] shadow-[0_0_24px_rgba(227,184,150,0.25)] p-5 flex flex-col items-center justify-center text-center shrink-0 relative z-10"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-[#1E4A5C]/40 border border-[#E3B896]/30 flex items-center justify-center mb-2">
-            <Sparkles className="w-6 h-6 text-[#E3B896]" />
-          </div>
-          <span className="font-heading text-[22px] font-bold text-white tracking-tight">
-            Open <span className="text-[#E3B896]">Hours</span>
-          </span>
-          <div className="w-16 h-1 bg-[#E3B896]/60 rounded-full my-3" />
-          <span className="text-[16px] text-[#DCE9EC] font-medium leading-tight">
-            Design &amp; Audit Engine
-          </span>
-
-          <div className="flex gap-1.5 mt-3 opacity-60">
-            <div className="w-4 h-1 bg-[#E3B896] rounded-full" />
-            <div className="w-4 h-1 bg-[#E3B896] rounded-full" />
-            <div className="w-4 h-1 bg-[#E3B896] rounded-full" />
-          </div>
-        </motion.div>
-
-        {/* RIGHT: Finished Website assembling block by block */}
-        <div className="w-[370px] h-[370px] flex flex-col justify-between shrink-0 z-20">
-          <div className="bg-white rounded-2xl border-2 border-[#1E4A5C] shadow-2xl p-4 flex flex-col justify-between flex-1">
-            <motion.div
-              style={{ opacity: webNav }}
-              className="flex items-center justify-between pb-2 border-b border-black/5"
-            >
-              <span className="text-[18px] font-bold text-[#0F2A35]">Your business</span>
-              <span className="text-[16px] font-semibold bg-[#1E4A5C] text-white px-3 py-1 rounded-full">
-                Call now
-              </span>
-            </motion.div>
-
-            <motion.div style={{ opacity: webHero }} className="py-1">
-              <h5 className="text-[20px] font-bold text-[#0F2A35] leading-snug">
-                Roofing you can rely on
-              </h5>
-              <div className="flex items-center gap-1 text-[#E8943A] text-[16px] font-medium mt-0.5">
-                <Star className="w-3.5 h-3.5 fill-current" />
-                <Star className="w-3.5 h-3.5 fill-current" />
-                <Star className="w-3.5 h-3.5 fill-current" />
-                <Star className="w-3.5 h-3.5 fill-current" />
-                <Star className="w-3.5 h-3.5 fill-current" />
-                <span className="text-black/70 ml-1">5.0 stars</span>
-              </div>
-            </motion.div>
-
-            <motion.div style={{ opacity: webTiles }} className="grid grid-cols-3 gap-1.5 py-1">
-              <div className="h-10 rounded-lg bg-[#EEF3F4] border border-black/5 flex items-center justify-center text-[13px] font-medium text-[#1E4A5C]">
-                Slating
-              </div>
-              <div className="h-10 rounded-lg bg-[#EEF3F4] border border-black/5 flex items-center justify-center text-[13px] font-medium text-[#1E4A5C]">
-                Repairs
-              </div>
-              <div className="h-10 rounded-lg bg-[#EEF3F4] border border-black/5 flex items-center justify-center text-[13px] font-medium text-[#1E4A5C]">
-                Gutters
-              </div>
-            </motion.div>
-
-            <motion.div
-              style={{ opacity: webCta }}
-              className="flex items-center justify-between pt-1 gap-2"
-            >
-              <div className="flex-1 py-1.5 rounded-xl bg-[#1E4A5C] text-white text-[16px] font-semibold text-center">
-                Request a quote
-              </div>
-              <span className="text-[16px] font-bold text-[#1E4A5C] bg-[#1E4A5C]/15 px-3 py-1 rounded-lg">
-                Website
-              </span>
-            </motion.div>
-
-            <motion.div
-              style={{ opacity: webBadge }}
-              className="mt-2 flex items-center justify-center gap-1.5 bg-[#2E9E6B]/15 text-[#2E9E6B] rounded-xl py-1 px-3 text-[17px] font-bold"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Built for enquiries</span>
-            </motion.div>
-          </div>
-
-          <motion.div
-            style={{ opacity: webBadge }}
-            className="flex items-center justify-between gap-2 mt-2"
-          >
-            <span className="text-[17px] font-medium text-white bg-white/10 border border-white/20 px-3 py-1 rounded-full text-center flex-1">
-              2-minute video audit
-            </span>
-            <span className="text-[17px] font-bold text-[#0F2A35] bg-[#E3B896] px-3 py-1 rounded-full text-center flex-1">
-              Homepage concept
-            </span>
-          </motion.div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// SCENE 4: READY TO BE FOUND
-function Scene4Visual({
-  scrollYProgress,
-  onescene,
-  staticMode,
-}: {
-  scrollYProgress: MotionValue<number>;
-  onescene?: boolean;
-  staticMode?: boolean;
-}) {
-  const { opacity, y, scale, pointerEvents, visibility, sceneProgress } = useSceneVisibility(
-    scrollYProgress,
-    3,
-    onescene,
-    staticMode
-  );
-
-  const climbY = useTransform(sceneProgress, [0.10, 0.22, 0.25, 0.37, 0.40, 0.52], [264, 176, 176, 88, 88, 0]);
-  const comp3Y = useTransform(sceneProgress, [0.10, 0.22], [176, 264]);
-  const comp2Y = useTransform(sceneProgress, [0.25, 0.37], [88, 176]);
-  const comp1Y = useTransform(sceneProgress, [0.40, 0.52], [0, 88]);
-
-  const peachRingOpacity = useTransform(sceneProgress, [0.52, 0.58], [0, 1]);
-  const timeBarWidth = useTransform(sceneProgress, [0.10, 0.52], ['0%', '100%']);
-
-  return (
-    <motion.div
-      style={{
-        opacity,
-        y,
-        scale,
-        pointerEvents: pointerEvents as any,
-        visibility: visibility as any,
-      }}
-      className="absolute inset-0 flex items-center justify-center p-4"
-    >
-      <div className="w-[912px] h-[432px] bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col justify-between">
-        <div className="w-full bg-white rounded-2xl p-3 flex items-center gap-3 shadow-md">
-          <Search className="w-5 h-5 text-[#1E4A5C] shrink-0" />
-          <span className="text-[22px] font-semibold text-[#0F2A35]">
-            roofers in Galway
-          </span>
-          <span className="ml-auto text-xs font-semibold px-3 py-1 rounded-full bg-[#DCE9EC] text-[#1E4A5C]">
-            Search Results
-          </span>
-        </div>
-
-        <div className="w-full flex items-center gap-3 py-1">
-          <div className="flex items-center gap-1.5 text-[16px] font-semibold text-white/90 shrink-0">
-            <Clock className="w-4 h-4 text-[#E3B896]" />
-            <span>Over time</span>
-          </div>
-          <div className="flex-1 h-1.5 bg-white/15 rounded-full overflow-hidden relative">
-            <motion.div
-              style={{ width: timeBarWidth }}
-              className="h-full bg-[#E3B896] rounded-full"
-            />
-          </div>
-        </div>
-
-        <div className="relative w-full h-[340px]">
-          <motion.div
-            style={{ y: comp1Y }}
-            className="absolute top-0 inset-x-0 h-[76px] bg-white rounded-xl p-3.5 text-[#0F2A35] shadow-xs flex items-center justify-between"
-          >
-            <div>
-              <h4 className="text-[18px] font-bold">Galway Roofing Services</h4>
-              <p className="text-[16px] text-[#5E6F77]">4.8 stars · 24 reviews</p>
-            </div>
-            <span className="text-[16px] font-semibold text-[#1E4A5C] bg-[#EEF3F4] px-4 py-1.5 rounded-lg">
-              Website
-            </span>
-          </motion.div>
-
-          <motion.div
-            style={{ y: comp2Y }}
-            className="absolute top-0 inset-x-0 h-[76px] bg-white rounded-xl p-3.5 text-[#0F2A35] shadow-xs flex items-center justify-between"
-          >
-            <div>
-              <h4 className="text-[18px] font-bold">Corrib Slate & Tile</h4>
-              <p className="text-[16px] text-[#5E6F77]">4.9 stars · 38 reviews</p>
-            </div>
-            <span className="text-[16px] font-semibold text-[#1E4A5C] bg-[#EEF3F4] px-4 py-1.5 rounded-lg">
-              Website
-            </span>
-          </motion.div>
-
-          <motion.div
-            style={{ y: comp3Y }}
-            className="absolute top-0 inset-x-0 h-[76px] bg-white rounded-xl p-3.5 text-[#0F2A35] shadow-xs flex items-center justify-between"
-          >
-            <div>
-              <h4 className="text-[18px] font-bold">Western Roofing</h4>
-              <p className="text-[16px] text-[#5E6F77]">4.7 stars · 19 reviews</p>
-            </div>
-            <span className="text-[16px] font-semibold text-[#1E4A5C] bg-[#EEF3F4] px-4 py-1.5 rounded-lg">
-              Website
-            </span>
-          </motion.div>
-
-          <motion.div
-            style={{ y: climbY }}
-            className="absolute top-0 inset-x-0 h-[76px] bg-white rounded-xl p-3.5 text-[#0F2A35] border-2 border-[#1E4A5C] shadow-lg flex items-center justify-between z-10"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#1E4A5C] text-white flex items-center justify-center shrink-0">
-                <Globe className="w-5 h-5 text-[#E3B896]" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="text-[18px] font-bold">Your business</h4>
-                  <span className="text-[14px] font-bold text-[#1E4A5C] bg-[#1E4A5C]/15 px-2.5 py-0.5 rounded-md">
-                    Website
-                  </span>
-                </div>
-                <p className="text-[16px] text-[#5E6F77]">4.8 stars · Verified trade website</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-[16px] font-semibold text-white bg-[#1E4A5C] px-3.5 py-1.5 rounded-lg">
-                Request a quote
-              </span>
-              <span className="text-[16px] font-semibold text-[#1E4A5C] bg-[#EEF3F4] px-3.5 py-1.5 rounded-lg flex items-center gap-1">
-                <Phone className="w-3.5 h-3.5" />
-                Call
-              </span>
-            </div>
-
-            <motion.div
-              style={{ opacity: peachRingOpacity }}
-              className="absolute inset-0 rounded-xl ring-2 ring-[#E3B896] shadow-[0_0_20px_rgba(227,184,150,0.5)] pointer-events-none"
-            />
-          </motion.div>
-        </div>
-
-        <p className="text-[16px] text-white/75 text-center pt-1">
-          Illustrative. Search results vary and take time to build.
-        </p>
-      </div>
-    </motion.div>
-  );
-}
-
-// SCENE 5: DIRECT ENQUIRIES
-function Scene5Visual({
-  scrollYProgress,
-  onescene,
-  staticMode,
-}: {
-  scrollYProgress: MotionValue<number>;
-  onescene?: boolean;
-  staticMode?: boolean;
-}) {
-  const { opacity, y, scale, pointerEvents, visibility, sceneProgress } = useSceneVisibility(
-    scrollYProgress,
-    4,
-    onescene,
-    staticMode
-  );
-
-  const chip1In = useTransform(sceneProgress, [0.12, 0.22], [0, 1]);
-  const chip2In = useTransform(sceneProgress, [0.24, 0.34], [0, 1]);
-  const chip3In = useTransform(sceneProgress, [0.36, 0.46], [0, 1]);
-  const chip4In = useTransform(sceneProgress, [0.48, 0.58], [0, 1]);
-
-  return (
-    <motion.div
-      style={{
-        opacity,
-        y,
-        scale,
-        pointerEvents: pointerEvents as any,
-        visibility: visibility as any,
-      }}
-      className="absolute inset-0 flex items-center justify-center p-4"
-    >
-      <div className="w-[912px] h-[432px] bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-2xl flex items-center justify-between gap-6">
-        <div className="flex-1 flex flex-col justify-between h-full">
-          <div className="flex flex-col gap-2.5">
-            <div className="bg-white rounded-xl p-3.5 text-[#0F2A35] ring-2 ring-[#1E4A5C] shadow-lg flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="text-[18px] font-bold">Your business</h4>
-                  <span className="text-[14px] font-bold text-[#1E4A5C] bg-[#1E4A5C]/15 px-2 py-0.5 rounded-md">
-                    Active
-                  </span>
-                </div>
-                <p className="text-[16px] text-[#5E6F77]">4.8 stars · Direct web leads</p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-[16px] font-semibold text-white bg-[#1E4A5C] px-3 py-1.5 rounded-lg shadow-sm">
-                  Request a quote
-                </span>
-                <span className="text-[16px] font-semibold text-[#1E4A5C] bg-[#EEF3F4] px-3 py-1.5 rounded-lg flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5" />
-                  Call
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-white/80 rounded-xl p-3 text-[#0F2A35] opacity-60 flex items-center justify-between">
-              <div>
-                <span className="text-[16px] font-bold">Galway Roofing Services</span>
-                <p className="text-[14px] text-[#5E6F77]">Standard listing</p>
-              </div>
-              <span className="text-[14px] font-medium text-[#5E6F77]">Website</span>
-            </div>
-          </div>
-
-          <div className="bg-[#133543] rounded-2xl p-4 border border-white/10 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[16px] font-semibold text-white/90">
-                Local Homeowners Searching
-              </span>
-              <span className="text-xs text-[#E3B896] font-medium">Direct enquiry traffic</span>
-            </div>
-
-            <div className="flex items-center justify-between px-3 py-2">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-white">
-                    <User className="w-5 h-5 text-white/80" />
-                  </div>
-                  <span className="text-[12px] text-white/60">Searcher</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-around pt-2 border-t border-white/10 text-xs text-[#DCE9EC]">
-              <span>&bull; 2 tap "Request a quote"</span>
-              <span>&bull; 1 taps "Call"</span>
-              <span>&bull; Photos &amp; details sent</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="w-[340px] h-[380px] bg-[#0F2A35] border-2 border-white/20 rounded-[32px] p-4 shadow-2xl flex flex-col justify-between shrink-0">
-          <div className="flex items-center justify-between pb-2 border-b border-white/10">
-            <span className="text-xs font-mono text-white/60">Notifications</span>
-            <div className="flex items-center gap-1.5 bg-white/10 px-2.5 py-0.5 rounded-full text-xs font-mono text-white/90">
-              <Clock className="w-3 h-3 text-[#E3B896]" />
-              <span>9:15 pm</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2.5 my-auto">
-            <motion.div
-              style={{
-                opacity: chip1In,
-                y: useTransform(chip1In, [0, 1], [14, 0]),
-              }}
-              className="bg-white rounded-xl p-3 text-[#0F2A35] shadow-md flex items-start justify-between gap-2"
-            >
-              <div className="flex items-start gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#1E4A5C]/10 text-[#1E4A5C] flex items-center justify-center mt-0.5 shrink-0">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <div>
-                  <h5 className="text-[17px] font-bold leading-tight">New quote request</h5>
-                  <p className="text-[14px] text-[#5E6F77] mt-0.5 leading-snug">Slate repair · Salthill</p>
-                </div>
-              </div>
-              <span className="text-[11px] font-semibold uppercase bg-[#EEF3F4] text-[#5E6F77] px-2 py-0.5 rounded-sm shrink-0">
-                Sample
-              </span>
-            </motion.div>
-
-            <motion.div
-              style={{
-                opacity: chip2In,
-                y: useTransform(chip2In, [0, 1], [14, 0]),
-              }}
-              className="bg-white rounded-xl p-3 text-[#0F2A35] shadow-md flex items-start justify-between gap-2"
-            >
-              <div className="flex items-start gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#E3B896]/20 text-[#0F2A35] flex items-center justify-center mt-0.5 shrink-0">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <div>
-                  <h5 className="text-[17px] font-bold leading-tight">Missed call: auto-text sent</h5>
-                  <p className="text-[14px] text-[#5E6F77] mt-0.5 leading-snug">Homeowner notified instantly</p>
-                </div>
-              </div>
-              <span className="text-[11px] font-semibold uppercase bg-[#EEF3F4] text-[#5E6F77] px-2 py-0.5 rounded-sm shrink-0">
-                Sample
-              </span>
-            </motion.div>
-
-            <motion.div
-              style={{
-                opacity: chip3In,
-                y: useTransform(chip3In, [0, 1], [14, 0]),
-              }}
-              className="bg-white rounded-xl p-3 text-[#0F2A35] shadow-md flex items-start justify-between gap-2"
-            >
-              <div className="flex items-start gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#1E4A5C]/10 text-[#1E4A5C] flex items-center justify-center mt-0.5 shrink-0">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <div>
-                  <h5 className="text-[17px] font-bold leading-tight">New quote request</h5>
-                  <p className="text-[14px] text-[#5E6F77] mt-0.5 leading-snug">Chimney flashing repair</p>
-                </div>
-              </div>
-              <span className="text-[11px] font-semibold uppercase bg-[#EEF3F4] text-[#5E6F77] px-2 py-0.5 rounded-sm shrink-0">
-                Sample
-              </span>
-            </motion.div>
-
-            <motion.div
-              style={{
-                opacity: chip4In,
-                y: useTransform(chip4In, [0, 1], [14, 0]),
-              }}
-              className="bg-white rounded-xl p-3 text-[#0F2A35] shadow-md flex items-start justify-between gap-2"
-            >
-              <div className="flex items-start gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#2E9E6B]/15 text-[#2E9E6B] flex items-center justify-center mt-0.5 shrink-0">
-                  <MessageSquare className="w-4 h-4" />
-                </div>
-                <div>
-                  <h5 className="text-[17px] font-bold leading-tight">WhatsApp message</h5>
-                  <p className="text-[14px] text-[#5E6F77] mt-0.5 leading-snug">Project photos received</p>
-                </div>
-              </div>
-              <span className="text-[11px] font-semibold uppercase bg-[#EEF3F4] text-[#5E6F77] px-2 py-0.5 rounded-sm shrink-0">
-                Sample
-              </span>
-            </motion.div>
-          </div>
-
-          <div className="text-center text-[11px] text-white/50">
-            Direct web enquiries delivered live
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// SCENE 6: WORKING AROUND THE CLOCK
-function Scene6Visual({
-  scrollYProgress,
-  onescene,
-  staticMode,
-}: {
-  scrollYProgress: MotionValue<number>;
-  onescene?: boolean;
-  staticMode?: boolean;
-}) {
-  const { opacity, y, scale, pointerEvents, visibility, sceneProgress } = useSceneVisibility(
-    scrollYProgress,
-    5,
-    onescene,
-    staticMode
-  );
-
-  const flipRatio = useTransform(sceneProgress, [0.15, 0.45], [0, 180]);
-
-  return (
-    <motion.div
-      style={{
-        opacity,
-        y,
-        scale,
-        pointerEvents: pointerEvents as any,
-        visibility: visibility as any,
-      }}
-      className="absolute inset-0 flex items-center justify-center p-4"
-    >
-      <div className="w-[912px] h-[432px] grid grid-cols-2 gap-6 items-center">
-        <div className="bg-white/95 rounded-2xl p-6 text-[#0F2A35] shadow-xl flex flex-col justify-between h-[340px] text-center">
-          <div className="flex items-center justify-between pb-2 border-b border-black/5">
-            <span className="text-[18px] font-bold">Your office</span>
-            <Building2 className="w-5 h-5 text-[#5E6F77]" />
-          </div>
-
-          <div className="my-auto flex flex-col items-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#EEF3F4] flex items-center justify-center text-[#1E4A5C] mb-4">
-              <Building2 className="w-7 h-7" />
-            </div>
-
-            <motion.div
-              style={{ rotateY: flipRatio }}
-              className="px-5 py-1.5 rounded-full bg-[#EEF3F4] text-[#5E6F77] border border-black/10 text-[16px] font-bold ambient"
-            >
-              CLOSED
-            </motion.div>
-          </div>
-
-          <span className="text-[16px] text-[#5E6F77] font-medium">Closes at 5:30 pm</span>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 text-[#0F2A35] shadow-xl flex flex-col justify-between h-[340px] text-center border-2 border-[#2E9E6B]">
-          <div className="flex items-center justify-between pb-2 border-b border-black/5">
-            <span className="text-[18px] font-bold">Your website</span>
-            <Globe className="w-5 h-5 text-[#2E9E6B]" />
-          </div>
-
-          <div className="my-auto flex flex-col items-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#2E9E6B]/10 flex items-center justify-center text-[#2E9E6B] mb-4">
-              <Globe className="w-7 h-7" />
-            </div>
-
-            <div className="px-5 py-1.5 rounded-full bg-[#2E9E6B] text-white text-[16px] font-bold shadow-md">
-              OPEN 24h
-            </div>
-          </div>
-
-          <span className="text-[16px] text-[#5E6F77] font-medium">Captures enquiries around the clock</span>
-        </div>
-      </div>
     </motion.div>
   );
 }

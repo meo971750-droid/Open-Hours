@@ -962,13 +962,22 @@ export default function InteractiveFeatures({
   onOpenAudit,
 }: InteractiveFeaturesProps) {
   const reducedMotion = Boolean(useReducedMotion());
-  const timelineRef = useRef<HTMLDivElement>(null);
+  const [targetNode, setTargetNode] = useState<HTMLDivElement | null>(null);
+  const timelineRef = useRef<HTMLDivElement | null>(null);
+  const setTimelineRef = useCallback((node: HTMLDivElement | null) => {
+    timelineRef.current = node;
+    setTargetNode(node);
+  }, []);
 
   // Timeline track fill follows section scroll progress
-  const { scrollYProgress } = useScroll({
-    target: timelineRef,
-    offset: ['start 70%', 'end 60%'],
-  });
+  const { scrollYProgress } = useScroll(
+    targetNode
+      ? {
+          target: timelineRef,
+          offset: ['start 70%', 'end 60%'],
+        }
+      : undefined
+  );
 
   const smoothScaleY = useSpring(scrollYProgress, {
     stiffness: 260,
@@ -1023,7 +1032,7 @@ export default function InteractiveFeatures({
           </div>
 
           {/* Timeline Wrapper (Max width 1100px) */}
-          <div ref={timelineRef} className="max-w-[1100px] mx-auto relative">
+          <div ref={setTimelineRef} className="max-w-[1100px] mx-auto relative">
             {/* Vertical timeline track at left = 6px */}
             <div
               className="absolute left-[6px] top-4 bottom-4 w-[1px] bg-white/[0.18]"
@@ -1188,15 +1197,15 @@ export default function InteractiveFeatures({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-8%' }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="relative rounded-[28px] px-5 py-7 sm:px-8 sm:py-10 text-center shadow-[0_18px_44px_rgba(0,0,0,0.25)] backdrop-blur-xs overflow-hidden"
+              className="relative rounded-[28px] px-5 py-7 sm:px-8 sm:py-10 text-center shadow-[0_24px_50px_rgba(0,0,0,0.65)] overflow-hidden bg-black"
               style={{
                 background:
-                  'linear-gradient(rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07)) padding-box, linear-gradient(135deg, rgba(243, 221, 184, 0.6), rgba(227, 184, 150, 0.6), rgba(201, 154, 102, 0.6)) border-box',
+                  '#000000 padding-box, linear-gradient(135deg, rgba(243, 221, 184, 0.8), rgba(227, 184, 150, 0.8), rgba(201, 154, 102, 0.8)) border-box',
                 border: '1px solid transparent',
               }}
             >
-              {/* Small icon tile: 48px, radius 14px, background rgba(227,184,150,.16), Lightbulb in gold #E3B896 */}
-              <div className="w-12 h-12 rounded-[14px] bg-[#E3B896]/16 flex items-center justify-center mx-auto mb-4">
+              {/* Small icon tile: 48px, radius 14px, background rgba(227,184,150,.18), Lightbulb in gold #E3B896 */}
+              <div className="w-12 h-12 rounded-[14px] bg-[#E3B896]/20 border border-[#E3B896]/30 flex items-center justify-center mx-auto mb-4">
                 <motion.div
                   animate={
                     reducedMotion
@@ -1215,31 +1224,31 @@ export default function InteractiveFeatures({
                 </motion.div>
               </div>
 
-              {/* Title (H3, clamp(26px, 3vw, 38px), weight 600, tracking -0.02em, white, centred) */}
+              {/* Title (H3, clamp(26px, 3vw, 38px), weight 600, tracking -0.02em, golden text, centred) */}
               <h3
                 id="feature-idea-title"
-                className="text-[26px] sm:text-[32px] md:text-[38px] font-semibold tracking-[-0.02em] text-white text-center mb-3 leading-tight"
+                className="text-[26px] sm:text-[32px] md:text-[38px] font-semibold tracking-[-0.02em] text-[#E3B896] text-center mb-3 leading-tight"
               >
                 Have a feature <Accent className="text-[#E3B896]">idea</Accent>?
               </h3>
 
-              {/* Line (clamp(17px, 1.5vw, 20px), white at 80%, max-width 520px, centred) */}
-              <p className="text-[17px] sm:text-[18.5px] md:text-[20px] text-white/80 text-center max-w-[520px] mx-auto mb-8 leading-relaxed">
+              {/* Line (clamp(17px, 1.5vw, 20px), golden text, max-width 520px, centred) */}
+              <p className="text-[17px] sm:text-[18.5px] md:text-[20px] text-[#E3B896]/90 text-center max-w-[520px] mx-auto mb-8 leading-relaxed font-normal">
                 Tell us what you&apos;d like your website to do, and we&apos;ll quote it in writing.
               </p>
 
-              {/* Primary button (light) */}
+              {/* Primary button (golden) */}
               <div className="flex flex-col items-center justify-center">
                 <button
                   type="button"
                   onClick={() => onOpenAudit('feature')}
-                  className="group relative h-[56px] px-7 rounded-full bg-white text-[#0F2A35] text-[17px] font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B896] focus-visible:ring-offset-3 focus-visible:ring-offset-[#0F2A35] cursor-pointer shadow-lg"
+                  className="group relative h-[56px] px-7 rounded-full bg-[#E3B896] text-[#0F2A35] hover:bg-[#ebd0b9] text-[17px] font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B896] focus-visible:ring-offset-3 focus-visible:ring-offset-black cursor-pointer shadow-lg"
                 >
                   <span>Get it done on your website</span>
                   <ArrowRight className="w-4 h-4 text-[#0F2A35] transition-transform duration-200 group-hover:translate-x-1" />
                 </button>
 
-                {/* WhatsApp text link if configured */}
+                {/* WhatsApp text link if configured (golden) */}
                 {(() => {
                   const hasDigits = Boolean(
                     CONTACT.whatsappNumber &&
@@ -1253,7 +1262,7 @@ export default function InteractiveFeatures({
                       href={waUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-4 text-[15px] text-white/80 hover:text-white hover:underline transition-colors block text-center"
+                      className="mt-4 text-[15px] text-[#E3B896]/90 hover:text-[#E3B896] hover:underline transition-colors block text-center"
                     >
                       Prefer WhatsApp? Message us
                     </a>
@@ -1262,8 +1271,8 @@ export default function InteractiveFeatures({
               </div>
             </motion.div>
 
-            {/* Muted line directly UNDER the new block, unchanged */}
-            <p className="mt-6 text-[14px] text-white/70 text-center leading-relaxed">
+            {/* Muted line directly UNDER the block (golden) */}
+            <p className="mt-6 text-[14px] text-[#E3B896]/80 text-center leading-relaxed">
               Interactive features are optional extras, quoted in writing. They are not part of the 1-page website.
             </p>
           </div>

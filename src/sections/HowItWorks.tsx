@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { Route, Info } from 'lucide-react';
 import Container from '../components/Container';
@@ -6,22 +6,31 @@ import Accent from '../components/Accent';
 import { HOW_IT_WORKS_CONTENT } from '../content';
 
 export default function HowItWorks() {
-  const sectionRef = useRef<HTMLElement>(null);
+  const [targetNode, setTargetNode] = useState<HTMLElement | null>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const setSectionRef = useCallback((node: HTMLElement | null) => {
+    sectionRef.current = node;
+    setTargetNode(node);
+  }, []);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [focusedIdx, setFocusedIdx] = useState<number | null>(null);
 
   // Scroll-linked motion: line draws as section scrolls into view
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start 80%', 'center 50%'],
-  });
+  const { scrollYProgress } = useScroll(
+    targetNode
+      ? {
+          target: sectionRef,
+          offset: ['start 80%', 'center 50%'],
+        }
+      : undefined
+  );
 
   // Clamp progress between 0 and 1
   const lineProgress = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
   return (
     <section
-      ref={sectionRef}
+      ref={setSectionRef}
       id="how-it-works"
       className="relative z-0 w-full bg-white py-16 overflow-x-clip scroll-mt-24"
     >
