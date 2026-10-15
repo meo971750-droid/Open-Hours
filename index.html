@@ -10,6 +10,15 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#FFFFFF" />
+    <script>
+      // Safe fallback for third-party script rejections (e.g. adblockers blocking external tracking)
+      window.addEventListener('unhandledrejection', function(event) {
+        var str = String((event.reason && (event.reason.stack || event.reason.message)) || event.reason || '');
+        if (str.includes('senja.io') || str.includes('platform.js')) {
+          event.preventDefault();
+        }
+      });
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
