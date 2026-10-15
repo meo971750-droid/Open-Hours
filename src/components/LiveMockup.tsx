@@ -8,7 +8,6 @@ import {
   ArrowUp,
 } from 'lucide-react';
 import { SAMPLE_DASHBOARD } from '../content';
-import { CONFIG } from '../config';
 
 export interface MessageItem {
   id: string;
@@ -162,15 +161,15 @@ export default function LiveMockup({
     setMessages([
       {
         id: 'init-1',
-        title: 'Roof repair quote',
-        location: 'Galway',
+        title: 'Kitchen quote request',
+        location: 'Dublin 14',
         time: '18m ago',
         status: 'Replied',
       },
       {
         id: 'init-2',
-        title: 'Slate roof replacement',
-        location: 'Navan',
+        title: 'Roof leak call-back',
+        location: 'Sliema',
         time: '1h ago',
         status: 'Replied',
       },
@@ -379,48 +378,48 @@ export default function LiveMockup({
             if (messageStageRef.current !== 2) {
               messageStageRef.current = 2;
               setMessages([
-                { id: 'b-1', title: 'Roof repair quote', location: 'Galway', time: '18m ago', status: 'New' },
+                { id: 'b-1', title: 'Kitchen quote request', location: 'Dublin 14', time: '18m ago', status: 'New' },
               ]);
             }
           } else if (tRel < T.row2Slide) {
             if (messageStageRef.current !== 3) {
               messageStageRef.current = 3;
               setMessages([
-                { id: 'b-1', title: 'Roof repair quote', location: 'Galway', time: '18m ago', status: 'Replied' },
+                { id: 'b-1', title: 'Kitchen quote request', location: 'Dublin 14', time: '18m ago', status: 'Replied' },
               ]);
             }
           } else if (tRel < T.row2Slide + T.buildupRepliedDelay) {
             if (messageStageRef.current !== 4) {
               messageStageRef.current = 4;
               setMessages([
-                { id: 'b-2', title: 'Slate roof replacement', location: 'Navan', time: '1h ago', status: 'New' },
-                { id: 'b-1', title: 'Roof repair quote', location: 'Galway', time: '18m ago', status: 'Replied' },
+                { id: 'b-2', title: 'Roof leak call-back', location: 'Sliema', time: '1h ago', status: 'New' },
+                { id: 'b-1', title: 'Kitchen quote request', location: 'Dublin 14', time: '18m ago', status: 'Replied' },
               ]);
             }
           } else if (tRel < T.row3Slide) {
             if (messageStageRef.current !== 5) {
               messageStageRef.current = 5;
               setMessages([
-                { id: 'b-2', title: 'Slate roof replacement', location: 'Navan', time: '1h ago', status: 'Replied' },
-                { id: 'b-1', title: 'Roof repair quote', location: 'Galway', time: '18m ago', status: 'Replied' },
+                { id: 'b-2', title: 'Roof leak call-back', location: 'Sliema', time: '1h ago', status: 'Replied' },
+                { id: 'b-1', title: 'Kitchen quote request', location: 'Dublin 14', time: '18m ago', status: 'Replied' },
               ]);
             }
           } else if (tRel < T.row3Slide + T.buildupRepliedDelay) {
             if (messageStageRef.current !== 6) {
               messageStageRef.current = 6;
               setMessages([
-                { id: 'b-3', title: 'Gutter and fascia quote', location: 'Bray', time: '3h ago', status: 'New' },
-                { id: 'b-2', title: 'Slate roof replacement', location: 'Navan', time: '1h ago', status: 'Replied' },
-                { id: 'b-1', title: 'Roof repair quote', location: 'Galway', time: '18m ago', status: 'Replied' },
+                { id: 'b-3', title: 'Extension enquiry', location: 'Galway', time: '2m ago', status: 'New' },
+                { id: 'b-2', title: 'Roof leak call-back', location: 'Sliema', time: '1h ago', status: 'Replied' },
+                { id: 'b-1', title: 'Kitchen quote request', location: 'Dublin 14', time: '18m ago', status: 'Replied' },
               ]);
             }
           } else {
             if (messageStageRef.current !== 7) {
               messageStageRef.current = 7;
               setMessages([
-                { id: 'b-3', title: 'Gutter and fascia quote', location: 'Bray', time: '3h ago', status: 'Replied' },
-                { id: 'b-2', title: 'Slate roof replacement', location: 'Navan', time: '1h ago', status: 'Replied' },
-                { id: 'b-1', title: 'Roof repair quote', location: 'Galway', time: '18m ago', status: 'Replied' },
+                { id: 'b-3', title: 'Extension enquiry', location: 'Galway', time: '2m ago', status: 'Replied' },
+                { id: 'b-2', title: 'Roof leak call-back', location: 'Sliema', time: '1h ago', status: 'Replied' },
+                { id: 'b-1', title: 'Kitchen quote request', location: 'Dublin 14', time: '18m ago', status: 'Replied' },
               ]);
             }
           }
@@ -463,14 +462,14 @@ export default function LiveMockup({
               setMessages([
                 {
                   id: 'live-1',
-                  title: 'Emergency leak repair',
-                  location: 'Galway',
+                  title: 'Garden room quote',
+                  location: 'Cork',
                   time: 'Just now',
                   status: isNew ? 'New' : 'Replied',
                   isHighlight: true,
                 },
-                { id: 'b-3', title: 'Gutter and fascia quote', location: 'Bray', time: '2m ago', status: 'Replied' },
-                { id: 'b-2', title: 'Slate roof replacement', location: 'Navan', time: '1h ago', status: 'Replied' },
+                { id: 'b-3', title: 'Extension enquiry', location: 'Galway', time: '2m ago', status: 'Replied' },
+                { id: 'b-2', title: 'Roof leak call-back', location: 'Sliema', time: '1h ago', status: 'Replied' },
               ]);
             }
           } else if (t < T.liveEvent3) {
@@ -502,14 +501,14 @@ export default function LiveMockup({
               setMessages([
                 {
                   id: 'live-2',
-                  title: 'Chimney flashing repair',
-                  location: 'Ennis',
+                  title: 'Window replacement quote',
+                  location: 'Limerick',
                   time: 'Just now',
                   status: isNew ? 'New' : 'Replied',
                   isHighlight: true,
                 },
-                { id: 'live-1', title: 'Emergency leak repair', location: 'Galway', time: '2m ago', status: 'Replied' },
-                { id: 'b-3', title: 'Gutter and fascia quote', location: 'Bray', time: '4m ago', status: 'Replied' },
+                { id: 'live-1', title: 'Garden room quote', location: 'Cork', time: '2m ago', status: 'Replied' },
+                { id: 'b-3', title: 'Extension enquiry', location: 'Galway', time: '4m ago', status: 'Replied' },
               ]);
             }
           } else {
@@ -541,14 +540,14 @@ export default function LiveMockup({
               setMessages([
                 {
                   id: 'live-3',
-                  title: 'Flat roof felt replacement',
-                  location: 'Kilkenny',
+                  title: 'Kitchen refit call-back',
+                  location: 'Gozo',
                   time: 'Just now',
                   status: isNew ? 'New' : 'Replied',
                   isHighlight: true,
                 },
-                { id: 'live-2', title: 'Chimney flashing repair', location: 'Ennis', time: '2m ago', status: 'Replied' },
-                { id: 'live-1', title: 'Emergency leak repair', location: 'Galway', time: '4m ago', status: 'Replied' },
+                { id: 'live-2', title: 'Window replacement quote', location: 'Limerick', time: '2m ago', status: 'Replied' },
+                { id: 'live-1', title: 'Garden room quote', location: 'Cork', time: '4m ago', status: 'Replied' },
               ]);
             }
           }
@@ -620,15 +619,7 @@ export default function LiveMockup({
         </div>
 
         {/* Cards Grid: Metric 1, Metric 2, Ring Chart */}
-        <div
-          className={`grid gap-3 sm:gap-4 items-stretch ${
-            !CONFIG.features.missedCallTextBack && !CONFIG.features.sourceBreakdown
-              ? 'grid-cols-1 max-w-sm mx-auto'
-              : !CONFIG.features.missedCallTextBack || !CONFIG.features.sourceBreakdown
-              ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto'
-              : 'grid-cols-1 sm:grid-cols-3'
-          }`}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 items-stretch">
           {/* Card 1: Enquiries this month */}
           <div className="bg-[#EEF3F4]/80 p-3.5 sm:p-4 rounded-xl border border-[rgba(15,42,53,0.05)] h-[132px] sm:h-[136px] flex flex-col justify-between">
             <div className="flex items-center justify-between">
@@ -670,117 +661,109 @@ export default function LiveMockup({
             </div>
           </div>
 
-          {/* Card 2: Missed calls recovered (hidden if features.missedCallTextBack is false) */}
-          {CONFIG.features.missedCallTextBack && (
-            <div className="bg-[#EEF3F4]/80 p-3.5 sm:p-4 rounded-xl border border-[rgba(15,42,53,0.05)] h-[132px] sm:h-[136px] flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#5E6F77] font-medium">
-                  Missed calls recovered
-                </span>
-                <PhoneCall className="w-4 h-4 text-[#2E9E6B]" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span
-                  ref={missedCallsCountElRef}
-                  className="text-2xl sm:text-3xl font-heading font-semibold text-[#0F2A35] tabular-nums inline-block min-w-[1.4ch]"
-                >
-                  0
-                </span>
-                <span className="text-[11px] text-[#5E6F77]">Saved via SMS</span>
-              </div>
-
-              {/* Auto-text row with peach flash on event 2 and 3 */}
-              <div className="min-h-[30px] flex items-center">
-                <div
-                  ref={autoTextRowElRef}
-                  className="w-full p-1.5 px-2.5 rounded-lg border text-[11px] flex items-center gap-1.5 transition-all duration-300 opacity-0 bg-white border-[rgba(15,42,53,0.06)] text-[#5E6F77]"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2E9E6B] shrink-0" />
-                  <span>
-                    {CONFIG.features.autoTextSeconds
-                      ? `Auto-text sent in <${CONFIG.features.autoTextSeconds}s`
-                      : 'Auto-text sent'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Card 3: Ring chart "Where enquiries came from" (hidden if features.sourceBreakdown is false) */}
-          {CONFIG.features.sourceBreakdown && (
-            <div className="bg-[#EEF3F4]/80 p-3.5 sm:p-4 rounded-xl border border-[rgba(15,42,53,0.05)] h-[132px] sm:h-[136px] flex flex-col justify-between">
+          {/* Card 2: Missed calls recovered */}
+          <div className="bg-[#EEF3F4]/80 p-3.5 sm:p-4 rounded-xl border border-[rgba(15,42,53,0.05)] h-[132px] sm:h-[136px] flex flex-col justify-between">
+            <div className="flex items-center justify-between">
               <span className="text-xs text-[#5E6F77] font-medium">
-                Where enquiries came from
+                Missed calls recovered
               </span>
-              <div className="flex items-center gap-3">
-                {/* Ring SVG with clockwise sweeping segments */}
-                <svg className="w-14 h-14 shrink-0 -rotate-90" viewBox="0 0 36 36">
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="14"
-                    fill="none"
-                    stroke="#DCE9EC"
-                    strokeWidth="4"
-                  />
-                  {/* Google segment */}
-                  <circle
-                    ref={googleCircleRef}
-                    cx="18"
-                    cy="18"
-                    r="14"
-                    fill="none"
-                    stroke="#1E4A5C"
-                    strokeWidth="4"
-                    strokeDasharray="0 88"
-                    strokeDashoffset="0"
-                    className="will-change-[stroke-dasharray]"
-                  />
-                  {/* Facebook segment */}
-                  <circle
-                    ref={facebookCircleRef}
-                    cx="18"
-                    cy="18"
-                    r="14"
-                    fill="none"
-                    stroke="#E3B896"
-                    strokeWidth="4"
-                    strokeDasharray="0 88"
-                    strokeDashoffset="0"
-                    className="will-change-[stroke-dasharray]"
-                  />
-                  {/* Direct segment */}
-                  <circle
-                    ref={directCircleRef}
-                    cx="18"
-                    cy="18"
-                    r="14"
-                    fill="none"
-                    stroke="#5E6F77"
-                    strokeWidth="4"
-                    strokeDasharray="0 88"
-                    strokeDashoffset="0"
-                    className="will-change-[stroke-dasharray]"
-                  />
-                </svg>
+              <PhoneCall className="w-4 h-4 text-[#2E9E6B]" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span
+                ref={missedCallsCountElRef}
+                className="text-2xl sm:text-3xl font-heading font-semibold text-[#0F2A35] tabular-nums inline-block min-w-[1.4ch]"
+              >
+                0
+              </span>
+              <span className="text-[11px] text-[#5E6F77]">Saved via SMS</span>
+            </div>
 
-                <div className="text-[11px] flex flex-col gap-0.5 tabular-nums">
-                  <div className="flex items-center gap-1.5 text-[#0F2A35]">
-                    <span className="w-2 h-2 rounded-full bg-[#1E4A5C]" />
-                    <span ref={googlePctRef}>Google 0%</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#0F2A35]">
-                    <span className="w-2 h-2 rounded-full bg-[#E3B896]" />
-                    <span ref={facebookPctRef}>Facebook 0%</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#0F2A35]">
-                    <span className="w-2 h-2 rounded-full bg-[#5E6F77]" />
-                    <span ref={directPctRef}>Direct 0%</span>
-                  </div>
+            {/* Auto-text row with peach flash on event 2 and 3 */}
+            <div className="min-h-[30px] flex items-center">
+              <div
+                ref={autoTextRowElRef}
+                className="w-full p-1.5 px-2.5 rounded-lg border text-[11px] flex items-center gap-1.5 transition-all duration-300 opacity-0 bg-white border-[rgba(15,42,53,0.06)] text-[#5E6F77]"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#2E9E6B] shrink-0" />
+                <span>Auto-text sent in &lt;30s</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Ring chart "Where enquiries came from" */}
+          <div className="bg-[#EEF3F4]/80 p-3.5 sm:p-4 rounded-xl border border-[rgba(15,42,53,0.05)] h-[132px] sm:h-[136px] flex flex-col justify-between">
+            <span className="text-xs text-[#5E6F77] font-medium">
+              Where enquiries came from
+            </span>
+            <div className="flex items-center gap-3">
+              {/* Ring SVG with clockwise sweeping segments */}
+              <svg className="w-14 h-14 shrink-0 -rotate-90" viewBox="0 0 36 36">
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="none"
+                  stroke="#DCE9EC"
+                  strokeWidth="4"
+                />
+                {/* Google segment */}
+                <circle
+                  ref={googleCircleRef}
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="none"
+                  stroke="#1E4A5C"
+                  strokeWidth="4"
+                  strokeDasharray="0 88"
+                  strokeDashoffset="0"
+                  className="will-change-[stroke-dasharray]"
+                />
+                {/* Facebook segment */}
+                <circle
+                  ref={facebookCircleRef}
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="none"
+                  stroke="#E3B896"
+                  strokeWidth="4"
+                  strokeDasharray="0 88"
+                  strokeDashoffset="0"
+                  className="will-change-[stroke-dasharray]"
+                />
+                {/* Direct segment */}
+                <circle
+                  ref={directCircleRef}
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="none"
+                  stroke="#5E6F77"
+                  strokeWidth="4"
+                  strokeDasharray="0 88"
+                  strokeDashoffset="0"
+                  className="will-change-[stroke-dasharray]"
+                />
+              </svg>
+
+              <div className="text-[11px] flex flex-col gap-0.5 tabular-nums">
+                <div className="flex items-center gap-1.5 text-[#0F2A35]">
+                  <span className="w-2 h-2 rounded-full bg-[#1E4A5C]" />
+                  <span ref={googlePctRef}>Google 0%</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[#0F2A35]">
+                  <span className="w-2 h-2 rounded-full bg-[#E3B896]" />
+                  <span ref={facebookPctRef}>Facebook 0%</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[#0F2A35]">
+                  <span className="w-2 h-2 rounded-full bg-[#5E6F77]" />
+                  <span ref={directPctRef}>Direct 0%</span>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Recent Inbound Messages List: sized to fit exactly 3 complete message rows */}

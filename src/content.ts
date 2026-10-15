@@ -60,37 +60,6 @@ export const CONTACT = {
   email: "[CONTACT_EMAIL]",
 };
 
-export const TRADES = [
-  "Roofers",
-  "Kitchen fitters",
-  "Extension builders",
-  "Windows & doors",
-  "Landscapers",
-  "Painters & decorators",
-  "Heating installers",
-  "Garden rooms",
-] as const;
-
-export const CTA_CONFIG = {
-  cta: {
-    badge: "Free intro call",
-    headline: "Let's get your next enquiry coming in.",
-    points: [
-      "Video calls, a written contract and a data processing agreement",
-      "No middlemen: you deal directly with me",
-      "Euro invoices, paid by standard SEPA bank transfer",
-    ],
-  },
-  responseTime: "", // empty by default; set to e.g. "2 hours" or "24 hours"
-  whatsapp: "", // empty by default; uses CONTACT.whatsappNumber if valid
-  email: CONTACT.email,
-  formEndpoint: FORM_ENDPOINT, // empty by default
-  privacyPolicyUrl: "#privacy",
-  bookingUrl: "", // empty by default
-  workingModelLine: "Irish & Maltese business hours",
-  trades: TRADES,
-};
-
 export function whatsappLink(message: string = "Hi Open Hours, I'd like a 1-page website for my business: "): string | null {
   const digitsOnly = CONTACT.whatsappNumber.replace(/\D/g, "");
   if (!digitsOnly || digitsOnly.length < 5) {

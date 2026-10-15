@@ -6,7 +6,6 @@ import Container from '../components/Container';
 import Logo from '../components/Logo';
 import { FOOTER_CONTENT } from '../content';
 import { setConsent } from '../lib/consent';
-import { CONFIG } from '../config';
 
 interface FooterProps {
   onNavigatePage?: (page: 'home' | 'privacy' | 'cookies' | 'terms') => void;
@@ -176,9 +175,7 @@ export default function Footer({ onNavigatePage, currentPage }: FooterProps) {
         {/* Company line */}
         <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#5E6F77]">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>
-              © {new Date().getFullYear()} {CONFIG.legalName ? CONFIG.legalName : CONFIG.studioName}. All rights reserved.
-            </span>
+            <span>© {new Date().getFullYear()} {FOOTER_CONTENT.companyLegal}. All rights reserved.</span>
             <span aria-hidden="true" className="opacity-40">·</span>
             <button
               type="button"
@@ -188,9 +185,9 @@ export default function Footer({ onNavigatePage, currentPage }: FooterProps) {
               Cookie settings
             </button>
           </div>
-          {CONFIG.companyAddress ? (
-            <div>{CONFIG.companyAddress}</div>
-          ) : null}
+          <div>
+            {FOOTER_CONTENT.companyAddress}
+          </div>
         </div>
 
         {/* FULL UN-CROPPED OpenHours Wordmark:

@@ -6,7 +6,6 @@ import {
 import Container from '../components/Container';
 import Accent from '../components/Accent';
 import { TradeName } from '../content';
-import { CONFIG } from '../config';
 
 const SCREENSHOTS_VERSION = "1";
 
@@ -53,7 +52,7 @@ function CardScreenshot({ card, index }: { card: typeof ROOFING_CARDS[number]; i
 
 interface DesignsSliderProps {
   id?: string;
-  onOpenAudit?: (trade?: TradeName, cardName?: string) => void;
+  onOpenAudit?: (trade?: TradeName) => void;
 }
 
 const BASE_TILTS = [-2.4, 1.8, -1.5, 2.2, -1.8, 1.4, -2.1, 2.0];
@@ -177,9 +176,9 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
 
   // Action handler
   const handleGetDesign = useCallback(
-    (trade?: TradeName, cardName?: string) => {
+    (trade?: TradeName) => {
       if (onOpenAudit) {
-        onOpenAudit(trade, cardName);
+        onOpenAudit(trade);
       } else {
         const input = document.getElementById('audit-email-input');
         if (input) {
@@ -596,7 +595,7 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleGetDesign(card.trade as TradeName, card.name);
+                        handleGetDesign(card.trade as TradeName);
                       }}
                       className="w-full mt-1.5 py-1.5 px-3 rounded-lg bg-[#0F2A35] hover:bg-[#1E4A5C] text-white text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
                     >
@@ -639,28 +638,13 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
             {/* Quick action link for current centered card */}
             <button
               type="button"
-              onClick={() => handleGetDesign(activeCard.trade as TradeName, activeCard.name)}
+              onClick={() => handleGetDesign(activeCard.trade as TradeName)}
               className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#1E4A5C] hover:text-[#0F2A35] underline decoration-[#1E4A5C]/40 underline-offset-4 cursor-pointer"
             >
               <span>Get a design like {activeCard.name}</span>
               <ArrowUpRight className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Optional live demo site link if config.liveDemoUrl is set */}
-          {CONFIG.liveDemoUrl && (
-            <div className="mt-3">
-              <a
-                href={CONFIG.liveDemoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#1E4A5C] hover:text-[#0F2A35] underline decoration-[#1E4A5C]/40 underline-offset-4"
-              >
-                <span>Open a live demo site</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </a>
-            </div>
-          )}
 
           {/* Reduced motion indicator only when active */}
           {prefersReducedMotion && (

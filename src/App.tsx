@@ -17,6 +17,7 @@ import InteractiveFeatures from './sections/InteractiveFeatures';
 import SenjaEmbed from './components/SenjaEmbed';
 import About from './sections/About';
 import FAQ from './sections/FAQ';
+import FinalCTA from './sections/FinalCTA';
 import Footer from './sections/Footer';
 import CookieBanner from './components/CookieBanner';
 import AuditModal from './components/AuditModal';
@@ -149,12 +150,16 @@ export default function App() {
       component: <SenjaEmbed onOpenPrivacy={() => handleNavigate('privacy')} />,
     },
     {
+      id: 'about',
+      component: <About />,
+    },
+    {
       id: 'faq',
       component: <FAQ />,
     },
     {
-      id: 'about',
-      component: <About onOpenPrivacy={() => handleNavigate('privacy')} />,
+      id: 'final-cta',
+      component: <FinalCTA onOpenAudit={() => handleOpenAudit()} />,
     },
     {
       id: 'footer',
