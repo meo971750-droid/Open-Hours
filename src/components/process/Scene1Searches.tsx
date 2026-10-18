@@ -1,379 +1,289 @@
-import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Clock, ExternalLink, RotateCcw, Phone, Info } from 'lucide-react';
+import React from 'react';
+import { Search, MapPin, Globe, Phone, ExternalLink, HelpCircle } from 'lucide-react';
 import { SceneProps } from './types';
 import { config } from '../../config';
 
-interface PinData {
-  id: string;
-  name: string;
-  rating: string;
-  reviews: string;
-  category: string;
-  hasWebsite: boolean;
-  x: number; // percentage
-  y: number; // percentage
-  note?: string;
-}
-
-export default function Scene1Searches({ progress, isActive, isMobile, onInteract }: SceneProps) {
-  const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const [replayKey, setReplayKey] = useState(0);
-
+export default function Scene1Searches({ progress, isMobile, palette }: SceneProps) {
   const sampleTown = config.wayOfWorking.sampleTown || 'Galway';
   const sampleTrade = config.wayOfWorking.sampleTrade || 'roofers';
 
-  const pins: PinData[] = [
-    {
-      id: 'co-a',
-      name: 'Sample Roofing Co. A',
-      rating: '5.0',
-      reviews: '24',
-      category: 'Roofing contractor',
-      hasWebsite: true,
-      x: 35,
-      y: 28,
-    },
-    {
-      id: 'co-b',
-      name: 'Sample Roofing Co. B',
-      rating: '4.9',
-      reviews: '19',
-      category: 'Roofing & guttering',
-      hasWebsite: true,
-      x: 72,
-      y: 38,
-    },
-    {
-      id: 'co-c',
-      name: 'Sample Roofing Co. C',
-      rating: '4.8',
-      reviews: '15',
-      category: 'Roof repairs specialist',
-      hasWebsite: true,
-      x: 52,
-      y: 72,
-    },
-    {
-      id: 'your-biz',
-      name: 'Your business',
-      rating: '—',
-      reviews: '0',
-      category: 'Phone listing only',
-      hasWebsite: false,
-      x: 22,
-      y: 70,
-      note: "People can't check you out before calling, so they choose someone else.",
-    },
+  // Autoplay Timeline Stages (0.0 to 1.0)
+  // 1: Streets draw: 0.05 - 0.25
+  // 2: Search bar types: 0.20 - 0.42
+  // 3: 3 Competitor pins drop & cards slide in: 0.38 - 0.62
+  // 4: People dots travel to competitors: 0.55 - 0.76
+  // 5: "Your business" appears in list & map: 0.70 - 0.85
+  // 6: Hesitating dot veers off: 0.82 - 0.93 -> Hold 0.93 - 1.0
+
+  const streetsProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.20));
+  const searchProgress = Math.min(1, Math.max(0, (progress - 0.20) / 0.22));
+  const competitorsProgress = Math.min(1, Math.max(0, (progress - 0.38) / 0.24));
+  const dotsProgress = Math.min(1, Math.max(0, (progress - 0.55) / 0.21));
+  const yourBizProgress = Math.min(1, Math.max(0, (progress - 0.70) / 0.15));
+  const veerProgress = Math.min(1, Math.max(0, (progress - 0.82) / 0.11));
+
+  const searchText = `${sampleTrade} in ${sampleTown}`;
+  const typedCount = Math.floor(searchProgress * searchText.length);
+  const currentTypedText = searchText.slice(0, typedCount);
+
+  const competitors = [
+    { name: 'Sample Roofing Co. A', rating: '5.0 (24)', x: 480, y: 180, tag: 'Roofing contractor' },
+    { name: 'Sample Roofing Co. B', rating: '4.9 (19)', x: 620, y: 270, tag: 'Roofing & guttering' },
+    { name: 'Sample Roofing Co. C', rating: '4.8 (15)', x: 530, y: 390, tag: 'Specialist roofer' },
   ];
 
-  // Timing: 20% entrance, 45% main animation (0.20 to 0.65), 20% HOLD (0.65 to 0.85), 15% exit (0.85 to 1.0)
-  const enterProgress = Math.min(1, Math.max(0, progress / 0.2));
-  const exitProgress = Math.min(1, Math.max(0, (progress - 0.85) / 0.15));
-
-  const xOffset = isMobile ? 0 : (1 - enterProgress) * -40 + exitProgress * 40;
-  const opacity = isMobile ? 1 : Math.min(enterProgress, 1 - exitProgress);
-
-  // Animation phase progression (0.20 to 0.65)
-  const animProgress = isMobile ? 1 : Math.min(1, Math.max(0, (progress - 0.2) / 0.45));
-
-  // Three traveller person dots traveling to pins A, B, C along curved paths
-  // Traveller 1: to Co. A (arrives ~0.35)
-  // Traveller 2: to Co. B (arrives ~0.50)
-  // Traveller 3: to Co. C (arrives ~0.65)
-  // Note: NO dot travels to "Your business"!
-
-  const handlePinClick = (id: string) => {
-    setSelectedPinId(id);
-    if (!hasInteracted) {
-      setHasInteracted(true);
-      if (onInteract) onInteract();
-    }
-  };
-
-  const handleReplay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedPinId(null);
-    setReplayKey((k) => k + 1);
-  };
-
-  const activePin = pins.find((p) => p.id === selectedPinId);
-
   return (
-    <div
-      key={replayKey}
-      style={{
-        transform: `translateX(${xOffset}px)`,
-        opacity,
-        transition: 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease-out',
-      }}
-      className="w-full max-w-4xl mx-auto flex flex-col gap-4 select-none"
-    >
-      {/* Top Status Bar: Chip "Before" + Clock + Replay Button */}
-      <div className="flex items-center justify-between text-xs text-white/70">
-        <div className="flex items-center gap-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold uppercase text-[11px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-            <span>Before Open Hours</span>
-          </div>
-          <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white/80 font-mono text-[11px]">
-            <Clock className="w-3 h-3 text-[#E3B896]" />
-            <span>8:45 PM · Homeowners searching after work</span>
-          </div>
-        </div>
+    <div className="relative w-full h-full flex flex-col items-center justify-between overflow-hidden select-none">
+      {/* Illustrative tag */}
+      <div className="absolute top-2 right-4 text-[10px] uppercase tracking-wider text-white/40 px-2 py-0.5 rounded bg-black/20 border border-white/10 z-20">
+        Illustrative example
+      </div>
 
-        <div className="flex items-center gap-2">
-          {/* Micro-label indicator */}
-          {!hasInteracted && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E3B896]/20 border border-[#E3B896]/40 text-[#E3B896] text-[11px] font-medium animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E3B896]" />
-              <span>Tap a pin to explore</span>
-            </span>
-          )}
-
-          <button
-            type="button"
-            onClick={handleReplay}
-            aria-label="Replay scene animation"
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 text-[11px] transition-colors cursor-pointer"
+      {/* Main Visual Stage */}
+      <div className="relative w-full max-w-6xl mx-auto flex-1 flex flex-col md:flex-row items-center justify-center gap-6 px-4 py-2">
+        {/* Left Side: Search Bar + Results List */}
+        <div className="w-full md:w-80 lg:w-96 flex flex-col gap-2.5 z-10 shrink-0">
+          {/* Simulated Google Maps Search Bar */}
+          <div
+            style={{
+              opacity: Math.min(1, searchProgress * 2),
+              transform: `translateY(${(1 - Math.min(1, searchProgress * 2)) * 12}px)`,
+            }}
+            className="w-full bg-white text-[#1B2B34] rounded-2xl px-3.5 py-2.5 shadow-lg flex items-center gap-2.5 border border-white/20 transition-all duration-300"
           >
-            <RotateCcw className="w-3 h-3" />
-            <span>Replay</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Simulated Search Bar */}
-      <div className="w-full bg-[#162C36] rounded-2xl p-3 border border-white/15 shadow-lg flex items-center gap-3">
-        <Search className="w-5 h-5 text-[#E3B896] shrink-0" />
-        <div className="flex-1 font-mono text-sm sm:text-base text-white/90 truncate flex items-center">
-          <span>{sampleTrade} in {sampleTown}</span>
-          <span className="w-2 h-4 bg-[#E3B896] ml-1.5 animate-pulse" />
-        </div>
-        <span className="text-xs text-white/40 hidden sm:inline-block">Google Maps View</span>
-      </div>
-
-      {/* Map & Interactive Split Canvas */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
-        {/* Map Area */}
-        <div className="md:col-span-7 relative bg-[#13242C] rounded-2xl border border-white/10 overflow-hidden p-4 min-h-[320px] flex flex-col justify-between">
-          {/* Background Street Grid & Curved Paths */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="pathGradientA" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#E3B896" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#2E9E6B" stopOpacity="0.9" />
-              </linearGradient>
-            </defs>
-
-            {/* Faint road grid */}
-            <line x1="20%" y1="0" x2="20%" y2="100%" stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="4 4" />
-            <line x1="50%" y1="0" x2="50%" y2="100%" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-            <line x1="80%" y1="0" x2="80%" y2="100%" stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="4 4" />
-            <line x1="0" y1="35%" x2="100%" y2="35%" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-            <line x1="0" y1="75%" x2="100%" y2="75%" stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="4 4" />
-
-            {/* Travel Path 1 to Co. A (x: 35%, y: 28%) */}
-            <path
-              d="M 10 90 Q 80 50 140 90 T 230 90"
-              fill="none"
-              stroke="rgba(227,184,150,0.25)"
-              strokeWidth="2"
-              strokeDasharray="4 4"
-            />
-          </svg>
-
-          {/* Map Header */}
-          <div className="relative z-10 flex items-center justify-between text-xs text-white/60">
-            <span className="font-semibold text-white/80">Local Search Map</span>
-            <span className="text-[11px] bg-white/10 px-2 py-0.5 rounded font-mono">{sampleTown} Area</span>
+            <Search className="w-4 h-4 text-[#2A5A6B] shrink-0" />
+            <div className="flex-1 text-xs sm:text-sm font-medium tracking-tight overflow-hidden text-ellipsis whitespace-nowrap">
+              <span>{currentTypedText}</span>
+              {searchProgress < 1 && (
+                <span className="inline-block w-1.5 h-3.5 bg-[#2A5A6B] ml-0.5 animate-pulse" />
+              )}
+            </div>
+            <span className="text-[10px] font-semibold text-white bg-[#2A5A6B] px-2 py-0.5 rounded-full">
+              Maps
+            </span>
           </div>
 
-          {/* Interactive Pins on the Map */}
-          <div className="relative z-10 w-full h-[220px]">
-            {pins.map((pin) => {
-              const isSelected = selectedPinId === pin.id;
-              const isYourBiz = pin.id === 'your-biz';
-
+          {/* Cards List */}
+          <div className="flex flex-col gap-2">
+            {competitors.map((comp, idx) => {
+              const cardReveal = Math.min(1, Math.max(0, (competitorsProgress - idx * 0.28) / 0.4));
+              if (cardReveal <= 0) return null;
               return (
                 <div
-                  key={pin.id}
+                  key={comp.name}
                   style={{
-                    left: `${pin.x}%`,
-                    top: `${pin.y}%`,
+                    opacity: cardReveal,
+                    transform: `translateX(${(1 - cardReveal) * -20}px)`,
                   }}
-                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                  className="bg-white/95 backdrop-blur-sm text-[#1B2B34] rounded-xl p-2.5 sm:p-3 shadow-md border border-white/20 flex items-center justify-between gap-2 transition-all duration-300"
                 >
-                  <button
-                    type="button"
-                    onClick={() => handlePinClick(pin.id)}
-                    aria-label={`View details for ${pin.name}`}
-                    className={`group min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer transition-transform hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B896] rounded-full`}
-                  >
-                    <div
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] shadow-lg border transition-all ${
-                        isYourBiz
-                          ? isSelected
-                            ? 'bg-rose-500/30 border-rose-400 text-rose-200 ring-2 ring-rose-400'
-                            : 'bg-[#18262E] border-dashed border-rose-400/80 text-rose-300'
-                          : isSelected
-                          ? 'bg-[#2E9E6B] text-white border-white ring-2 ring-[#2E9E6B]'
-                          : 'bg-[#18313D] text-white/90 border-white/20 hover:border-white/50'
-                      }`}
-                    >
-                      <MapPin
-                        className={`w-3.5 h-3.5 ${
-                          isYourBiz
-                            ? 'text-rose-400'
-                            : 'text-[#2E9E6B] fill-[#2E9E6B]'
-                        }`}
-                      />
-                      <span className="font-medium whitespace-nowrap">{pin.name}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#2A5A6B]/15 text-[#2A5A6B] flex items-center justify-center shrink-0">
+                      <MapPin className="w-4 h-4" />
                     </div>
-                  </button>
-
-                  {/* Red dashed tag on Your business */}
-                  {isYourBiz && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-dashed border-rose-400/60 text-[9px] font-medium whitespace-nowrap">
-                      No website link
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-semibold truncate text-[#0B1B2B]">{comp.name}</p>
+                      <p className="text-[11px] text-emerald-600 font-medium">★ {comp.rating}</p>
                     </div>
-                  )}
+                  </div>
+                  <div className="shrink-0 flex items-center gap-1.5">
+                    <span className="px-2 py-1 bg-[#12303D] text-white text-[10px] font-medium rounded-md flex items-center gap-1 shadow-sm">
+                      <Globe className="w-3 h-3 text-[#F4B860]" />
+                      Website
+                    </span>
+                  </div>
                 </div>
               );
             })}
 
-            {/* Search-person dots traveling to competitor pins */}
-            {/* Person 1 -> arrives at Co. A */}
-            <div
-              style={{
-                left: `${Math.min(35, 5 + animProgress * 30)}%`,
-                top: `${Math.min(28, 55 - animProgress * 27)}%`,
-                opacity: animProgress > 0.1 ? 1 : 0,
-                transition: 'all 0.4s ease-out',
-              }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            >
-              <div className="w-5 h-5 rounded-full bg-[#E3B896] text-[#0F2A35] flex items-center justify-center shadow-md ring-2 ring-white/30 text-[10px] font-bold">
-                👤
-              </div>
-            </div>
-
-            {/* Person 2 -> arrives at Co. B */}
-            <div
-              style={{
-                left: `${Math.min(72, 5 + animProgress * 67)}%`,
-                top: `${Math.min(38, 70 - animProgress * 32)}%`,
-                opacity: animProgress > 0.25 ? 1 : 0,
-                transition: 'all 0.5s ease-out',
-              }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            >
-              <div className="w-5 h-5 rounded-full bg-[#E3B896] text-[#0F2A35] flex items-center justify-center shadow-md ring-2 ring-white/30 text-[10px] font-bold">
-                👤
-              </div>
-            </div>
-
-            {/* Person 3 -> arrives at Co. C */}
-            <div
-              style={{
-                left: `${Math.min(52, 5 + animProgress * 47)}%`,
-                top: `${Math.min(72, 40 + animProgress * 32)}%`,
-                opacity: animProgress > 0.4 ? 1 : 0,
-                transition: 'all 0.4s ease-out',
-              }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            >
-              <div className="w-5 h-5 rounded-full bg-[#E3B896] text-[#0F2A35] flex items-center justify-center shadow-md ring-2 ring-white/30 text-[10px] font-bold">
-                👤
-              </div>
-            </div>
-          </div>
-
-          <div className="relative z-10 text-[11px] text-white/50 text-right">
-            Homeowner searchers bypass listings without website links
-          </div>
-        </div>
-
-        {/* Right Side: Explanatory Detail Card upon tapping any pin */}
-        <div className="md:col-span-5 bg-[#172D38] rounded-2xl border border-white/10 p-5 sm:p-6 flex flex-col justify-between shadow-lg">
-          <div>
-            <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-3">
-              <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">
-                Listing Preview
-              </span>
-              <span className="text-[11px] text-[#E3B896]">
-                {activePin ? 'Selected Pin' : 'Select a pin on the map'}
-              </span>
-            </div>
-
-            {activePin ? (
-              <div className="flex flex-col gap-3 animate-in fade-in duration-300">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="text-base font-bold text-white">{activePin.name}</h4>
-                    <p className="text-xs text-white/60 mt-0.5">{activePin.category}</p>
-                  </div>
-                  {activePin.hasWebsite ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      Website active
-                    </span>
-                  ) : (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                      Missing link
-                    </span>
-                  )}
-                </div>
-
-                {activePin.hasWebsite ? (
-                  <>
-                    <div className="bg-[#10222A] rounded-xl p-3 border border-white/10 flex items-center justify-between">
+            {/* "Your business" Card */}
+            {yourBizProgress > 0 && (
+              <div
+                style={{
+                  opacity: yourBizProgress,
+                  transform: `translateX(${(1 - yourBizProgress) * -20}px)`,
+                }}
+                className="relative bg-[#1A3342] text-white rounded-xl p-2.5 sm:p-3 shadow-md border-2 border-dashed border-[#E5484D]/70 transition-all duration-300"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-white/10 text-white/50 flex items-center justify-center shrink-0">
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-amber-400 text-sm">★ {activePin.rating}</span>
-                        <span className="text-xs text-white/60">({activePin.reviews} reviews)</span>
+                        <p className="text-xs sm:text-sm font-bold text-[#F4B860] truncate">Your business</p>
+                        <span className="text-[9px] bg-white/10 text-white/70 px-1.5 py-0.5 rounded">Phone only</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#2E9E6B] text-white text-xs font-semibold">
-                          <span>Website</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/10 text-white/80 text-xs">
-                          <Phone className="w-3 h-3" />
-                        </span>
-                      </div>
+                      <p className="text-[11px] text-white/50 font-normal">No customer reviews yet</p>
                     </div>
-                    <p className="text-xs text-emerald-300 bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20 leading-relaxed">
-                      Homeowners can view recent job photos, check insurance, and tap a quote button. They choose this contractor.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div className="bg-rose-500/10 rounded-xl p-3.5 border border-rose-500/30">
-                      <span className="text-xs font-bold text-rose-300 block mb-1">
-                        Why nobody chooses this listing:
-                      </span>
-                      <p className="text-xs text-rose-200 leading-relaxed">
-                        {activePin.note}
-                      </p>
-                    </div>
-                    <div className="text-xs text-white/60 bg-white/[0.03] p-2.5 rounded-lg border border-white/5">
-                      Phone numbers without an online presence look unverified to modern homeowners.
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="py-8 flex flex-col items-center justify-center text-center text-white/60 gap-2">
-                <Info className="w-8 h-8 text-[#E3B896]/60" />
-                <p className="text-xs max-w-[200px]">
-                  Click or tap any pin on the map to see what homeowners see when they search.
-                </p>
+                  </div>
+                  <div className="shrink-0">
+                    <span className="px-2 py-1 bg-[#E5484D]/20 text-[#FF8585] border border-[#E5484D]/40 text-[10px] font-semibold rounded-md flex items-center gap-1">
+                      No website link
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
+        </div>
 
-          <div className="text-[11px] text-white/40 pt-3 border-t border-white/10 mt-4">
-            Cause &amp; effect: Searchers require proof before calling.
-          </div>
+        {/* Right Side: Map Canvas with Street Vector & Traveling People */}
+        <div className="relative flex-1 w-full h-[260px] sm:h-[320px] md:h-[380px] bg-[#0E2333]/80 rounded-3xl border border-[#2A5A6B]/40 overflow-hidden shadow-2xl flex items-center justify-center">
+          <svg
+            className="w-full h-full"
+            viewBox="0 0 800 480"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {/* Grid & Street Network */}
+            <g stroke="#2A5A6B" strokeWidth="2" strokeOpacity={0.4 + streetsProgress * 0.4} fill="none">
+              <path
+                d="M 50 120 Q 250 80, 480 180 T 750 200"
+                strokeDasharray="900"
+                strokeDashoffset={(1 - streetsProgress) * 900}
+              />
+              <path
+                d="M 80 380 Q 300 320, 530 390 T 760 360"
+                strokeDasharray="900"
+                strokeDashoffset={(1 - streetsProgress) * 900}
+              />
+              <path
+                d="M 280 40 Q 360 220, 620 270 T 720 460"
+                strokeDasharray="800"
+                strokeDashoffset={(1 - streetsProgress) * 800}
+              />
+              <path
+                d="M 160 450 Q 280 260, 450 120"
+                strokeDasharray="600"
+                strokeDashoffset={(1 - streetsProgress) * 600}
+              />
+            </g>
+
+            {/* Competitor Pins & Pulse Rings */}
+            {competitors.map((comp, idx) => {
+              const pinReveal = Math.min(1, Math.max(0, (competitorsProgress - idx * 0.28) / 0.4));
+              if (pinReveal <= 0) return null;
+              const hasArrived = dotsProgress > 0.4 + idx * 0.2;
+              return (
+                <g key={comp.name} transform={`translate(${comp.x}, ${comp.y})`}>
+                  {hasArrived && (
+                    <circle r="22" fill="#F4B860" opacity="0.2" className="animate-ping" />
+                  )}
+                  <circle r="14" fill="#FFFFFF" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.3))" />
+                  <circle r="7" fill="#2A5A6B" />
+                  <text
+                    y="-20"
+                    textAnchor="middle"
+                    fill="#FFFFFF"
+                    fontSize="11"
+                    fontWeight="600"
+                    opacity={pinReveal}
+                  >
+                    {comp.name}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* People Dots travelling from left to competitors */}
+            {dotsProgress > 0 && (
+              <g>
+                {/* Person 1 -> Comp A */}
+                <circle
+                  cx={80 + dotsProgress * (480 - 80)}
+                  cy={120 + Math.sin(dotsProgress * Math.PI) * -30 + dotsProgress * (180 - 120)}
+                  r="6"
+                  fill="#F4B860"
+                  filter="drop-shadow(0 0 6px #F4B860)"
+                />
+                {/* Person 2 -> Comp B */}
+                {dotsProgress > 0.2 && (
+                  <circle
+                    cx={60 + (dotsProgress - 0.2) * 1.25 * (620 - 60)}
+                    cy={240 + Math.sin((dotsProgress - 0.2) * Math.PI) * 40 + (dotsProgress - 0.2) * 1.25 * (270 - 240)}
+                    r="6"
+                    fill="#F4B860"
+                    filter="drop-shadow(0 0 6px #F4B860)"
+                  />
+                )}
+                {/* Person 3 -> Comp C */}
+                {dotsProgress > 0.35 && (
+                  <circle
+                    cx={100 + (dotsProgress - 0.35) * 1.5 * (530 - 100)}
+                    cy={380 + Math.sin((dotsProgress - 0.35) * Math.PI) * -20 + (dotsProgress - 0.35) * 1.5 * (390 - 380)}
+                    r="6"
+                    fill="#F4B860"
+                    filter="drop-shadow(0 0 6px #F4B860)"
+                  />
+                )}
+              </g>
+            )}
+
+            {/* "Your Business" Map Pin (Hollow & Grey) */}
+            {yourBizProgress > 0 && (
+              <g transform="translate(320, 310)">
+                <circle r="14" fill="#1A3342" stroke="#E5484D" strokeWidth="2.5" strokeDasharray="4 2" />
+                <circle r="5" fill="#718096" />
+                <text
+                  y="-20"
+                  textAnchor="middle"
+                  fill="#F4B860"
+                  fontSize="12"
+                  fontWeight="bold"
+                >
+                  Your business
+                </text>
+                <text
+                  y="28"
+                  textAnchor="middle"
+                  fill="#FF8585"
+                  fontSize="10"
+                  fontWeight="500"
+                >
+                  (No website link)
+                </text>
+              </g>
+            )}
+
+            {/* Last Person Dot approaching Your Business, hesitating, then veering to Comp B */}
+            {veerProgress > 0 && (
+              <g>
+                {/* Before 0.5: moves towards Your Business (320, 310). After 0.5: veers to Comp B (620, 270) */}
+                {veerProgress <= 0.5 ? (
+                  <g>
+                    <circle
+                      cx={140 + (veerProgress / 0.5) * (280 - 140)}
+                      cy={310 + Math.sin((veerProgress / 0.5) * Math.PI) * -15}
+                      r="6.5"
+                      fill="#F4B860"
+                      filter="drop-shadow(0 0 8px #F4B860)"
+                    />
+                    {veerProgress > 0.35 && (
+                      <g transform={`translate(${140 + (veerProgress / 0.5) * (280 - 140)}, ${290})`}>
+                        <rect x="-10" y="-18" width="20" height="15" rx="4" fill="#E5484D" />
+                        <text x="0" y="-7" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="bold">?</text>
+                      </g>
+                    )}
+                  </g>
+                ) : (
+                  <g>
+                    <circle
+                      cx={280 + ((veerProgress - 0.5) / 0.5) * (620 - 280)}
+                      cy={310 + ((veerProgress - 0.5) / 0.5) * (270 - 310) + Math.sin(((veerProgress - 0.5) / 0.5) * Math.PI) * -35}
+                      r="6.5"
+                      fill="#F4B860"
+                      filter="drop-shadow(0 0 8px #F4B860)"
+                    />
+                    <g transform={`translate(${280 + ((veerProgress - 0.5) / 0.5) * (620 - 280)}, ${275})`}>
+                      <rect x="-35" y="-18" width="70" height="16" rx="4" fill="#12303D" stroke="#FFFFFF" strokeWidth="0.5" />
+                      <text x="0" y="-6" textAnchor="middle" fill="#FFFFFF" fontSize="9" fontWeight="500">Choosing Co. B</text>
+                    </g>
+                  </g>
+                )}
+              </g>
+            )}
+          </svg>
         </div>
       </div>
     </div>

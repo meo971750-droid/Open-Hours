@@ -1,254 +1,310 @@
-import React, { useState } from 'react';
-import { Search, MousePointer, Globe, PhoneCall, CheckCircle2, AlertTriangle, RotateCcw, User, UserX } from 'lucide-react';
+import React from 'react';
+import { Search, MousePointer, Globe, PhoneCall, CheckCircle2, User, UserX, AlertTriangle } from 'lucide-react';
 import { SceneProps } from './types';
-import { getActiveFrictionPairs } from './Scene3Solve';
+import { config } from '../../config';
 
-interface JourneyStepData {
-  id: string;
-  stepNum: string;
-  title: string;
-  icon: any;
-  customerThought: string;
-  frictionProblem: string | null;
-  frictionDetail: string;
-}
-
-export default function Scene2Journey({ progress, isActive, isMobile, onInteract }: SceneProps) {
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const [replayKey, setReplayKey] = useState(0);
-
-  // Timing: 20% entrance, 45% main animation (0.20 to 0.65), 20% HOLD (0.65 to 0.85), 15% exit (0.85 to 1.0)
-  const enterProgress = Math.min(1, Math.max(0, progress / 0.2));
-  const exitProgress = Math.min(1, Math.max(0, (progress - 0.85) / 0.15));
-
-  const xOffset = isMobile ? 0 : (1 - enterProgress) * -40 + exitProgress * 40;
-  const opacity = isMobile ? 1 : Math.min(enterProgress, 1 - exitProgress);
-
-  // Homeowner traveling progression across 0.20 to 0.65
-  const animProgress = isMobile ? 1 : Math.min(1, Math.max(0, (progress - 0.2) / 0.45));
-
-  // Consistency rule: Scene 2 and Scene 3 share the exact same set of friction points
-  const activePairs = getActiveFrictionPairs();
-  const activeProblems = new Set(activePairs.map((p) => p.problem));
-
-  const steps: JourneyStepData[] = [
+export function getActiveFrictionPairs() {
+  const f = config.features;
+  const base = [
     {
-      id: 'search',
-      stepNum: '01',
-      title: 'Search',
-      icon: Search,
-      customerThought: 'Looking for a reliable local trade nearby.',
-      frictionProblem: activeProblems.has('No website to click') ? 'No website to click' : null,
-      frictionDetail: 'Searcher sees competitor links with photos and reviews, skips the profile with just a mobile number.',
+      nodeId: 'search',
+      nodeIdx: 0,
+      problem: 'No website to click',
+      fix: 'A clear website with one next step',
     },
     {
-      id: 'click',
-      stepNum: '02',
-      title: 'Click',
-      icon: MousePointer,
-      customerThought: 'Wants to see proof of recent work and verify insurance.',
-      frictionProblem: activeProblems.has('Hard to contact on mobile') ? 'Hard to contact on mobile' : null,
-      frictionDetail: 'Taps on phone but page is cluttered, slow, or has no direct tap-to-call button. Backs out.',
-    },
-    {
-      id: 'website',
-      stepNum: '03',
-      title: 'Website',
-      icon: Globe,
-      customerThought: 'Wants an obvious, low-pressure way to request an estimate.',
-      frictionProblem: null,
-      frictionDetail: 'Clear photos and service towns reassure the homeowner they are in the right place.',
-    },
-    {
-      id: 'enquiry',
-      stepNum: '04',
-      title: 'Call / form',
-      icon: PhoneCall,
-      customerThought: 'Calls at 8 PM after dinner or submits details.',
-      frictionProblem: activeProblems.has('Missed call after hours') ? 'Missed call after hours' : null,
-      frictionDetail: 'Tradesperson is resting or off duty. Unanswered call leaves homeowner looking for the next number.',
-    },
-    {
-      id: 'followup',
-      stepNum: '05',
-      title: 'Follow-up',
-      icon: CheckCircle2,
-      customerThought: 'Expects quick confirmation that their message was received.',
-      frictionProblem: activeProblems.has('No follow-up') ? 'No follow-up' : null,
-      frictionDetail: 'Without instant confirmation, homeowner reaches out to two other contractors before morning.',
+      nodeId: 'click',
+      nodeIdx: 1,
+      problem: 'Hard to contact on mobile',
+      fix: 'Call and quote buttons on every page',
     },
   ];
 
-  // Which step the homeowner figure is currently visiting along the track
-  const currentStepIndex = Math.min(steps.length - 1, Math.floor(animProgress * steps.length));
-  const currentActiveStep = steps[currentStepIndex];
+  if (f.missedCallTextBack || f.afterHoursAutoReply || f.voiceAgent) {
+    base.push({
+      nodeId: 'call',
+      nodeIdx: 3,
+      problem: 'Missed call after hours',
+      fix: 'After-hours handling',
+    });
+  }
 
-  const handleNodeClick = (id: string) => {
-    setSelectedNodeId(id);
-    if (!hasInteracted) {
-      setHasInteracted(true);
-      if (onInteract) onInteract();
-    }
-  };
+  if (f.enquiryTracking) {
+    base.push({
+      nodeId: 'followup',
+      nodeIdx: 4,
+      problem: 'No follow-up',
+      fix: 'Every enquiry confirmed and logged',
+    });
+  }
 
-  const handleReplay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedNodeId(null);
-    setReplayKey((k) => k + 1);
-  };
+  return base;
+}
 
-  const activeStep = steps.find((s) => s.id === selectedNodeId) || currentActiveStep;
+export default function Scene2Journey({ progress, isMobile, palette }: SceneProps) {
+  // Autoplay Timeline (0.0 to 1.0)
+  // 1: Wavy line draws: 0.05 to 0.25
+  // 2: 5 nodes & white icon cards pop in: 0.15 to 0.45
+  // 3: Homeowner dot travels & encounters friction points: 0.40 to 0.85
+  // 4: Hold: 0.85 to 1.0
+
+  const lineProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.20));
+  const nodesProgress = Math.min(1, Math.max(0, (progress - 0.15) / 0.30));
+  const travelProgress = Math.min(1, Math.max(0, (progress - 0.35) / 0.50));
+
+  const activePairs = getActiveFrictionPairs();
+  const activeFrictionProblems = new Set(activePairs.map((p) => p.problem));
+
+  // Node positions along a wide 1200 x 420 viewBox
+  const nodes = [
+    {
+      id: 'search',
+      numeral: '1',
+      title: 'Search',
+      desc: 'Looking for a reliable trade nearby',
+      icon: Search,
+      x: 120,
+      y: 200,
+      isTop: false,
+      friction: activeFrictionProblems.has('No website to click') ? 'No website to click' : null,
+      thought: 'Looks for a roofer nearby',
+    },
+    {
+      id: 'click',
+      numeral: '2',
+      title: 'Click',
+      desc: 'Wants to see proof of recent work',
+      icon: MousePointer,
+      x: 360,
+      y: 120,
+      isTop: true,
+      friction: activeFrictionProblems.has('Hard to contact on mobile') ? 'Hard to contact on mobile' : null,
+      thought: 'Wants to see their work',
+    },
+    {
+      id: 'website',
+      numeral: '3',
+      title: 'Website',
+      desc: 'Checking services and location',
+      icon: Globe,
+      x: 600,
+      y: 240,
+      isTop: false,
+      friction: null,
+      thought: 'Wants an easy way to get in touch',
+    },
+    {
+      id: 'call',
+      numeral: '4',
+      title: 'Call or form',
+      desc: 'Reaching out for a quote or repair',
+      icon: PhoneCall,
+      x: 840,
+      y: 130,
+      isTop: true,
+      friction: activeFrictionProblems.has('Missed call after hours') ? 'Missed call after hours' : null,
+      thought: 'Calling after 6 PM',
+    },
+    {
+      id: 'followup',
+      numeral: '5',
+      title: 'Follow-up',
+      desc: 'Awaiting confirmation & booking',
+      icon: CheckCircle2,
+      x: 1080,
+      y: 220,
+      isTop: false,
+      friction: activeFrictionProblems.has('No follow-up') ? 'No follow-up' : null,
+      thought: 'Waiting for a response',
+    },
+  ];
+
+  // Current position of traveling homeowner
+  const currentStepIdx = Math.min(4, Math.floor(travelProgress * 5));
+  const activeNode = nodes[currentStepIdx] || nodes[0];
 
   return (
-    <div
-      key={replayKey}
-      style={{
-        transform: `translateX(${xOffset}px)`,
-        opacity,
-        transition: 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease-out',
-      }}
-      className="w-full max-w-4xl mx-auto flex flex-col gap-5 select-none"
-    >
-      {/* Top Banner with Replay & Hotspot micro-label */}
-      <div className="flex items-center justify-between text-xs text-white/70">
-        <span className="font-semibold text-[#E3B896] uppercase tracking-wider text-[11px]">
-          Customer Journey Audit
-        </span>
-
-        <div className="flex items-center gap-2">
-          {!hasInteracted && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E3B896]/20 border border-[#E3B896]/40 text-[#E3B896] text-[11px] font-medium animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E3B896]" />
-              <span>Tap any step to inspect friction</span>
-            </span>
-          )}
-
-          <button
-            type="button"
-            onClick={handleReplay}
-            aria-label="Replay journey animation"
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 text-[11px] transition-colors cursor-pointer"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Replay</span>
-          </button>
-        </div>
+    <div className="relative w-full h-full flex flex-col items-center justify-between overflow-hidden select-none">
+      <div className="absolute top-2 right-4 text-[10px] uppercase tracking-wider text-[#1B2B34]/50 px-2 py-0.5 rounded bg-black/5 border border-black/10 z-20">
+        Illustrative example
       </div>
 
-      {/* Main Journey Stage Canvas */}
-      <div className="relative bg-[#13242C] rounded-2xl border border-white/10 p-5 sm:p-7 min-h-[380px] flex flex-col justify-between overflow-x-auto shadow-xl">
-        {/* Thought Bubble Display for Current / Selected Step */}
-        <div className="bg-[#18313D] rounded-xl p-3 border border-white/10 flex items-start gap-3 shadow-md">
-          <div className="w-8 h-8 rounded-full bg-[#E3B896] text-[#0F2A35] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-            💭
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-[#E3B896]">
-                Step {activeStep.stepNum}: {activeStep.title} — Homeowner's Thought:
-              </span>
-              <span className="text-white/40 text-[10px]">Tap steps below to compare</span>
-            </div>
-            <p className="text-sm text-white font-medium italic mt-0.5">
-              "{activeStep.customerThought}"
-            </p>
-            {activeStep.frictionProblem && (
-              <div className="mt-2 text-xs text-rose-300 bg-rose-500/10 p-2 rounded border border-rose-500/20">
-                <strong>Where customers drop off:</strong> {activeStep.frictionDetail}
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="relative w-full max-w-6xl mx-auto flex-1 flex items-center justify-center px-4 py-2">
+        <svg
+          className="w-full h-auto max-h-[460px]"
+          viewBox="0 0 1200 420"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {/* Base Wavy Journey Line */}
+          <path
+            d="M 60 210 Q 240 70, 360 120 T 600 240 T 840 130 T 1140 230"
+            fill="none"
+            stroke="#C8642E"
+            strokeWidth="3.5"
+            strokeDasharray="1400"
+            strokeDashoffset={(1 - lineProgress) * 1400}
+            strokeLinecap="round"
+          />
 
-        {/* SVG Track with Moving Figure and Dropping Copies */}
-        <div className="relative my-8 py-4">
-          {/* Horizontal Track Line */}
-          <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-            <svg className="w-full h-8" preserveAspectRatio="none">
-              <line
-                x1="0"
-                y1="16"
-                x2="100%"
-                y2="16"
-                stroke="rgba(255,255,255,0.15)"
-                strokeWidth="3"
-                strokeDasharray="6 6"
-              />
-              <line
-                x1="0"
-                y1="16"
-                x2={`${animProgress * 100}%`}
-                y2="16"
-                stroke="#E3B896"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
+          {/* Dashed Red Friction Segments along the line */}
+          {lineProgress > 0.6 && (
+            <g stroke="#D64545" strokeWidth="4" strokeDasharray="8 6" fill="none">
+              <path d="M 120 200 Q 240 120, 360 120" opacity={travelProgress > 0.15 ? 0.9 : 0.2} />
+              <path d="M 360 120 Q 480 240, 600 240" opacity={travelProgress > 0.35 ? 0.9 : 0.2} />
+              {activeFrictionProblems.has('Missed call after hours') && (
+                <path d="M 600 240 Q 720 130, 840 130" opacity={travelProgress > 0.6 ? 0.9 : 0.2} />
+              )}
+            </g>
+          )}
 
-          {/* Steps Node Row */}
-          <div className="relative z-10 grid grid-cols-5 gap-2 items-center">
-            {steps.map((step, idx) => {
-              const Icon = step.icon;
-              const isSelected = selectedNodeId === step.id;
-              const hasPassed = animProgress >= idx / (steps.length - 1);
-              const hasFriction = Boolean(step.frictionProblem);
+          {/* 5 Nodes with Big Faint Numerals, White Cards & Alternating Labels */}
+          {nodes.map((node, idx) => {
+            const nodeReveal = Math.min(1, Math.max(0, (nodesProgress - idx * 0.18) / 0.28));
+            if (nodeReveal <= 0) return null;
+            const isFrictionHit = travelProgress >= (idx / 5) && Boolean(node.friction);
+            const isPastFriction = travelProgress > ((idx + 0.5) / 5) && Boolean(node.friction);
 
-              return (
-                <div key={step.id} className="flex flex-col items-center text-center relative group">
-                  {/* Friction Warning Badge */}
-                  {hasFriction && (
-                    <div className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-[10px] text-rose-300 font-semibold whitespace-nowrap shadow-xs">
-                      <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
-                      <span className="hidden sm:inline">{step.frictionProblem}</span>
-                      <span className="sm:hidden">Drop-off</span>
+            return (
+              <g
+                key={node.id}
+                transform={`translate(${node.x}, ${node.y})`}
+                opacity={nodeReveal}
+                style={{ transition: 'opacity 0.4s ease' }}
+              >
+                {/* Big Faint Numeral behind card */}
+                <text
+                  x="0"
+                  y={node.isTop ? 28 : -22}
+                  textAnchor="middle"
+                  fill="#E9DFD2"
+                  fontSize="76"
+                  fontWeight="900"
+                  fontFamily="sans-serif"
+                  style={{ userSelect: 'none' }}
+                >
+                  {node.numeral}
+                </text>
+
+                {/* White Rounded-2xl Icon Card sitting on line */}
+                <g filter="drop-shadow(0 8px 18px rgba(27, 43, 52, 0.08))">
+                  <rect
+                    x="-26"
+                    y="-26"
+                    width="52"
+                    height="52"
+                    rx="18"
+                    fill="#FFFFFF"
+                    stroke={isFrictionHit ? '#D64545' : '#E9DFD2'}
+                    strokeWidth={isFrictionHit ? '2' : '1'}
+                  />
+                  <foreignObject x="-16" y="-16" width="32" height="32">
+                    <div className="w-full h-full flex items-center justify-center text-[#1B2B34]">
+                      <node.icon className="w-5 h-5 text-[#C8642E]" />
                     </div>
-                  )}
+                  </foreignObject>
+                </g>
 
-                  {/* Node Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleNodeClick(step.id)}
-                    aria-label={`Inspect step ${step.title}`}
-                    className={`min-w-[44px] min-h-[44px] w-12 h-12 rounded-full flex items-center justify-center cursor-pointer transition-all ${
-                      isSelected
-                        ? 'bg-[#E3B896] text-[#0F2A35] ring-4 ring-[#E3B896]/30 shadow-lg'
-                        : hasPassed
-                        ? 'bg-[#18313D] border-2 border-[#E3B896] text-[#E3B896]'
-                        : 'bg-[#18313D] border-2 border-white/20 text-white/50'
-                    }`}
+                {/* Title & One-line Description placed alternately above & below */}
+                <g transform={`translate(0, ${node.isTop ? -45 : 48})`}>
+                  <text
+                    x="0"
+                    y="0"
+                    textAnchor="middle"
+                    fill="#1B2B34"
+                    fontSize="13"
+                    fontWeight="700"
                   >
-                    <Icon className="w-5 h-5" />
-                  </button>
+                    {node.title}
+                  </text>
+                  <text
+                    x="0"
+                    y="16"
+                    textAnchor="middle"
+                    fill="#1B2B34"
+                    opacity="0.65"
+                    fontSize="10"
+                    fontWeight="500"
+                  >
+                    {node.desc}
+                  </text>
+                </g>
 
-                  <span className="text-xs font-semibold text-white mt-2">{step.title}</span>
-
-                  {/* Faded copy of the customer dropping away where friction occurs */}
-                  {hasFriction && hasPassed && (
-                    <div
-                      style={{
-                        transform: 'translateY(24px)',
-                        opacity: 0.35,
-                        transition: 'all 0.8s ease-out',
-                      }}
-                      className="absolute top-16 flex flex-col items-center text-[10px] text-rose-300 pointer-events-none"
+                {/* Red Friction Marker (Pulses with label) */}
+                {isFrictionHit && (
+                  <g transform={`translate(0, ${node.isTop ? 42 : -46})`}>
+                    <rect
+                      x="-65"
+                      y="-12"
+                      width="130"
+                      height="24"
+                      rx="6"
+                      fill="#D64545"
+                      filter="drop-shadow(0 4px 10px rgba(214, 69, 69, 0.3))"
+                    />
+                    <text
+                      x="0"
+                      y="4"
+                      textAnchor="middle"
+                      fill="#FFFFFF"
+                      fontSize="9.5"
+                      fontWeight="700"
                     >
-                      <UserX className="w-4 h-4 text-rose-400" />
-                      <span className="text-[9px] text-rose-400">Lost</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                      {node.friction}
+                    </text>
+                  </g>
+                )}
 
-        {/* Bottom Explanatory Summary */}
-        <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-white/60">
-          <span>Cause &amp; effect: Each unaddressed obstacle causes homeowners to abandon the journey</span>
-          <span className="text-[#E3B896] font-medium">Click steps to see friction points</span>
-        </div>
+                {/* Faded customer dropping away (lost visitor) */}
+                {isPastFriction && (
+                  <g transform="translate(0, 50)" opacity="0.45">
+                    <line x1="0" y1="0" x2="0" y2="24" stroke="#D64545" strokeWidth="1.5" strokeDasharray="3 3" />
+                    <circle cx="0" cy="30" r="5" fill="#D64545" />
+                    <text x="0" y="44" textAnchor="middle" fill="#D64545" fontSize="8.5" fontWeight="600">
+                      Customer leaves
+                    </text>
+                  </g>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Traveling Homeowner Dot with Thought Bubble */}
+          {travelProgress > 0 && (
+            <g
+              transform={`translate(${120 + travelProgress * (1080 - 120)}, ${
+                200 + Math.sin(travelProgress * Math.PI * 3.5) * -50
+              })`}
+            >
+              <circle r="14" fill="#C8642E" opacity="0.2" className="animate-ping" />
+              <circle r="7.5" fill="#C8642E" stroke="#FFFFFF" strokeWidth="2" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.2))" />
+
+              {/* Thought Bubble */}
+              <g transform="translate(0, -28)">
+                <rect
+                  x="-75"
+                  y="-14"
+                  width="150"
+                  height="22"
+                  rx="6"
+                  fill="#FFFFFF"
+                  stroke="#C8642E"
+                  strokeWidth="1"
+                  filter="drop-shadow(0 4px 8px rgba(0,0,0,0.1))"
+                />
+                <text
+                  x="0"
+                  y="1"
+                  textAnchor="middle"
+                  fill="#1B2B34"
+                  fontSize="9.5"
+                  fontWeight="600"
+                >
+                  "{activeNode.thought}"
+                </text>
+              </g>
+            </g>
+          )}
+        </svg>
       </div>
     </div>
   );

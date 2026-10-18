@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useReducedMotion } from 'motion/react';
-import { ChevronDown } from 'lucide-react';
+import { Play, Pause, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { config } from '../config';
 import {
   Scene1Searches,
@@ -12,36 +12,19 @@ import {
   Scene7AlwaysOn,
   Scene8Talk,
 } from '../components/process';
+import { ScenePalette } from '../components/process/types';
 
 interface OurProcessProps {
   onOpenAudit?: () => void;
 }
 
 export default function OurProcess({ onOpenAudit }: OurProcessProps) {
-  const containerRef = useRef<HTMLElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
-  const tablistRef = useRef<HTMLDivElement>(null);
-
+  const sectionRef = useRef<HTMLElement>(null);
   const shouldReduceMotion = useReducedMotion();
   const [isMobile, setIsMobile] = useState(false);
 
-  // Raw scroll target and smoothed lerp progress
-  const targetProgressRef = useRef(0);
-  const currentProgressRef = useRef(0);
-  const [displayProgress, setDisplayProgress] = useState(0);
-
-  // Viewport resize listener
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile, { passive: true });
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Determine active scenes and total scroll distance from config.wayOfWorking.pace
-  const { scenes: activeScenes, totalVh, sceneSlices } = useMemo(() => {
+  // Active Scenes based on feature flags
+  const activeScenes = useMemo(() => {
     const features = config.features;
     const canShowAlwaysOn = Boolean(
       features.voiceAgent ||
@@ -55,165 +38,303 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
       ? baseScenes
       : baseScenes.filter((s) => s.id !== 'always-on');
 
-    // Dynamically format tabs with clean sequential 2-digit numbers: 01 Searches, 02 Journey, 03 Solve, etc.
-    const formatted = filtered.map((scene, idx) => {
+    const pills = [
+      '01 · The problem',
+      '02 · The journey',
+      '03 · What we fix',
+      '04 · The build',
+      '05 · Clear signals',
+      '06 · Time passing',
+      '07 · Always on',
+      '08 · Next step',
+    ];
+
+    return filtered.map((scene, idx) => {
       const num = String(idx + 1).padStart(2, '0');
       const baseLabel = scene.tab.replace(/^\d+\s*/, '');
       return {
         ...scene,
         tab: `${num} ${baseLabel}`,
+        pillLabel: pills[idx] || `${num} · ${baseLabel}`,
+        paletteKey: `s${idx + 1}`,
       };
     });
-
-    const pace = config.wayOfWorking.pace;
-    const getSceneVh = (id: string) => {
-      if (id === 'rank') return pace.rankSceneVh || 260;
-      if (id === 'solve') return pace.solveSceneVh || 220;
-      if (id === 'talk') return pace.ctaSceneVh || 120;
-      return pace.scrollPerSceneVh || 200;
-    };
-
-    const sumVh = formatted.reduce((acc, s) => acc + getSceneVh(s.id), 0);
-
-    let cumulativeVh = 0;
-    const slices = formatted.map((s) => {
-      const vh = getSceneVh(s.id);
-      const start = cumulativeVh / sumVh;
-      cumulativeVh += vh;
-      const end = cumulativeVh / sumVh;
-      return { id: s.id, start, end, vh };
-    });
-
-    return { scenes: formatted, totalVh: sumVh, sceneSlices: slices };
   }, []);
 
   const totalScenes = activeScenes.length;
 
-  // Passive scroll listener + 60fps lerp inertia smoothing (factor ~0.08)
+  // Autoplay State
+  const [currentSceneIdx, setCurrentSceneIdx] = useState(0);
+  const [sceneProgress, setSceneProgress] = useState(0); // 0 to 1
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isSectionVisible, setIsSectionVisible] = useState(false);
+
+  // Responsive check
   useEffect(() => {
-    if (isMobile || shouldReduceMotion) return;
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile, { passive: true });
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
-    let rafId: number;
+  // IntersectionObserver:
+  // Starts when >= 60% is visible; pauses when < 30% is visible.
+  useEffect(() => {
+    if (shouldReduceMotion) return;
+    const el = sectionRef.current;
+    if (!el) return;
 
-    const updateScrollTarget = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const scrollableDistance = rect.height - window.innerHeight;
-
-      if (scrollableDistance <= 0) {
-        targetProgressRef.current = 0;
-        return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio >= 0.6) {
+            setIsSectionVisible(true);
+            setIsPlaying(true);
+          } else if (entry.intersectionRatio < 0.3) {
+            setIsSectionVisible(false);
+            setIsPlaying(false);
+          }
+        });
+      },
+      {
+        threshold: [0.3, 0.6],
       }
+    );
 
-      const currentScroll = -rect.top;
-      const raw = currentScroll / scrollableDistance;
-      targetProgressRef.current = Math.max(0, Math.min(1, raw));
-    };
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [shouldReduceMotion]);
 
-    const animate = () => {
-      const target = targetProgressRef.current;
-      const current = currentProgressRef.current;
-      const diff = target - current;
-
-      if (Math.abs(diff) > 0.0001) {
-        // Lerp factor ~0.08 per frame for butter-smooth inertia
-        const next = current + diff * 0.08;
-        currentProgressRef.current = next;
-        setDisplayProgress(next);
-      } else if (current !== target) {
-        currentProgressRef.current = target;
-        setDisplayProgress(target);
+  // Tab visibility listener (pause on hidden tab, resume when visible if in view)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsPlaying(false);
+      } else if (isSectionVisible) {
+        setIsPlaying(true);
       }
-
-      rafId = requestAnimationFrame(animate);
     };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [isSectionVisible]);
 
-    window.addEventListener('scroll', updateScrollTarget, { passive: true });
-    updateScrollTarget();
-    rafId = requestAnimationFrame(animate);
+  // Durations from config.wayOfWorking.timing
+  const timingConfig = config.wayOfWorking.timing || {
+    s1: 10000,
+    s2: 11000,
+    s3: 10000,
+    s4: 11000,
+    s5: 10000,
+    s6: 13000,
+    s7: 11000,
+    s8: 0,
+    speed: 1,
+    pauseOnHover: false,
+  };
 
-    return () => {
-      window.removeEventListener('scroll', updateScrollTarget);
-      cancelAnimationFrame(rafId);
-    };
-  }, [isMobile, shouldReduceMotion]);
-
-  // Current active scene and local progress (0 to 1) based on custom scene slice ranges
-  const { activeIndex, localProgress } = useMemo(() => {
-    if (sceneSlices.length === 0) return { activeIndex: 0, localProgress: 0 };
-    const p = displayProgress;
-    let idx = sceneSlices.findIndex((s) => p >= s.start && p < s.end);
-    if (idx === -1) {
-      idx = p >= 1 ? sceneSlices.length - 1 : 0;
-    }
-    const slice = sceneSlices[idx];
-    const sliceRange = slice.end - slice.start;
-    const lp = sliceRange > 0 ? (p - slice.start) / sliceRange : 0;
-    return {
-      activeIndex: idx,
-      localProgress: Math.max(0, Math.min(1, lp)),
-    };
-  }, [displayProgress, sceneSlices]);
-
-  // Smooth scroll to a specific scene
-  const scrollToScene = useCallback(
-    (index: number) => {
-      if (!containerRef.current) return;
-      const containerTop = containerRef.current.offsetTop;
-      const scrollableDistance = containerRef.current.offsetHeight - window.innerHeight;
-      const slice = sceneSlices[index];
-      // Scroll to mid-hold point of scene
-      const fraction = slice ? (slice.start + slice.end) / 2 : index / totalScenes;
-      const targetScroll = containerTop + fraction * scrollableDistance;
-
-      window.scrollTo({
-        top: targetScroll,
-        behavior: shouldReduceMotion ? 'auto' : 'smooth',
-      });
+  const getSceneDuration = useCallback(
+    (idx: number) => {
+      const key = `s${idx + 1}` as keyof typeof timingConfig;
+      const raw = (timingConfig[key] as number) || 10000;
+      return raw * (timingConfig.speed || 1);
     },
-    [sceneSlices, totalScenes, shouldReduceMotion]
+    [timingConfig]
   );
 
-  // Keyboard navigation for tablist (ArrowLeft, ArrowRight)
-  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      const nextIndex = (index + 1) % totalScenes;
-      scrollToScene(nextIndex);
-      const nextTab = tablistRef.current?.children[nextIndex] as HTMLButtonElement;
-      nextTab?.focus();
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      const prevIndex = (index - 1 + totalScenes) % totalScenes;
-      scrollToScene(prevIndex);
-      const prevTab = tablistRef.current?.children[prevIndex] as HTMLButtonElement;
-      prevTab?.focus();
+  // Autoplay Timeline Loop via requestAnimationFrame
+  useEffect(() => {
+    if (!isPlaying || !isSectionVisible || shouldReduceMotion) return;
+
+    // If on scene 8 (last scene), holds permanently and never loops
+    if (currentSceneIdx >= totalScenes - 1) {
+      setSceneProgress(1);
+      return;
+    }
+
+    const duration = getSceneDuration(currentSceneIdx);
+    let lastTime = performance.now();
+    let animId: number;
+
+    const tick = (now: number) => {
+      const delta = now - lastTime;
+      lastTime = now;
+
+      setSceneProgress((prev) => {
+        const next = prev + delta / duration;
+        if (next >= 1) {
+          // Transition to next scene
+          if (currentSceneIdx < totalScenes - 1) {
+            setCurrentSceneIdx((curr) => curr + 1);
+            return 0;
+          }
+          return 1;
+        }
+        return next;
+      });
+
+      animId = requestAnimationFrame(tick);
+    };
+
+    animId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animId);
+  }, [isPlaying, isSectionVisible, currentSceneIdx, totalScenes, getSceneDuration, shouldReduceMotion]);
+
+  // Scene navigation controls
+  const goToScene = useCallback(
+    (idx: number) => {
+      const bounded = Math.max(0, Math.min(totalScenes - 1, idx));
+      setCurrentSceneIdx(bounded);
+      setSceneProgress(0);
+      setIsPlaying(true);
+    },
+    [totalScenes]
+  );
+
+  const handleNext = () => {
+    if (currentSceneIdx < totalScenes - 1) {
+      goToScene(currentSceneIdx + 1);
     }
   };
 
-  // Helper to render scene visual component
-  const renderSceneVisual = (sceneId: string, currentLocalProgress: number, isActive: boolean, mobileMode = false) => {
+  const handlePrev = () => {
+    if (currentSceneIdx > 0) {
+      goToScene(currentSceneIdx - 1);
+    }
+  };
+
+  const handleReplay = () => {
+    setSceneProgress(0);
+    setIsPlaying(true);
+  };
+
+  const togglePlay = () => {
+    setIsPlaying((prev) => !prev);
+  };
+
+  // Keyboard accessibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isSectionVisible) return;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNext();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrev();
+      } else if (e.key === ' ') {
+        // Toggle play/pause only if user is not in a text input
+        const target = e.target as HTMLElement;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+        e.preventDefault();
+        togglePlay();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSectionVisible, currentSceneIdx, totalScenes]);
+
+  // Hover pause support if enabled
+  const handleMouseEnter = () => {
+    if (timingConfig.pauseOnHover) {
+      setIsPlaying(false);
+    }
+  };
+  const handleMouseLeave = () => {
+    if (timingConfig.pauseOnHover && isSectionVisible) {
+      setIsPlaying(true);
+    }
+  };
+
+  // Active scene & palette
+  const activeScene = activeScenes[currentSceneIdx] || activeScenes[0];
+  const paletteConfig = config.wayOfWorking.palette || {};
+  const currentPalette: ScenePalette =
+    (paletteConfig[activeScene.paletteKey as keyof typeof paletteConfig] as ScenePalette) || {
+      id: 'default',
+      bg: '#0F2A35',
+      textPrimary: '#FFFFFF',
+      textSecondary: 'rgba(255,255,255,0.7)',
+      pillBg: 'rgba(255,255,255,0.1)',
+      pillText: '#E3B896',
+      pillBorder: 'rgba(227,184,150,0.3)',
+      isDark: true,
+    };
+
+  // Helper to render current scene visual
+  const renderSceneVisual = (sceneId: string, progressVal: number) => {
     switch (sceneId) {
       case 'searches':
-        return <Scene1Searches progress={currentLocalProgress} isActive={isActive} isMobile={mobileMode} />;
+        return (
+          <Scene1Searches
+            progress={progressVal}
+            isActive={true}
+            isMobile={isMobile}
+            palette={currentPalette}
+          />
+        );
       case 'journey':
-        return <Scene2Journey progress={currentLocalProgress} isActive={isActive} isMobile={mobileMode} />;
+        return (
+          <Scene2Journey
+            progress={progressVal}
+            isActive={true}
+            isMobile={isMobile}
+            palette={currentPalette}
+          />
+        );
       case 'solve':
-        return <Scene3Solve progress={currentLocalProgress} isActive={isActive} isMobile={mobileMode} />;
+        return (
+          <Scene3Solve
+            progress={progressVal}
+            isActive={true}
+            isMobile={isMobile}
+            palette={currentPalette}
+          />
+        );
       case 'build':
-        return <Scene4Build progress={currentLocalProgress} isActive={isActive} isMobile={mobileMode} />;
+        return (
+          <Scene4Build
+            progress={progressVal}
+            isActive={true}
+            isMobile={isMobile}
+            palette={currentPalette}
+          />
+        );
       case 'findable':
-        return <Scene5Findable progress={currentLocalProgress} isActive={isActive} isMobile={mobileMode} />;
+        return (
+          <Scene5Findable
+            progress={progressVal}
+            isActive={true}
+            isMobile={isMobile}
+            palette={currentPalette}
+          />
+        );
       case 'rank':
-        return <Scene6Rank progress={currentLocalProgress} isActive={isActive} isMobile={mobileMode} />;
+        return (
+          <Scene6Rank
+            progress={progressVal}
+            isActive={true}
+            isMobile={isMobile}
+            palette={currentPalette}
+          />
+        );
       case 'always-on':
-        return <Scene7AlwaysOn progress={currentLocalProgress} isActive={isActive} isMobile={mobileMode} />;
+        return (
+          <Scene7AlwaysOn
+            progress={progressVal}
+            isActive={true}
+            isMobile={isMobile}
+            palette={currentPalette}
+          />
+        );
       case 'talk':
         return (
           <Scene8Talk
-            progress={currentLocalProgress}
-            isActive={isActive}
-            isMobile={mobileMode}
+            progress={progressVal}
+            isActive={true}
+            isMobile={isMobile}
+            palette={currentPalette}
             onOpenAudit={onOpenAudit}
           />
         );
@@ -223,23 +344,22 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
   };
 
   // --------------------------------------------------------------------------
-  // Mobile & Reduced-Motion Fallback: Stacked static / animated panels
+  // Reduced Motion / No-JS Fallback: Static stacked panels in final state
   // --------------------------------------------------------------------------
-  if (isMobile || shouldReduceMotion) {
+  if (shouldReduceMotion) {
     return (
       <section
         id="process"
         aria-label={config.wayOfWorking.title}
-        className="relative w-full bg-[#0F2A35] text-white py-16 px-4 sm:px-6"
+        className="relative w-full py-16 px-4 sm:px-6 bg-[#0F2A35]"
       >
         <div id="how-it-works" className="absolute top-0 left-0 scroll-mt-24 pointer-events-none" />
 
-        {/* Section Header */}
-        <div className="max-w-4xl mx-auto mb-12 text-center">
+        <div className="max-w-4xl mx-auto mb-12 text-center text-white">
           <span className="text-xs font-semibold uppercase tracking-wider text-[#E3B896] bg-[#E3B896]/10 px-3.5 py-1.5 rounded-full border border-[#E3B896]/20">
             {config.wayOfWorking.title}
           </span>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mt-4">
+          <h2 className="text-2xl sm:text-3xl font-bold mt-4">
             How we take you from invisible to booked
           </h2>
           <p className="text-sm text-white/70 mt-2 max-w-xl mx-auto">
@@ -247,36 +367,55 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
           </p>
         </div>
 
-        {/* Stacked Panels */}
-        <div className="max-w-4xl mx-auto space-y-16">
-          {activeScenes.map((scene) => (
-            <div
-              key={scene.id}
-              className="bg-[#13242C] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl flex flex-col gap-6"
-            >
-              {/* Scene Header */}
-              <div>
-                <span className="text-xs font-bold text-[#E3B896] uppercase tracking-wider block mb-1">
-                  {scene.tab}
-                </span>
-                <h3 className="text-xl sm:text-2xl font-bold text-white leading-snug">
-                  {scene.headline}
-                </h3>
-                <p className="text-sm text-white/70 mt-1.5 leading-relaxed">{scene.text}</p>
-              </div>
+        <div className="max-w-5xl mx-auto space-y-12">
+          {activeScenes.map((scene, idx) => {
+            const pal = (paletteConfig[scene.paletteKey as keyof typeof paletteConfig] as ScenePalette) || currentPalette;
+            return (
+              <div
+                key={scene.id}
+                style={{ background: pal.bg }}
+                className="rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl flex flex-col gap-6"
+              >
+                <div>
+                  <span
+                    style={{
+                      backgroundColor: pal.pillBg,
+                      color: pal.pillText,
+                      borderColor: pal.pillBorder,
+                    }}
+                    className="inline-block text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border mb-2"
+                  >
+                    {scene.pillLabel}
+                  </span>
+                  <h3
+                    style={{ color: pal.textPrimary }}
+                    className="text-xl sm:text-2xl font-bold leading-snug"
+                  >
+                    {scene.headline}
+                  </h3>
+                  <p
+                    style={{ color: pal.textSecondary }}
+                    className="text-sm mt-1.5 leading-relaxed"
+                  >
+                    {scene.text}
+                  </p>
+                </div>
 
-              {/* Scene Visual Body */}
-              <div className="w-full">{renderSceneVisual(scene.id, 0.5, true, true)}</div>
+                <div className="w-full min-h-[300px]">
+                  {renderSceneVisual(scene.id, 1)}
+                </div>
 
-              {/* Caption */}
-              <div className="text-[11px] text-white/40 text-right border-t border-white/10 pt-3">
-                {scene.caption}
+                <div
+                  style={{ color: pal.textSecondary }}
+                  className="text-[11px] text-right border-t border-black/10 pt-3"
+                >
+                  {scene.caption}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Footnote */}
         <div className="max-w-4xl mx-auto mt-12 text-center text-xs text-white/50">
           Illustrative story. Search results vary and take time to build. We never promise rankings or a set number of enquiries.
         </div>
@@ -286,24 +425,25 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
   }
 
   // --------------------------------------------------------------------------
-  // Desktop Full-Screen Scroll-Driven Experience
+  // Full-Screen Autoplay Story Engine (100svh, never locks scrolling)
   // --------------------------------------------------------------------------
-  const currentScene = activeScenes[activeIndex] || activeScenes[0];
-
   return (
     <section
-      ref={containerRef}
+      ref={sectionRef}
       id="process"
       aria-label={config.wayOfWorking.title}
-      className="relative w-full bg-[#0F2A35] text-white"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
-        height: `${totalVh}vh`,
+        background: currentPalette.bg,
+        transition: 'background 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
       }}
+      className="relative w-full h-[100svh] min-h-[640px] flex flex-col justify-between overflow-hidden select-none"
     >
-      {/* Anchor for backward compatibility with #how-it-works navigation */}
+      {/* Anchor for backward compatibility with #how-it-works */}
       <div id="how-it-works" className="absolute top-0 left-0 scroll-mt-24 pointer-events-none" />
 
-      {/* Screen reader skip link */}
+      {/* Screen Reader Skip Link */}
       <a
         href="#after-process"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-[#0F2A35] focus:rounded-lg focus:shadow-lg focus:font-semibold"
@@ -311,32 +451,34 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
         Skip this section
       </a>
 
-      {/* Sticky Full-Viewport Stage */}
-      <div
-        ref={stickyRef}
-        className="sticky top-0 h-[100svh] w-full flex flex-col justify-between overflow-hidden px-4 sm:px-6 lg:px-8 py-4 sm:py-5 select-none"
-      >
-        {/* ===================================================================
-            HEADER: Title & Numbered Pill Tabs (Fit on 1280px Screen)
-           =================================================================== */}
-        <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 pt-1">
+      {/* ===================================================================
+          TOP AREA: Section Title, Tabs & Active Scene Header (< 35% height)
+         =================================================================== */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 flex flex-col gap-2 shrink-0 z-20">
+        {/* Row 1: Section Title & 8 Numbered Tabs */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
           {/* Section Title */}
           <div className="flex items-center gap-2 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-[#E3B896] animate-pulse" />
-            <h2 className="text-sm sm:text-base font-bold text-white tracking-tight whitespace-nowrap">
+            <span
+              className="w-2 h-2 rounded-full animate-pulse"
+              style={{ backgroundColor: currentPalette.pillText }}
+            />
+            <h2
+              style={{ color: currentPalette.textPrimary }}
+              className="text-xs sm:text-sm font-bold tracking-tight uppercase"
+            >
               {config.wayOfWorking.title}
             </h2>
           </div>
 
-          {/* Numbered Pill Tabs (role="tablist"): Single row on >=1024px, scrollable on narrow */}
+          {/* Numbered Pill Tabs (role="tablist") */}
           <div
-            ref={tablistRef}
             role="tablist"
-            aria-label="Story chapters"
-            className="flex items-center gap-1 sm:gap-1.5 p-1 bg-[#13242C] rounded-full border border-white/10 shadow-md overflow-x-auto no-scrollbar max-w-full"
+            aria-label="Story scenes"
+            className="flex items-center gap-1 p-1 rounded-full bg-black/15 backdrop-blur-md border border-white/10 overflow-x-auto no-scrollbar max-w-full"
           >
             {activeScenes.map((scene, idx) => {
-              const isSelected = activeIndex === idx;
+              const isSelected = currentSceneIdx === idx;
               return (
                 <button
                   key={scene.id}
@@ -345,96 +487,174 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
                   aria-selected={isSelected}
                   aria-controls={`panel-${scene.id}`}
                   tabIndex={isSelected ? 0 : -1}
-                  onClick={() => scrollToScene(idx)}
-                  onKeyDown={(e) => handleKeyDown(e, idx)}
-                  className={`relative px-2.5 sm:px-3 py-1 rounded-full text-[11px] xl:text-xs font-medium transition-all duration-200 cursor-pointer overflow-hidden whitespace-nowrap shrink-0 ${
+                  onClick={() => goToScene(idx)}
+                  className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-medium transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
                     isSelected
-                      ? 'bg-white/15 text-white ring-1 ring-[#E3B896]/60 shadow-sm'
-                      : 'text-white/60 hover:text-white/90 hover:bg-white/5'
+                      ? 'bg-white text-[#12303D] font-bold shadow-md'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  <span className="relative z-10">{scene.tab}</span>
-
-                  {/* Tiny progress fill bar inside active pill tab */}
-                  {isSelected && (
-                    <span
-                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#E3B896] transition-all duration-75"
-                      style={{
-                        width: `${Math.min(100, Math.max(0, localProgress * 100))}%`,
-                      }}
-                    />
-                  )}
+                  {scene.tab}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* ===================================================================
-            MAIN STAGE: Active Scene Content (Headline, Supporting Line, Visual)
-           =================================================================== */}
-        <div
-          id={`panel-${currentScene.id}`}
-          role="tabpanel"
-          aria-labelledby={`tab-${currentScene.id}`}
-          className="w-full max-w-5xl mx-auto my-auto flex flex-col justify-center py-2"
-        >
-          {/* Scene Header */}
-          <div className="mb-3 sm:mb-5 text-center max-w-3xl mx-auto">
-            <h3 className="text-[clamp(1.5rem,3vw,2.35rem)] font-bold text-white leading-[1.12] tracking-[-0.03em]">
-              {currentScene.headline}
-            </h3>
-            <p className="text-xs sm:text-sm md:text-[15px] text-white/70 mt-1 leading-relaxed">
-              {currentScene.text}
-            </p>
-          </div>
-
-          {/* Active Scene Visual with Staggered Entrance & 20% Hold Phase */}
-          <div className="w-full relative">
-            {renderSceneVisual(currentScene.id, localProgress, true, false)}
-          </div>
-
-          {/* Scene Caption / Attribution */}
-          <div className="text-[11px] text-white/40 text-center mt-2 sm:mt-3">
-            {currentScene.caption}
-          </div>
-        </div>
-
-        {/* ===================================================================
-            FOOTER: Scroll Hint, Footnote, and Overall Progress Bar
-           =================================================================== */}
-        <div className="w-full max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 pb-2 text-[11px] text-white/50 border-t border-white/10 pt-2">
-          {/* Scroll Hint (fades out as you advance past scene 1) */}
-          <div
+        {/* Row 2: Centered Scene Pill, Headline, and Supporting Line */}
+        <div className="text-center max-w-3xl mx-auto pt-1 sm:pt-2">
+          {/* Centered Pill Label */}
+          <span
             style={{
-              opacity: Math.max(0, 1 - displayProgress * 5),
-              transition: 'opacity 0.3s linear',
+              backgroundColor: currentPalette.pillBg,
+              color: currentPalette.pillText,
+              borderColor: currentPalette.pillBorder,
             }}
-            className="flex items-center gap-1.5 text-white/70 font-medium"
+            className="inline-block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full border mb-1 transition-colors duration-500"
           >
-            <ChevronDown className="w-3.5 h-3.5 text-[#E3B896] animate-bounce" />
-            <span>Scroll down to advance</span>
-          </div>
+            {activeScene.pillLabel}
+          </span>
 
-          {/* Footnote statement */}
-          <div className="text-center sm:text-right max-w-xl text-white/50">
-            Illustrative story. Search results vary and take time to build. We never promise rankings or a set number of enquiries.
-          </div>
-        </div>
+          {/* Large Headline */}
+          <h3
+            style={{ color: currentPalette.textPrimary }}
+            className="text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight leading-snug transition-colors duration-500"
+          >
+            {activeScene.headline}
+          </h3>
 
-        {/* Global Progress Bar at the absolute bottom of the sticky viewport */}
-        <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-white/10 overflow-hidden">
-          <div
-            className="h-full bg-[#E3B896] transition-transform duration-75 origin-left"
-            style={{
-              transform: `scaleX(${displayProgress})`,
-            }}
-          />
+          {/* Short Supporting Line */}
+          <p
+            style={{ color: currentPalette.textSecondary }}
+            className="text-xs sm:text-sm mt-1 max-w-2xl mx-auto leading-relaxed transition-colors duration-500"
+          >
+            {activeScene.text}
+          </p>
         </div>
       </div>
 
-      {/* Target for skip link */}
-      <div id="after-process" className="h-0 w-0" />
+      {/* ===================================================================
+          STAGE AREA: Responsive Viewport Canvas (~60% height)
+         =================================================================== */}
+      <div
+        id={`panel-${activeScene.id}`}
+        role="tabpanel"
+        aria-labelledby={`tab-${activeScene.id}`}
+        className="relative flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1 flex items-center justify-center overflow-hidden z-10"
+      >
+        <div
+          key={activeScene.id}
+          className="w-full h-full flex items-center justify-center transition-all duration-700"
+          style={{
+            animation: 'fadeInScale 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+          }}
+        >
+          {renderSceneVisual(activeScene.id, sceneProgress)}
+        </div>
+      </div>
+
+      {/* ===================================================================
+          BOTTOM CONTROL BAR: 8 Progress Segments, Play/Pause, Prev/Next, Replay
+         =================================================================== */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-3 sm:pb-4 flex flex-col gap-2 shrink-0 z-20">
+        {/* 8 Clickable Progress Segments */}
+        <div className="w-full grid grid-cols-8 gap-1.5 sm:gap-2">
+          {activeScenes.map((scene, idx) => {
+            let fillPct = 0;
+            if (idx < currentSceneIdx) fillPct = 100;
+            else if (idx === currentSceneIdx) fillPct = sceneProgress * 100;
+
+            return (
+              <button
+                key={scene.id}
+                type="button"
+                onClick={() => goToScene(idx)}
+                aria-label={`Jump to scene ${idx + 1}: ${scene.tab}`}
+                className="group relative h-2 sm:h-2.5 rounded-full bg-white/20 hover:bg-white/30 overflow-hidden cursor-pointer transition-colors"
+              >
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${fillPct}%`,
+                    backgroundColor: currentPalette.pillText || '#FFFFFF',
+                    transitionDuration: idx === currentSceneIdx ? '100ms' : '300ms',
+                  }}
+                />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Playback Controls & Caption Bar */}
+        <div className="flex items-center justify-between text-xs pt-1">
+          {/* Controls: Prev, Play/Pause, Next, Replay */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePrev}
+              disabled={currentSceneIdx === 0}
+              aria-label="Previous scene"
+              className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={togglePlay}
+              aria-label={isPlaying ? 'Pause autoplay' : 'Resume autoplay'}
+              className="px-3 py-1 rounded-full bg-black/25 hover:bg-black/45 border border-white/10 text-white font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              {isPlaying ? (
+                <>
+                  <Pause className="w-3.5 h-3.5 fill-current" />
+                  <span className="text-[11px]">Pause</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span className="text-[11px]">Play</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={currentSceneIdx >= totalScenes - 1}
+              aria-label="Next scene"
+              className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleReplay}
+              aria-label="Replay current scene"
+              className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 transition-colors text-white cursor-pointer ml-1"
+              title="Replay scene"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Scene Counter & Keyboard Hint */}
+          <div
+            style={{ color: currentPalette.textSecondary }}
+            className="flex items-center gap-3 text-[11px]"
+          >
+            <span className="hidden sm:inline opacity-75">
+              Press Space to pause · Arrow keys to skip
+            </span>
+            <span className="font-mono font-semibold">
+              {String(currentSceneIdx + 1).padStart(2, '0')} / {String(totalScenes).padStart(2, '0')}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div id="after-process" className="sr-only" />
     </section>
   );
 }

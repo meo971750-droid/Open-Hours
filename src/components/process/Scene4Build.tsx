@@ -1,285 +1,225 @@
-import React, { useState } from 'react';
-import { Smartphone, Laptop, Phone, CheckCircle2, ArrowRight, MapPin, RotateCcw, Inbox, Sparkles } from 'lucide-react';
+import React from 'react';
+import { Smartphone, Laptop, Phone, CheckCircle2, Inbox, Send, MapPin, Check } from 'lucide-react';
 import { SceneProps } from './types';
 import { config } from '../../config';
 
-export default function Scene4Build({ progress, isActive, isMobile, onInteract }: SceneProps) {
-  const [device, setDevice] = useState<'laptop' | 'phone'>('laptop');
-  const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
-  const [formDemoStep, setFormDemoStep] = useState<'idle' | 'filling' | 'ready' | 'submitted'>('idle');
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const [replayKey, setReplayKey] = useState(0);
-
+export default function Scene4Build({ progress, isMobile, palette }: SceneProps) {
   const sampleTown = config.wayOfWorking.sampleTown || 'Galway';
   const sampleTrade = config.wayOfWorking.sampleTrade || 'roofers';
 
-  // Timing: 20% entrance, 45% main animation (0.20 to 0.65), 20% HOLD (0.65 to 0.85), 15% exit (0.85 to 1.0)
-  const enterProgress = Math.min(1, Math.max(0, progress / 0.2));
-  const exitProgress = Math.min(1, Math.max(0, (progress - 0.85) / 0.15));
+  // Autoplay Timeline (0.0 to 1.0)
+  // 1: Grid fades in: 0.05 - 0.18
+  // 2: Laptop and phone outlines draw: 0.18 - 0.40
+  // 3: Website blocks build inside frames: 0.35 - 0.60
+  // 4: Annotation callouts with leader lines: 0.55 - 0.75
+  // 5: Form auto-fills, cursor taps send, enquiry card flies to inbox: 0.72 - 0.88
+  // 6: Hold: 0.88 - 1.0
 
-  const xOffset = isMobile ? 0 : (1 - enterProgress) * -40 + exitProgress * 40;
-  const opacity = isMobile ? 1 : Math.min(enterProgress, 1 - exitProgress);
+  const gridProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.15));
+  const framesProgress = Math.min(1, Math.max(0, (progress - 0.18) / 0.22));
+  const blocksProgress = Math.min(1, Math.max(0, (progress - 0.35) / 0.25));
+  const calloutsProgress = Math.min(1, Math.max(0, (progress - 0.55) / 0.20));
+  const formActionProgress = Math.min(1, Math.max(0, (progress - 0.70) / 0.18));
 
-  const triggerFormDemo = () => {
-    if (onInteract) onInteract();
-    setHasInteracted(true);
-    setFormDemoStep('filling');
-
-    setTimeout(() => {
-      setFormDemoStep('ready');
-    }, 600);
-  };
-
-  const submitFormDemo = () => {
-    if (onInteract) onInteract();
-    setHasInteracted(true);
-    setFormDemoStep('submitted');
-  };
-
-  const handleHotspotClick = (key: string) => {
-    setActiveHotspot(activeHotspot === key ? null : key);
-    if (!hasInteracted) {
-      setHasInteracted(true);
-      if (onInteract) onInteract();
-    }
-  };
-
-  const handleReplay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setFormDemoStep('idle');
-    setActiveHotspot(null);
-    setReplayKey((k) => k + 1);
-  };
-
-  const hotspots = {
-    call: 'Call button: prominent and always accessible on mobile for emergency repairs.',
-    quote: 'Quote form: captures homeowner name, phone, and job scope with zero friction.',
-    areas: 'Service-area block: explicitly confirms local coverage so visitors do not bounce.',
-    header: 'Header: clear branding and license reassurance so customers trust you instantly.',
-  };
+  const isFormFilled = formActionProgress > 0.25;
+  const isFormSent = formActionProgress > 0.55;
+  const isInboxReceived = formActionProgress > 0.75;
 
   return (
-    <div
-      key={replayKey}
-      style={{
-        transform: `translateX(${xOffset}px)`,
-        opacity,
-        transition: 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease-out',
-      }}
-      className="w-full max-w-4xl mx-auto flex flex-col gap-4 select-none"
-    >
-      {/* Top Banner with Device Toggle & Try Form Button */}
-      <div className="flex items-center justify-between text-xs text-white/70">
-        <div className="flex items-center gap-1.5 p-1 bg-[#13242C] rounded-full border border-white/10">
-          <button
-            type="button"
-            onClick={() => setDevice('laptop')}
-            className={`min-h-[32px] px-3 rounded-full text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              device === 'laptop' ? 'bg-white/20 text-white font-bold' : 'text-white/60 hover:text-white'
-            }`}
-          >
-            <Laptop className="w-3.5 h-3.5" />
-            <span>Laptop</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setDevice('phone')}
-            className={`min-h-[32px] px-3 rounded-full text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              device === 'phone' ? 'bg-white/20 text-white font-bold' : 'text-white/60 hover:text-white'
-            }`}
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>Phone</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {!hasInteracted && formDemoStep === 'idle' && (
-            <button
-              type="button"
-              onClick={triggerFormDemo}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E3B896] hover:bg-[#D4A379] text-[#0F2A35] text-xs font-semibold shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer animate-pulse"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Try the form</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={handleReplay}
-            aria-label="Replay mockup animation"
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 text-[11px] transition-colors cursor-pointer"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Replay</span>
-          </button>
-        </div>
+    <div className="relative w-full h-full flex flex-col items-center justify-between overflow-hidden select-none">
+      <div className="absolute top-2 right-4 text-[10px] uppercase tracking-wider text-white/40 px-2 py-0.5 rounded bg-black/20 border border-white/10 z-20">
+        Illustrative example
       </div>
 
-      {/* Main Canvas: Mockup Device on Left, Live Enquiry Inbox on Right */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
-        {/* Device Container */}
-        <div className="md:col-span-8 bg-[#18262E] rounded-2xl p-3 sm:p-4 border border-white/15 shadow-2xl flex flex-col justify-between">
-          {/* Laptop Browser Header / Phone Top */}
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 text-xs text-white/40">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-            </div>
-            <span className="text-[11px] font-mono text-white/50 truncate max-w-[200px]">
-              https://sample-{sampleTrade}-{sampleTown.toLowerCase()}.com
-            </span>
-            <span className="text-[10px] text-white/40">Tap dots to inspect</span>
-          </div>
+      {/* Blueprint Grid Overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none transition-opacity duration-700"
+        style={{
+          opacity: gridProgress * 0.45,
+          backgroundImage:
+            'linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)',
+          backgroundSize: '36px 36px',
+        }}
+      />
 
-          {/* Website Canvas */}
+      <div className="relative w-full max-w-6xl mx-auto flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 px-4 py-2 z-10">
+        {/* Device Stage: Laptop + Mobile */}
+        <div className="flex-1 w-full flex items-center justify-center gap-4 sm:gap-6">
+          {/* Laptop Frame */}
           <div
-            className={`bg-[#FAF8F5] text-[#0F2A35] rounded-xl p-3 sm:p-4 flex flex-col gap-3 shadow-inner transition-all ${
-              device === 'phone' ? 'max-w-[320px] mx-auto' : 'w-full'
-            }`}
+            style={{
+              opacity: framesProgress,
+              transform: `scale(${0.9 + framesProgress * 0.1})`,
+            }}
+            className="hidden sm:flex flex-col w-[340px] md:w-[420px] lg:w-[480px] bg-[#0E2235] rounded-xl border border-white/25 shadow-2xl overflow-hidden transition-all duration-300"
           >
-            {/* Nav Header with Call Button & Hotspot */}
-            <div className="relative flex items-center justify-between border-b border-slate-200 pb-2">
-              <button
-                type="button"
-                onClick={() => handleHotspotClick('header')}
-                className="font-bold text-xs sm:text-sm tracking-tight text-[#0F2A35] flex items-center gap-1.5 cursor-pointer text-left"
-              >
-                <span>Sample Roofing {sampleTown}</span>
-                <span className="w-2 h-2 rounded-full bg-[#E3B896] animate-ping" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleHotspotClick('call')}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#1E4A5C] hover:bg-[#153B34] text-white text-xs font-semibold cursor-pointer shadow-xs transition-colors"
-              >
-                <Phone className="w-3 h-3 text-[#E3B896]" />
-                <span>Call Now</span>
-              </button>
+            {/* Laptop Header Bar */}
+            <div className="h-6 bg-[#091724] border-b border-white/10 flex items-center px-3 gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-red-500/70" />
+              <span className="w-2 h-2 rounded-full bg-yellow-500/70" />
+              <span className="w-2 h-2 rounded-full bg-green-500/70" />
+              <span className="text-[10px] text-white/40 ml-2 font-mono">sample-roofing-{sampleTown.toLowerCase()}.com</span>
             </div>
 
-            {/* Headline & Body */}
-            <div>
-              <span className="text-[10px] font-bold text-[#1E4A5C] uppercase tracking-wider block">
-                Local Trade Specialists
-              </span>
-              <h4 className="text-sm sm:text-base font-bold text-[#0F2A35] leading-snug">
-                Professional Roofing &amp; Roof Repairs in {sampleTown}
-              </h4>
-            </div>
+            {/* Laptop Website Body */}
+            <div className="p-4 flex flex-col gap-3 min-h-[260px] bg-[#11293F]">
+              {/* Block 1: Nav / Header */}
+              {blocksProgress > 0.1 && (
+                <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded bg-[#E8B08F]" />
+                    <span>Sample Roofing</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-white/70">Roof Repairs</span>
+                    <span className="px-2 py-0.5 rounded bg-[#E8B08F] text-[#12304A] font-semibold text-[10px] flex items-center gap-1 shadow-sm">
+                      <Phone className="w-2.5 h-2.5" /> Call Now
+                    </span>
+                  </div>
+                </div>
+              )}
 
-            {/* Service Area Block with Hotspot */}
-            <button
-              type="button"
-              onClick={() => handleHotspotClick('areas')}
-              className="inline-flex items-center gap-1.5 text-xs text-[#1E4A5C] bg-[#DCE9EC]/80 px-2.5 py-1.5 rounded-lg border border-[#1E4A5C]/20 cursor-pointer text-left hover:bg-[#DCE9EC]"
-            >
-              <MapPin className="w-3.5 h-3.5 text-[#1E4A5C] shrink-0" />
-              <span>Serving {sampleTown}, Salthill &amp; County</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E3B896] ml-auto animate-ping" />
-            </button>
+              {/* Block 2: Hero Headline & Quote Form */}
+              <div className="grid grid-cols-2 gap-3 items-center">
+                {blocksProgress > 0.3 && (
+                  <div>
+                    <span className="text-[9px] uppercase tracking-wider text-[#E8B08F] font-bold">Trusted local roofing</span>
+                    <h4 className="text-xs sm:text-sm font-bold text-white mt-0.5 leading-snug">
+                      Reliable roof repairs in {sampleTown}.
+                    </h4>
+                    <p className="text-[10px] text-white/60 mt-1">Written estimates, verified insurance.</p>
+                  </div>
+                )}
 
-            {/* Interactive Form Section */}
-            <div className="relative bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#0F2A35]">Get a Fast Estimate</span>
-                <button
-                  type="button"
-                  onClick={() => handleHotspotClick('quote')}
-                  className="text-[10px] text-[#1E4A5C] font-semibold underline flex items-center gap-1"
-                >
-                  <span>Form Hotspot</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#E3B896] animate-ping" />
-                </button>
+                {blocksProgress > 0.5 && (
+                  <div className="bg-[#0B1E2E] p-2.5 rounded-lg border border-white/15 text-[10px] text-white space-y-1.5">
+                    <div className="font-semibold text-white/90 text-[10px] flex items-center justify-between">
+                      <span>Quick Quote</span>
+                      {isFormSent && <span className="text-emerald-400 text-[9px]">✓ Sent</span>}
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded px-2 py-1 text-[9px] text-white/80">
+                      {isFormFilled ? 'Tom Murphy' : 'Your name...'}
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded px-2 py-1 text-[9px] text-white/80">
+                      {isFormFilled ? 'Slate repair, storm leak' : 'Job details...'}
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded px-2 py-1 text-[9px] text-white/80">
+                      {isFormFilled ? 'H91 ...' : 'Eircode / Postcode'}
+                    </div>
+                    <button
+                      type="button"
+                      className={`w-full py-1 rounded text-[9px] font-bold flex items-center justify-center gap-1 transition-colors duration-300 ${
+                        isFormSent ? 'bg-emerald-600 text-white' : 'bg-[#E8B08F] text-[#12304A]'
+                      }`}
+                    >
+                      {isFormSent ? <Check className="w-2.5 h-2.5" /> : <Send className="w-2.5 h-2.5" />}
+                      {isFormSent ? 'Enquiry sent' : 'Request Estimate'}
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {formDemoStep === 'submitted' ? (
-                <div className="py-3 flex flex-col items-center justify-center text-center animate-in fade-in">
-                  <CheckCircle2 className="w-8 h-8 text-[#2E9E6B] mb-1" />
-                  <span className="text-xs font-bold text-[#0F2A35]">Thanks, we've got your request</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5">Enquiry logged in inbox</span>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <div className="h-7 bg-slate-100 rounded px-2 text-xs flex items-center text-slate-700">
-                    {formDemoStep === 'idle' ? 'Your Name' : 'Tom Murphy'}
+              {/* Block 3: Service-Area Bar */}
+              {blocksProgress > 0.7 && (
+                <div className="mt-auto pt-2 border-t border-white/10 flex items-center justify-between text-[9px] text-white/60">
+                  <div className="flex items-center gap-1 text-[#E8B08F]">
+                    <MapPin className="w-3 h-3" />
+                    <span className="font-semibold text-white/80">Covering: {sampleTown} &amp; 25km radius</span>
                   </div>
-                  <div className="h-7 bg-slate-100 rounded px-2 text-xs flex items-center text-slate-700">
-                    {formDemoStep === 'idle' ? 'Phone Number' : '087 123 4567'}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={formDemoStep === 'ready' ? submitFormDemo : triggerFormDemo}
-                    className="min-h-[34px] w-full bg-[#E3B896] hover:bg-[#D4A379] text-[#0F2A35] font-bold text-xs rounded-lg flex items-center justify-center gap-1 cursor-pointer transition-colors shadow-xs"
-                  >
-                    <span>{formDemoStep === 'ready' ? 'Tap to Send' : 'Try the Form'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                  <span>Response within 24h</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Active Hotspot Annotation Drawer */}
-          {activeHotspot && (
-            <div className="mt-2.5 p-2.5 bg-[#E3B896]/15 border border-[#E3B896]/40 rounded-xl text-xs text-white/90 animate-in fade-in">
-              <strong className="text-[#E3B896] block mb-0.5">Annotation:</strong>
-              {hotspots[activeHotspot as keyof typeof hotspots]}
+          {/* Mobile Frame (Phone) */}
+          <div
+            style={{
+              opacity: framesProgress,
+              transform: `scale(${0.9 + framesProgress * 0.1})`,
+            }}
+            className="relative w-48 sm:w-52 h-[340px] bg-[#0E2235] rounded-3xl border-2 border-white/30 shadow-2xl overflow-hidden p-2 flex flex-col shrink-0"
+          >
+            {/* Phone Notch */}
+            <div className="w-20 h-3 bg-black/40 rounded-full mx-auto mb-2" />
+
+            <div className="flex-1 bg-[#11293F] rounded-2xl p-2.5 flex flex-col justify-between overflow-hidden">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+                  <span className="text-[10px] font-bold text-white">Sample Roofing</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                </div>
+                <div className="bg-[#E8B08F]/15 border border-[#E8B08F]/30 rounded-lg p-2 text-[10px]">
+                  <p className="font-bold text-[#E8B08F]">Storm damage? We're on call.</p>
+                  <p className="text-[9px] text-white/70 mt-0.5">Direct tap-to-call on mobile.</p>
+                </div>
+              </div>
+
+              {/* Call button prominent on mobile */}
+              <div className="space-y-2">
+                <div className="w-full py-2 rounded-xl bg-[#E8B08F] text-[#12304A] font-bold text-[11px] flex items-center justify-center gap-1.5 shadow-md">
+                  <Phone className="w-3.5 h-3.5 fill-current" /> Tap to Call Now
+                </div>
+                <div className="w-full py-1.5 rounded-lg bg-white/10 text-white font-medium text-[10px] text-center border border-white/10">
+                  Request Quote Online
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Right Side: Live Enquiry Inbox (Cause and effect demo!) */}
-        <div className="md:col-span-4 bg-[#14232B] rounded-2xl border border-white/10 p-5 flex flex-col justify-between shadow-xl">
-          <div>
-            <div className="flex items-center justify-between pb-2 border-b border-white/10 text-xs mb-3">
-              <span className="font-semibold text-white/80 flex items-center gap-1.5">
-                <Inbox className="w-4 h-4 text-[#E3B896]" />
-                <span>Enquiry Inbox</span>
-              </span>
-              <span className="text-[10px] text-white/40">Real-time</span>
-            </div>
-
-            {formDemoStep === 'submitted' ? (
-              <div className="bg-[#18313D] rounded-xl p-3.5 border border-[#E3B896]/40 flex flex-col gap-2 shadow-lg animate-in slide-in-from-left duration-500">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">Tom Murphy</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
-                    New lead
-                  </span>
-                </div>
-                <div className="text-xs text-white/70 space-y-1 bg-white/[0.03] p-2 rounded">
-                  <div><strong>Phone:</strong> 087 123 4567</div>
-                  <div><strong>Town:</strong> {sampleTown}</div>
-                </div>
-                <div className="flex items-center gap-1 text-[11px] text-[#2E9E6B] font-semibold pt-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>Confirmation delivered to homeowner</span>
-                </div>
-              </div>
-            ) : (
-              <div className="py-12 flex flex-col items-center justify-center text-center text-white/50 gap-2">
-                <Inbox className="w-8 h-8 text-white/30" />
-                <p className="text-xs max-w-[180px]">
-                  When a homeowner completes the form, details drop directly into your inbox.
-                </p>
-                <button
-                  type="button"
-                  onClick={triggerFormDemo}
-                  className="mt-1 text-xs text-[#E3B896] underline font-semibold cursor-pointer"
+        {/* Right Side: Annotations & Enquiry Inbox */}
+        <div className="w-full lg:w-80 flex flex-col gap-3">
+          {/* Annotations */}
+          <div className="flex flex-col gap-2">
+            {[
+              { label: 'Call button', desc: 'Always visible on mobile with one tap' },
+              { label: 'Quote form', desc: 'Captures name, job and postcode with zero friction' },
+              { label: 'Service area', desc: 'Confirms local coverage so visitors do not bounce' },
+            ].map((anno, idx) => {
+              const annoReveal = Math.min(1, Math.max(0, (calloutsProgress - idx * 0.3) / 0.4));
+              if (annoReveal <= 0) return null;
+              return (
+                <div
+                  key={anno.label}
+                  style={{
+                    opacity: annoReveal,
+                    transform: `translateX(${(1 - annoReveal) * 15}px)`,
+                  }}
+                  className="bg-white/10 border border-white/15 rounded-xl p-2.5 backdrop-blur-sm transition-all duration-300"
                 >
-                  Test it now
-                </button>
-              </div>
-            )}
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#E8B08F]">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{anno.label}</span>
+                  </div>
+                  <p className="text-[10px] text-white/70 mt-0.5">{anno.desc}</p>
+                </div>
+              );
+            })}
           </div>
 
-          <p className="text-xs text-white/60 mt-4 leading-relaxed border-t border-white/10 pt-3">
-            Cause &amp; effect: Obvious contact options convert visitors before they leave for a competitor.
-          </p>
+          {/* Enquiry Inbox card */}
+          {isInboxReceived && (
+            <div
+              style={{
+                opacity: 1,
+                transform: 'scale(1)',
+              }}
+              className="bg-[#091926] border-2 border-emerald-500/50 rounded-2xl p-3 shadow-xl transition-all duration-300"
+            >
+              <div className="flex items-center justify-between text-xs font-bold text-white border-b border-white/10 pb-2">
+                <span className="flex items-center gap-1.5 text-emerald-400">
+                  <Inbox className="w-4 h-4" /> Enquiry Inbox
+                </span>
+                <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">New Lead</span>
+              </div>
+              <div className="mt-2 text-[11px] text-white/90 space-y-1">
+                <p><span className="text-white/50">Name:</span> Tom Murphy</p>
+                <p><span className="text-white/50">Job:</span> Slate repair, storm leak</p>
+                <p><span className="text-white/50">Location:</span> {sampleTown} (H91...)</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

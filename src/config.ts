@@ -51,6 +51,46 @@ export interface WayOfWorkingPace {
   stagger: number;
 }
 
+export interface WayOfWorkingTiming {
+  s1: number;
+  s2: number;
+  s3: number;
+  s4: number;
+  s5: number;
+  s6: number;
+  s7: number;
+  s8: number;
+  speed: number;
+  pauseOnHover: boolean;
+}
+
+export interface WayOfWorkingPaletteItem {
+  id: string;
+  bg: string;
+  bgSolid?: string;
+  bgStart?: string;
+  bgEnd?: string;
+  textPrimary: string;
+  textSecondary: string;
+  pillBg: string;
+  pillText: string;
+  pillBorder: string;
+  isDark: boolean;
+  [key: string]: any;
+}
+
+export interface WayOfWorkingPalette {
+  s1: WayOfWorkingPaletteItem;
+  s2: WayOfWorkingPaletteItem;
+  s3: WayOfWorkingPaletteItem;
+  s4: WayOfWorkingPaletteItem;
+  s5: WayOfWorkingPaletteItem;
+  s6: WayOfWorkingPaletteItem;
+  s7: WayOfWorkingPaletteItem;
+  s8: WayOfWorkingPaletteItem;
+  [key: string]: WayOfWorkingPaletteItem;
+}
+
 export interface WayOfWorkingConfig {
   title: string;
   studioVoice: 'we';
@@ -59,6 +99,8 @@ export interface WayOfWorkingConfig {
   voiceAgentTag: string;
   sampleTown: string;
   sampleTrade: string;
+  timing: WayOfWorkingTiming;
+  palette: WayOfWorkingPalette;
   pace: WayOfWorkingPace;
   scenes: WayOfWorkingScene[];
 }
@@ -143,6 +185,128 @@ export const config: AppConfig = {
     voiceAgentTag: 'Optional add-on',
     sampleTown: 'Galway',
     sampleTrade: 'roofers',
+    timing: {
+      s1: 10000,
+      s2: 11000,
+      s3: 10000,
+      s4: 11000,
+      s5: 10000,
+      s6: 13000,
+      s7: 11000,
+      s8: 0, // holds indefinitely on final CTA
+      speed: 1, // default 1, higher is slower
+      pauseOnHover: false,
+    },
+    palette: {
+      s1: {
+        id: 'night',
+        bg: 'linear-gradient(135deg, #0B1B2B 0%, #12303D 100%)',
+        bgSolid: '#0B1B2B',
+        textPrimary: '#FFFFFF',
+        textSecondary: 'rgba(255, 255, 255, 0.72)',
+        pillBg: 'rgba(255, 255, 255, 0.1)',
+        pillText: '#F4B860',
+        pillBorder: 'rgba(244, 184, 96, 0.3)',
+        mapLines: '#2A5A6B',
+        accentAmber: '#F4B860',
+        missingRed: '#E5484D',
+        isDark: true,
+      },
+      s2: {
+        id: 'paper',
+        bg: '#FBF6EE',
+        bgSolid: '#FBF6EE',
+        textPrimary: '#1B2B34',
+        textSecondary: 'rgba(27, 43, 52, 0.72)',
+        pillBg: 'rgba(200, 100, 46, 0.1)',
+        pillText: '#C8642E',
+        pillBorder: 'rgba(200, 100, 46, 0.25)',
+        journeyLine: '#C8642E',
+        frictionRed: '#D64545',
+        faintNumeral: '#E9DFD2',
+        isDark: false,
+      },
+      s3: {
+        id: 'mint',
+        bg: '#EEF8F3',
+        bgStart: '#FBF6EE',
+        bgSolid: '#EEF8F3',
+        textPrimary: '#143828',
+        textSecondary: 'rgba(20, 56, 40, 0.72)',
+        pillBg: 'rgba(30, 158, 106, 0.12)',
+        pillText: '#1E9E6A',
+        pillBorder: 'rgba(30, 158, 106, 0.3)',
+        fixedEmerald: '#1E9E6A',
+        frictionRed: '#D64545',
+        faintNumeral: '#D5ECE0',
+        isDark: false,
+      },
+      s4: {
+        id: 'blueprint',
+        bg: '#12304A',
+        bgSolid: '#12304A',
+        textPrimary: '#FFFFFF',
+        textSecondary: 'rgba(255, 255, 255, 0.75)',
+        pillBg: 'rgba(232, 176, 143, 0.15)',
+        pillText: '#E8B08F',
+        pillBorder: 'rgba(232, 176, 143, 0.3)',
+        gridLine: 'rgba(255, 255, 255, 0.08)',
+        peachAccent: '#E8B08F',
+        isDark: true,
+      },
+      s5: {
+        id: 'sky',
+        bg: '#EAF3FF',
+        bgSolid: '#EAF3FF',
+        textPrimary: '#0F2A4A',
+        textSecondary: 'rgba(15, 42, 74, 0.72)',
+        pillBg: 'rgba(47, 107, 255, 0.1)',
+        pillText: '#2F6BFF',
+        pillBorder: 'rgba(47, 107, 255, 0.25)',
+        accentBlue: '#2F6BFF',
+        cardBg: '#FFFFFF',
+        isDark: false,
+      },
+      s6: {
+        id: 'dawn',
+        bgStart: '#1B1F4B',
+        bgEnd: '#F6C9A5',
+        bg: 'linear-gradient(135deg, #1B1F4B 0%, #F6C9A5 100%)',
+        bgSolid: '#1B1F4B',
+        textPrimary: '#FFFFFF',
+        textSecondary: 'rgba(255, 255, 255, 0.8)',
+        pillBg: 'rgba(242, 181, 68, 0.18)',
+        pillText: '#F2B544',
+        pillBorder: 'rgba(242, 181, 68, 0.35)',
+        businessGold: '#F2B544',
+        isDark: true,
+      },
+      s7: {
+        id: 'midnight',
+        bg: '#0A1220',
+        bgSolid: '#0A1220',
+        textPrimary: '#FFFFFF',
+        textSecondary: 'rgba(255, 255, 255, 0.75)',
+        pillBg: 'rgba(45, 212, 191, 0.15)',
+        pillText: '#2DD4BF',
+        pillBorder: 'rgba(45, 212, 191, 0.3)',
+        waveformTeal: '#2DD4BF',
+        phoneAmber: '#F4B860',
+        isDark: true,
+      },
+      s8: {
+        id: 'brand',
+        bg: '#12303D',
+        bgSolid: '#12303D',
+        textPrimary: '#FFFFFF',
+        textSecondary: 'rgba(255, 255, 255, 0.75)',
+        pillBg: 'rgba(232, 176, 143, 0.15)',
+        pillText: '#E8B08F',
+        pillBorder: 'rgba(232, 176, 143, 0.3)',
+        peachAccent: '#E8B08F',
+        isDark: true,
+      },
+    },
     pace: {
       scrollPerSceneVh: 200,
       rankSceneVh: 260,

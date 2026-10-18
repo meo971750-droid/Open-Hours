@@ -1,264 +1,173 @@
-import React, { useState } from 'react';
-import { PhoneCall, Moon, Bot, Inbox, CheckCircle2, Clock, RotateCcw, AlertCircle, Sparkles } from 'lucide-react';
+import React from 'react';
+import { PhoneCall, Moon, Bot, Inbox, CheckCircle2, MessageSquare, AlertCircle, Clock } from 'lucide-react';
 import { SceneProps } from './types';
 import { config } from '../../config';
 
-type CallerOption = 'quote' | 'leak' | 'pricing';
-
-export default function Scene7AlwaysOn({ progress, isActive, isMobile, onInteract }: SceneProps) {
-  const [selectedOption, setSelectedOption] = useState<CallerOption>('leak');
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const [replayKey, setReplayKey] = useState(0);
-
+export default function Scene7AlwaysOn({ progress, isMobile, palette }: SceneProps) {
+  const sampleTown = config.wayOfWorking.sampleTown || 'Galway';
   const hasVoice = Boolean(config.features.voiceAgent);
-  const hasTextBack = Boolean(config.features.missedCallTextBack || config.features.afterHoursAutoReply);
   const voiceAgentTag = config.wayOfWorking.voiceAgentTag || 'Optional add-on';
 
-  // Timing: 20% entrance, 45% main animation (0.20 to 0.65), 20% HOLD (0.65 to 0.85), 15% exit (0.85 to 1.0)
-  const enterProgress = Math.min(1, Math.max(0, progress / 0.2));
-  const exitProgress = Math.min(1, Math.max(0, (progress - 0.85) / 0.15));
+  // Autoplay Timeline (0.0 to 1.0)
+  // 1: Phone rings late evening: 0.05 - 0.25
+  // 2: Waveform & dialog unfolds: 0.25 - 0.65
+  // 3: Live enquiry card builds in Inbox: 0.55 - 0.80
+  // 4: Confirmation SMS flies to caller: 0.75 - 0.90
+  // 5: Hold: 0.90 - 1.0
 
-  const xOffset = isMobile ? 0 : (1 - enterProgress) * -40 + exitProgress * 40;
-  const opacity = isMobile ? 1 : Math.min(enterProgress, 1 - exitProgress);
-
-  const optionDetails = {
-    leak: {
-      callerLabel: 'Leak after hours',
-      callerSay: 'We have water dripping through the ceiling from the storm.',
-      callerName: 'Tom Murphy',
-      callerJob: 'Emergency roof leak repair',
-      isUrgent: true,
-      tag: 'Marked for call back (Urgent)',
-    },
-    quote: {
-      callerLabel: 'Quote request',
-      callerSay: 'Looking for an estimate to re-slate an extension.',
-      callerName: 'Sarah Higgins',
-      callerJob: 'Extension slate re-roofing',
-      isUrgent: false,
-      tag: 'Quote requested',
-    },
-    pricing: {
-      callerLabel: 'Question about pricing',
-      callerSay: 'Just wondering how your call-out charges or estimates work.',
-      callerName: 'Michael Conneely',
-      callerJob: 'Pricing & call-out inquiry',
-      isUrgent: false,
-      tag: 'Pricing inquiry',
-    },
-  };
-
-  const handleSelectOption = (opt: CallerOption) => {
-    setSelectedOption(opt);
-    if (!hasInteracted) {
-      setHasInteracted(true);
-      if (onInteract) onInteract();
-    }
-  };
-
-  const handleReplay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setReplayKey((k) => k + 1);
-  };
-
-  const currentOption = optionDetails[selectedOption];
+  const ringProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.20));
+  const dialogProgress = Math.min(1, Math.max(0, (progress - 0.25) / 0.40));
+  const inboxProgress = Math.min(1, Math.max(0, (progress - 0.55) / 0.25));
+  const followUpProgress = Math.min(1, Math.max(0, (progress - 0.75) / 0.15));
 
   return (
-    <div
-      key={replayKey}
-      style={{
-        transform: `translateX(${xOffset}px)`,
-        opacity,
-        transition: 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease-out',
-      }}
-      className="w-full max-w-4xl mx-auto flex flex-col gap-4 select-none"
-    >
-      {/* Top Banner with Option Chips & Replay */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-white/70">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold">
-            <Moon className="w-3.5 h-3.5" />
-            <span>After-Hours System</span>
-          </span>
-          {hasVoice && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#E3B896]/20 text-[#E3B896] border border-[#E3B896]/30 text-[11px] font-medium">
-              {voiceAgentTag}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {!hasInteracted && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E3B896]/20 border border-[#E3B896]/40 text-[#E3B896] text-[11px] font-medium animate-pulse">
-              <Sparkles className="w-3 h-3" />
-              <span>Tap a scenario to test</span>
-            </span>
-          )}
-
-          <button
-            type="button"
-            onClick={handleReplay}
-            aria-label="Replay call demo"
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 text-[11px] transition-colors cursor-pointer"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Replay</span>
-          </button>
-        </div>
+    <div className="relative w-full h-full flex flex-col items-center justify-between overflow-hidden select-none">
+      <div className="absolute top-2 right-4 text-[10px] uppercase tracking-wider text-white/50 px-2 py-0.5 rounded bg-black/20 border border-white/10 z-20">
+        Illustrative example
       </div>
 
-      {/* Scenario Chooser Chips */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-xs text-white/60 mr-1">Choose caller need:</span>
-        {(['leak', 'quote', 'pricing'] as CallerOption[]).map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => handleSelectOption(opt)}
-            className={`min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-              selectedOption === opt
-                ? 'bg-[#E3B896] text-[#0F2A35] border-[#E3B896] shadow-md scale-105'
-                : 'bg-[#18313D] text-white/80 border-white/15 hover:border-white/30'
-            }`}
-          >
-            {optionDetails[opt].callerLabel}
-          </button>
-        ))}
-      </div>
-
-      {/* Main Conversation & Inbox Split Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
-        {/* Left Side: Subtitled Conversation Canvas */}
-        <div className="md:col-span-7 bg-[#13242C] rounded-2xl border border-white/10 p-5 flex flex-col justify-between gap-4 shadow-xl">
-          <div>
-            <div className="flex items-center justify-between pb-2 border-b border-white/10 text-xs text-white/70">
-              <span className="font-semibold text-white/90">After-Hours Subtitled Call</span>
-              <div className="flex items-center gap-1.5 font-mono text-[11px] text-white/50">
-                <Clock className="w-3 h-3 text-[#E3B896]" />
-                <span>9:15 PM · Evening</span>
-              </div>
-            </div>
-
-            {hasVoice ? (
-              <div className="mt-3 flex flex-col gap-2.5">
-                {/* Assistant Introduction with Waveform */}
-                <div className="bg-[#18313D] rounded-xl p-3 border border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[#E3B896] text-[#0F2A35] flex items-center justify-center font-bold">
-                      <Bot className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-white block">AI Phone Assistant</span>
-                      <span className="text-[10px] text-emerald-300">Live conversation (No audio)</span>
-                    </div>
-                  </div>
-                  {/* Subtle waveform animation */}
-                  <div className="flex items-center gap-1 h-5">
-                    {[8, 18, 12, 22, 10, 16, 8, 20].map((h, i) => (
-                      <span
-                        key={i}
-                        style={{ height: `${h}px` }}
-                        className="w-1 bg-[#E3B896] rounded-full animate-pulse"
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Subtitle 1: Assistant statement */}
-                <div className="bg-white/[0.04] p-3 rounded-xl border border-white/10 text-xs animate-in fade-in">
-                  <strong className="text-[#E3B896] block text-[11px] mb-0.5">
-                    AI Assistant:
-                  </strong>
-                  <p className="text-white/90 italic">
-                    "Hi, I'm an AI assistant for Sample Roofing Co. The team is off duty right now. Could I take your name, the job you need, and your postcode?"
-                  </p>
-                </div>
-
-                {/* Subtitle 2: Caller response based on selected chip */}
-                <div className="bg-white/[0.04] p-3 rounded-xl border border-white/10 text-xs ml-4 animate-in fade-in">
-                  <strong className="text-white/60 block text-[11px] mb-0.5">
-                    Caller ({currentOption.callerName}):
-                  </strong>
-                  <p className="text-white/90">
-                    "{currentOption.callerSay} Postcode H91."
-                  </p>
-                </div>
-              </div>
-            ) : hasTextBack ? (
-              <div className="mt-3 flex flex-col gap-2.5">
-                <div className="bg-[#18313D] p-3 rounded-xl border border-white/10 text-xs flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <PhoneCall className="w-4 h-4 text-rose-400" />
-                    <span className="text-white font-medium">Missed call at 9:15 PM</span>
-                  </div>
-                  <span className="text-white/50 text-[11px]">{currentOption.callerName}</span>
-                </div>
-                <div className="bg-[#1A3745] p-3 rounded-xl border border-[#E3B896]/30 text-xs">
-                  <span className="text-[#E3B896] font-bold block text-[11px] mb-0.5">
-                    Automated SMS Response:
-                  </span>
-                  <p className="text-white/90">
-                    "Hi {currentOption.callerName}, saw you called! The team is off duty right now. Reply with your job details and postcode and we'll reply first thing in the morning."
-                  </p>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="text-[11px] text-white/50 border-t border-white/10 pt-2">
-            Transparent disclosure · AI assistants introduce themselves with complete honesty
-          </div>
-        </div>
-
-        {/* Right Side: Live Enquiry Inbox building up */}
-        <div className="md:col-span-5 bg-[#172D38] rounded-2xl border border-white/10 p-5 flex flex-col justify-between shadow-xl">
-          <div>
-            <div className="flex items-center justify-between pb-2 border-b border-white/10 text-xs mb-3">
-              <span className="font-semibold text-white/80 flex items-center gap-1.5">
-                <Inbox className="w-4 h-4 text-[#E3B896]" />
-                <span>Enquiry Inbox</span>
+      <div className="relative w-full max-w-5xl mx-auto flex-1 flex flex-col md:flex-row items-center justify-center gap-6 px-4 py-2">
+        {/* Left: Caller Phone UI */}
+        <div className="w-full md:w-80 flex flex-col gap-3">
+          <div className="bg-[#101C2E] border border-white/15 rounded-3xl p-4 shadow-2xl relative overflow-hidden">
+            {/* Clock header */}
+            <div className="flex items-center justify-between text-xs text-white/60 pb-3 border-b border-white/10">
+              <span className="flex items-center gap-1 font-mono text-white/80">
+                <Clock className="w-3.5 h-3.5 text-[#2DD4BF]" /> 9:42 PM
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono">
-                Live Log
+              <span className="flex items-center gap-1 text-[10px] text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full">
+                <Moon className="w-3 h-3" /> After Hours
               </span>
             </div>
 
-            {/* Live enquiry card built from the caller choice */}
-            <div className="bg-[#10222A] rounded-xl p-3.5 border border-white/10 flex flex-col gap-2 shadow-md animate-in slide-in-from-left duration-300">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="text-sm font-bold text-white">{currentOption.callerName}</h4>
-                  <span className="text-xs text-[#E3B896]">{currentOption.callerJob}</span>
-                </div>
-                {currentOption.isUrgent ? (
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30">
-                    Urgent
-                  </span>
-                ) : (
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/10 text-white/60">
-                    H91 Area
-                  </span>
+            {/* Calling animation */}
+            <div className="my-4 flex flex-col items-center text-center">
+              <div className="relative">
+                {ringProgress < 0.8 && (
+                  <div className="absolute -inset-2 rounded-full bg-[#F4B860] opacity-40 animate-ping" />
                 )}
+                <div className="w-14 h-14 rounded-full bg-[#F4B860] text-[#0A1220] flex items-center justify-center shadow-lg">
+                  <PhoneCall className="w-6 h-6 animate-bounce" />
+                </div>
               </div>
+              <p className="font-bold text-sm text-white mt-2">Incoming Call</p>
+              <p className="text-[11px] text-white/60">Homeowner in {sampleTown}</p>
+            </div>
 
-              <div className="text-xs text-white/70 space-y-1 bg-white/[0.02] p-2 rounded border border-white/5">
-                <div><strong>Phone:</strong> 087 123 4567</div>
-                <div><strong>Status:</strong> {currentOption.tag}</div>
+            {/* Conversation Flow or Missed Call Text-back */}
+            {hasVoice ? (
+              <div className="space-y-2 mt-2">
+                {/* Voice waveform */}
+                <div className="flex items-center justify-center gap-1 h-6">
+                  {[4, 12, 22, 10, 18, 24, 14, 8, 20, 10].map((h, i) => (
+                    <span
+                      key={i}
+                      className="w-1 bg-[#2DD4BF] rounded-full transition-all duration-200"
+                      style={{
+                        height: dialogProgress > 0.1 ? `${h}px` : '4px',
+                        opacity: dialogProgress > 0.1 ? 0.9 : 0.3,
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Subtitle Dialogue */}
+                <div className="space-y-1.5 text-[10.5px]">
+                  {dialogProgress > 0.2 && (
+                    <div className="p-2 rounded-xl bg-white/10 text-white/90">
+                      <p className="text-[9px] text-[#2DD4BF] font-bold">AI Assistant ({voiceAgentTag})</p>
+                      <p>"Hello! This is the AI assistant for Sample Roofing. How can I help you tonight?"</p>
+                    </div>
+                  )}
+                  {dialogProgress > 0.5 && (
+                    <div className="p-2 rounded-xl bg-[#2DD4BF]/15 border border-[#2DD4BF]/30 text-white">
+                      <p className="text-[9px] text-white/60 font-bold">Caller (Tom)</p>
+                      <p>"Water is dripping through our kitchen ceiling from the storm."</p>
+                    </div>
+                  )}
+                  {dialogProgress > 0.8 && (
+                    <div className="p-2 rounded-xl bg-white/10 text-white/90">
+                      <p className="text-[9px] text-[#2DD4BF] font-bold">AI Assistant</p>
+                      <p>"I've logged this as an urgent repair for the team at 8 AM. May I take your phone and postcode?"</p>
+                    </div>
+                  )}
+                </div>
               </div>
+            ) : (
+              /* Text-only Auto Reply */
+              <div className="space-y-2 mt-2 text-[11px]">
+                <div className="p-2 rounded-xl bg-white/10 text-white/80">
+                  <p className="text-[9px] text-[#2DD4BF] font-bold">Instant SMS Triggered</p>
+                  <p>"Hi, we missed your call. We're on jobs right now. How can we help?"</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
-              <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                <span className="text-[11px] text-white/60">Automated Follow-up:</span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-semibold border border-emerald-500/30">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>Follow-up sent</span>
-                </span>
+        {/* Right: Live Enquiry Inbox & Auto Follow-up */}
+        <div className="w-full md:w-96 flex flex-col gap-3">
+          {/* Live Inbox Card */}
+          <div
+            style={{
+              opacity: inboxProgress,
+              transform: `translateY(${(1 - inboxProgress) * 16}px)`,
+            }}
+            className="bg-[#0C1726] border-2 border-[#2DD4BF]/60 rounded-3xl p-4 shadow-2xl transition-all duration-300"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Inbox className="w-4 h-4 text-[#2DD4BF]" />
+                <span className="text-xs font-bold text-white">Live Enquiry Inbox</span>
+              </div>
+              <span className="text-[9px] bg-red-500/20 text-red-300 border border-red-500/40 px-2 py-0.5 rounded-full font-bold">
+                Marked for call back (Urgent)
+              </span>
+            </div>
+
+            <div className="mt-3 space-y-2 text-xs text-white/90">
+              <div>
+                <span className="text-[10px] text-white/50 block">Caller</span>
+                <span className="font-semibold text-white">Tom Murphy</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-white/50 block">Scope of work</span>
+                <span className="text-[#2DD4BF] font-medium">Emergency roof storm leak</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-white/50 block">Location</span>
+                <span className="text-white/80">{sampleTown} (H91...)</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-white/50 block">Time Recorded</span>
+                <span className="text-white/60 text-[11px]">Tonight at 9:43 PM</span>
               </div>
             </div>
           </div>
 
-          <p className="text-xs text-white/65 mt-4 leading-relaxed border-t border-white/10 pt-2.5">
-            Cause &amp; effect: Enquiries are logged and acknowledged immediately, ensuring customers don't call three other competitors while you sleep.
-          </p>
+          {/* Follow-up Sent Chip */}
+          {followUpProgress > 0 && (
+            <div
+              style={{
+                opacity: followUpProgress,
+                transform: `translateX(${(1 - followUpProgress) * 15}px)`,
+              }}
+              className="bg-emerald-950/60 border border-emerald-500/50 rounded-2xl p-3 flex items-center justify-between text-xs text-emerald-200 shadow-lg transition-all duration-300"
+            >
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Confirmation SMS dispatched to caller</span>
+              </div>
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">
+                Follow-up sent
+              </span>
+            </div>
+          )}
+
+          {/* Feature Tag */}
+          <div className="text-[10px] text-white/40 text-center">
+            {voiceAgentTag} · All messages logged directly into your private CRM / email
+          </div>
         </div>
       </div>
     </div>
