@@ -3,7 +3,15 @@ import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'motion/
 import { ArrowRight, Menu, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Logo from './Logo';
-import { NAV_LINKS, CTA } from '../content';
+import { CTA } from '../content';
+import { CONFIG } from '../config';
+
+const NAV_LINKS = [
+  { label: 'How it works', href: '#how-it-works' },
+  { label: 'Work', href: '#designs' },
+  { label: 'Pricing', href: '#pricing' },
+  { label: 'FAQ', href: '#faq' },
+];
 
 interface NavbarProps {
   onOpenAudit: () => void;
@@ -69,6 +77,21 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
     }
   };
 
+  const handleCtaClick = () => {
+    if (CONFIG.bookingUrl && CONFIG.bookingUrl.startsWith('http')) {
+      window.location.href = CONFIG.bookingUrl;
+    } else if (CONFIG.bookingUrl && CONFIG.bookingUrl.startsWith('#')) {
+      const el = document.querySelector(CONFIG.bookingUrl);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        onOpenAudit();
+      }
+    } else {
+      onOpenAudit();
+    }
+  };
+
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setMobileMenuOpen(false);
@@ -128,7 +151,7 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onOpenAudit}
+              onClick={handleCtaClick}
               className="group relative inline-flex items-center gap-2 bg-[#0F2A35] text-white text-[14px] font-medium h-[42px] sm:h-[48px] px-4 sm:px-5 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C] focus-visible:ring-offset-2 cursor-pointer"
             >
               <span>{CTA.label}</span>
@@ -178,7 +201,7 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  onOpenAudit();
+                  handleCtaClick();
                 }}
                 className="w-full flex items-center justify-center gap-2 bg-[#0F2A35] text-white font-medium h-[48px] rounded-full shadow-md cursor-pointer"
               >

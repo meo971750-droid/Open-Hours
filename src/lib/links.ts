@@ -13,7 +13,6 @@ export const SECTION_LOCATIONS: Record<string, SectionLocation> = {
   pricing: { path: '/packages' },
   included: { path: '/packages' },
   'why-open-hours': { path: '/packages' },
-  compare: { path: '/packages' },
   faq: { path: '/packages' },
   'faq-short': { path: '/' },
   reviews: { path: '/' },

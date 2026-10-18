@@ -47,6 +47,17 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
     };
   }, []);
 
+  // Load Vimeo player script
+  useEffect(() => {
+    const scriptSrc = 'https://player.vimeo.com/api/player.js';
+    if (!document.querySelector(`script[src="${scriptSrc}"]`)) {
+      const script = document.createElement('script');
+      script.src = scriptSrc;
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
   // Check if captions file exists
   useEffect(() => {
     if (VIDEO_REVIEW.captions) {
@@ -171,7 +182,7 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
                 whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
                 transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="relative aspect-[4/5] w-full rounded-[28px] overflow-hidden bg-[#0F2A35] shadow-[0_16px_36px_rgba(15,42,53,0.12)] border border-[rgba(15,42,53,0.08)] transition-all duration-200 flex items-center justify-center text-white"
+                className="relative aspect-[4/5] w-full rounded-[28px] overflow-hidden bg-[#0F2A35] shadow-[0_16px_36px_rgba(15,42,53,0.12)] border border-[rgba(15,42,53,0.08)] transition-all duration-200"
               >
                 {/* Hidden File Input for video selection in dev mode */}
                 {import.meta.env.DEV && (
@@ -185,71 +196,17 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
                   />
                 )}
 
-                {hasError ? (
-                  <div className="flex flex-col items-center justify-center p-6 text-center text-white/80 gap-3">
-                    <Video className="w-10 h-10 text-[#E3B896]/70 stroke-[1.5]" />
-                    <p className="text-[17px] font-medium text-white">Video coming soon</p>
-                    <p className="text-[13px] text-white/60 max-w-[240px]">
-                      The video file will appear here as soon as it is published.
-                    </p>
-                  </div>
-                ) : (
+                {isCustomVideo ? (
                   <>
                     <video
                       ref={videoRef}
                       key={videoSrc}
                       src={videoSrc}
-                      poster={VIDEO_REVIEW.poster}
-                      preload="metadata"
+                      controls
                       playsInline
-                      controls={isPlaying}
-                      onEnded={handleVideoEnded}
-                      onError={() => setHasError(true)}
-                      aria-label={`Video review about working with ${FOUNDER.name}`}
                       className="w-full h-full object-cover"
-                    >
-                      {captionsExist && (
-                        <track
-                          kind="captions"
-                          src={VIDEO_REVIEW.captions}
-                          srcLang="en"
-                          label="English captions"
-                          default
-                        />
-                      )}
-                    </video>
-
-                    {/* Centred round play button on the poster if not playing */}
-                    {!isPlaying && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
-                        <motion.button
-                          type="button"
-                          onClick={handlePlayClick}
-                          aria-label={`Play video review about working with ${FOUNDER.name}`}
-                          animate={
-                            shouldReduceMotion
-                              ? {}
-                              : {
-                                  boxShadow: [
-                                    '0 0 0 0px rgba(255,255,255,0.4)',
-                                    '0 0 0 16px rgba(255,255,255,0)',
-                                  ],
-                                }
-                          }
-                          transition={{
-                            duration: 2.2,
-                            repeat: Infinity,
-                            ease: 'easeOut',
-                          }}
-                          className="w-[72px] h-[72px] rounded-full bg-white/90 hover:bg-white text-[#0F2A35] flex items-center justify-center shadow-2xl backdrop-blur-md transition-transform hover:scale-105 active:scale-95 cursor-pointer z-10"
-                        >
-                          <Play className="w-8 h-8 fill-[#0F2A35] ml-1 text-[#0F2A35]" />
-                        </motion.button>
-                      </div>
-                    )}
-
-                    {/* Custom video badge / reset control (dev only) */}
-                    {import.meta.env.DEV && isCustomVideo && !isPlaying && (
+                    />
+                    {import.meta.env.DEV && (
                       <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-auto">
                         <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-[11px] font-medium text-white/90">
                           Custom video loaded
@@ -265,6 +222,14 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
                       </div>
                     )}
                   </>
+                ) : (
+                  <iframe
+                    src="https://player.vimeo.com/video/1236873609?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479"
+                    className="absolute inset-0 w-full h-full border-0"
+                    allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    title="Another happy client #freewebsite"
+                  />
                 )}
               </motion.div>
 

@@ -1,16 +1,14 @@
-import React, { useState, useRef } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import {
   ChevronsRight,
   ArrowRight,
-  Check,
-  Zap,
-  Clock,
-  Lock,
+  Star,
 } from 'lucide-react';
 import SideTicker, { HorizontalTicker } from '../components/SideTicker';
 import LiveMockup from '../components/LiveMockup';
-import { HERO_CONTENT, HERO_TICKERS, SAMPLE_DASHBOARD, DELIVERY } from '../content';
+import { HERO_CONTENT, HERO_TICKERS } from '../content';
+import { config } from '../config';
 
 interface HeroProps {
   onOpenPrivacy?: () => void;
@@ -22,8 +20,27 @@ export default function Hero({ onOpenPrivacy, onOpenAudit }: HeroProps) {
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [rowSliding, setRowSliding] = useState(false);
+  const [hasReviewsSection, setHasReviewsSection] = useState(true);
+  const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
 
+  const shouldReduceMotion = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = document.getElementById('reviews');
+    if (!el) {
+      setHasReviewsSection(false);
+    }
+  }, []);
+
+  const handleScrollToReviews = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const el = document.getElementById('reviews');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+      window.history.pushState(null, '', '#reviews');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +71,10 @@ export default function Hero({ onOpenPrivacy, onOpenAudit }: HeroProps) {
     HERO_TICKERS.left.items[3],
     HERO_TICKERS.right.items[3],
   ];
+
+  const validAvatars = (config.heroProof?.avatars || [])
+    .filter((a, idx) => a.consent && (a.src || a.localSrc) && !failedImages[idx])
+    .slice(0, 5);
 
   return (
     <section
@@ -199,23 +220,102 @@ export default function Hero({ onOpenPrivacy, onOpenAudit }: HeroProps) {
                 {errorMessage && (
                   <p className="mt-2 text-xs text-[#D9444A] font-medium text-center">{errorMessage}</p>
                 )}
-
-                {/* Centred row of three small chips: 20px below consent line, wraps on mobile */}
-                <div className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
-                  <div className="inline-flex items-center gap-1.5 px-[14px] py-[8px] rounded-[999px] bg-[#DCE9EC] text-[#1E4A5C] text-[14px] font-semibold">
-                    <Zap className="w-4 h-4 text-[#1E4A5C] shrink-0" />
-                    <span>Concept in about {DELIVERY.conceptWorkingDays} working days</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 px-[14px] py-[8px] rounded-[999px] bg-[#DCE9EC] text-[#1E4A5C] text-[14px] font-semibold">
-                    <Clock className="w-4 h-4 text-[#1E4A5C] shrink-0" />
-                    <span>Live in about {DELIVERY.liveWorkingDays} working days</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 px-[14px] py-[8px] rounded-[999px] bg-[#DCE9EC] text-[#1E4A5C] text-[14px] font-semibold">
-                    <Lock className="w-4 h-4 text-[#1E4A5C] shrink-0" />
-                    <span>Fixed price</span>
-                  </div>
-                </div>
               </form>
+
+              {/* CHANGE 2: Real-Client Proof Row directly under the email form and consent checkbox */}
+              {validAvatars.length > 0 && (
+                <motion.div
+                  initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 max-w-full"
+                >
+                  {/* Overlapping Avatars */}
+                  <div className="flex items-center justify-center pl-2.5 shrink-0">
+                    {validAvatars.map((avatar, idx) => {
+                      const hasNameOrBiz = Boolean(avatar.name?.trim() || avatar.business?.trim());
+                      const altText = hasNameOrBiz
+                        ? [avatar.name?.trim(), avatar.business?.trim()].filter(Boolean).join(', ')
+                        : 'Open Hours client';
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`relative group ${idx === 0 ? 'ml-0' : '-ml-[10px]'} hover:z-20 focus-within:z-30`}
+                          style={{ zIndex: 10 - idx }}
+                        >
+                          <img
+                            src={avatar.src || avatar.localSrc}
+                            alt={altText}
+                            width={42}
+                            height={42}
+                            loading="lazy"
+                            tabIndex={hasNameOrBiz ? 0 : undefined}
+                            onError={(e) => {
+                              if (avatar.localSrc && e.currentTarget.src !== window.location.origin + avatar.localSrc && e.currentTarget.src !== avatar.localSrc) {
+                                e.currentTarget.src = avatar.localSrc;
+                              } else {
+                                setFailedImages((prev) => ({ ...prev, [idx]: true }));
+                              }
+                            }}
+                            className="w-[42px] h-[42px] rounded-full object-cover ring-2 ring-white shadow-sm shrink-0 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C]"
+                            style={{ objectPosition: 'center top' }}
+                          />
+
+                          {hasNameOrBiz && (
+                            <div
+                              role="tooltip"
+                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-[#0F2A35] text-white text-[11px] font-medium rounded-md shadow-md whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-40"
+                            >
+                              <span>
+                                {[avatar.name?.trim(), avatar.business?.trim()].filter(Boolean).join(' · ')}
+                              </span>
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-[#0F2A35]" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Proof text */}
+                  <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                    {config.heroProof.showStars && config.heroProof.ratingSourceUrl && (
+                      <a
+                        href={config.heroProof.ratingSourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 mb-1 text-amber-500 hover:text-amber-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1E4A5C] rounded-sm text-xs font-medium"
+                        aria-label={config.heroProof.ratingLabel || '5 out of 5 stars'}
+                      >
+                        <div className="flex items-center gap-0.5" aria-hidden="true">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          ))}
+                        </div>
+                        {config.heroProof.ratingLabel && (
+                          <span className="text-[#5E6F77] text-[11px] ml-1">{config.heroProof.ratingLabel}</span>
+                        )}
+                      </a>
+                    )}
+
+                    <p className="text-[14px] sm:text-[15px] font-medium text-[#0F2A35] leading-snug">
+                      {config.heroProof.line}
+                    </p>
+
+                    {hasReviewsSection && config.heroProof.linkText && (
+                      <a
+                        href="#reviews"
+                        onClick={handleScrollToReviews}
+                        className="inline-flex items-center gap-1 mt-0.5 text-[12px] sm:text-[13px] text-[#5E6F77] hover:text-[#0F2A35] transition-colors group/link focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1E4A5C] rounded-sm"
+                      >
+                        <span>{config.heroProof.linkText}</span>
+                        <ArrowRight className="w-3.5 h-3.5 transition-transform duration-150 group-hover/link:translate-x-0.5" />
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              )}
           </motion.div>
         </div>
 
@@ -302,22 +402,12 @@ export default function Hero({ onOpenPrivacy, onOpenAudit }: HeroProps) {
         >
           {/* Laptop Shell */}
           <div className="bg-[#18262E] p-2.5 sm:p-4 rounded-t-[24px] sm:rounded-t-[32px] shadow-[0_25px_60px_-15px_rgba(15,42,53,0.35)] border border-[rgba(255,255,255,0.1)]">
-            {/* Top Bar with Camera & SAMPLE DATA Tag */}
+            {/* Top Bar with Camera & Window Controls */}
             <div className="flex items-center justify-between px-3 py-1.5 sm:py-2 mb-2 border-b border-white/5">
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#D9444A]/80" />
                 <div className="w-2.5 h-2.5 rounded-full bg-[#E8943A]/80" />
                 <div className="w-2.5 h-2.5 rounded-full bg-[#2E9E6B]/80" />
-              </div>
-
-              {/* Business name shown & always-visible SAMPLE DATA tag */}
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] sm:text-xs text-white/60 font-medium">
-                  {SAMPLE_DASHBOARD.businessName}
-                </span>
-                <span className="bg-[#E3B896]/20 text-[#E3B896] text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  SAMPLE DATA
-                </span>
               </div>
               <div className="w-3 h-3 rounded-full bg-white/10" />
             </div>

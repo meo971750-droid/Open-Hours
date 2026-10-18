@@ -4,7 +4,6 @@ import PackageGuide from '../sections/PackageGuide';
 import Pricing from '../sections/Pricing';
 import WhatYouGet from '../sections/WhatYouGet';
 import WhyOpenHours from '../sections/WhyOpenHours';
-import Compare from '../sections/Compare';
 import FAQ from '../sections/FAQ';
 import FinalCTA from '../sections/FinalCTA';
 
@@ -34,10 +33,7 @@ export default function PackagesPage({ onOpenAudit }: PackagesPageProps) {
       {/* 5. Bento (id="why-open-hours") */}
       <WhyOpenHours />
 
-      {/* 6. Comparison (id="compare") */}
-      <Compare onOpenAudit={onOpenAudit} />
-
-      {/* 7. Full FAQ (id="faq") */}
+      {/* 6. Full FAQ (id="faq") */}
       <FAQ />
 
       {/* 8. Final CTA */}

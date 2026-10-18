@@ -210,6 +210,7 @@ export default function SenjaEmbed({ onOpenPrivacy }: SenjaEmbedProps) {
                 data-id={SENJA.widgetId}
                 data-mode="shadow"
                 data-lazyload="false"
+                data-track="false"
                 style={{ display: 'block', width: '100%' }}
               />
             </div>

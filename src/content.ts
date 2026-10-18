@@ -60,6 +60,35 @@ export const CONTACT = {
   email: "[CONTACT_EMAIL]",
 };
 
+export const CTA_CONFIG = {
+  email: CONTACT.email,
+  whatsapp: CONTACT.whatsappNumber,
+  bookingUrl: "",
+  formEndpoint: FORM_ENDPOINT,
+  responseTime: "24 hours",
+  privacyPolicyUrl: "#privacy",
+  workingModelLine: "Direct with the founder. No account managers.",
+  trades: [
+    "Roofers",
+    "Kitchen fitters",
+    "Extension builders",
+    "Windows & doors",
+    "Landscapers",
+    "Heating installers",
+    "Electricians",
+    "Plumbers",
+  ] as string[],
+  cta: {
+    badge: "Get in touch",
+    headline: "Ready to talk about your *1-page website*?",
+    points: [
+      "Concept ready in about 3 working days",
+      "Fixed price agreed before you start",
+      "No pushy sales pitch",
+    ],
+  },
+};
+
 export function whatsappLink(message: string = "Hi Open Hours, I'd like a 1-page website for my business: "): string | null {
   const digitsOnly = CONTACT.whatsappNumber.replace(/\D/g, "");
   if (!digitsOnly || digitsOnly.length < 5) {
@@ -96,7 +125,7 @@ export const NAV_LINKS = [
 ];
 
 export const HERO_CONTENT = {
-  badge: "Your 1-page website, at no cost",
+  badge: "Your Go-To Growth Partner",
   headline: "The website that answers while you're on the job",
   subtext:
     "Your website replies to quote requests, texts back missed calls and tracks every enquiry, so nothing slips while you're on the job.",
@@ -718,6 +747,7 @@ export const CONCEPT_STUDIES: ConceptStudy[] = [
 ];
 
 export const VIDEO_REVIEW = {
+  vimeoEmbedUrl: "https://player.vimeo.com/video/1236873609?badge=0&autopause=0&player_id=0&app_id=58479",
   src: "/zuhayer-review.mp4",
   poster: "/zuhayer-review-poster.jpg",
   captions: "/zuhayer-review.vtt", // optional; used only if the file exists
@@ -804,5 +834,10 @@ export const PAGES = [
   { id: "standard", pill: "Standard", h1: "Standard Website", sub: "Complete trade site with service areas." },
   { id: "growth", pill: "Growth", h1: "Growth Website", sub: "Full site for high-volume trade contractors." },
 ];
+
+import { config } from './config';
+export { config, CONFIG, type HeroProofAvatar, type HeroProofConfig } from './config';
+export const heroProof = config.heroProof;
+
 
 

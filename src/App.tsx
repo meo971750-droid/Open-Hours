@@ -11,7 +11,6 @@ import SampleAudit from './sections/SampleAudit';
 import WhatYouGet from './sections/WhatYouGet';
 import BuiltFast from './sections/BuiltFast';
 import WhyOpenHours from './sections/WhyOpenHours';
-import Compare from './sections/Compare';
 import Pricing from './sections/Pricing';
 import InteractiveFeatures from './sections/InteractiveFeatures';
 import SenjaEmbed from './components/SenjaEmbed';
@@ -69,7 +68,6 @@ export default function App() {
   // 9 "Always on, and yours to keep" bento (id="why-open-hours")
   // 10 "Interactive features" (id="interactive-features")
   // 11 Pricing (id="pricing")
-  // 11 "Questions to ask any provider" (id="compare")
   // 12 Reviews (id="reviews")
   // 13 About ("A small studio, openly based in Bangladesh") (id="about")
   // 14 FAQ (id="faq")
@@ -140,10 +138,6 @@ export default function App() {
     {
       id: 'sample-audit',
       component: <SampleAudit onOpenAudit={() => handleOpenAudit()} />,
-    },
-    {
-      id: 'compare',
-      component: <Compare onOpenAudit={() => handleOpenAudit()} />,
     },
     {
       id: 'reviews',
