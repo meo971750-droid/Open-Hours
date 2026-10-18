@@ -1,6 +1,5 @@
 import React from 'react';
 import PageHeader from '../components/PageHeader';
-import HowItWorks from '../sections/HowItWorks';
 import OurProcess from '../sections/OurProcess';
 import SampleAudit from '../sections/SampleAudit';
 import NeedFromYou from '../sections/NeedFromYou';
@@ -17,13 +16,10 @@ export default function HowItWorksPage({ onOpenAudit }: HowItWorksPageProps) {
       <PageHeader
         pill="How it works"
         h1="How we build your trade website"
-        sub="From first look to live site, step by step."
+        sub="The complete process from first consultation to live launch."
       />
 
-      {/* 2. The slim timeline (id="how-it-works") */}
-      <HowItWorks />
-
-      {/* 3. "The Way We Deliver" pinned Process section (id="process") */}
+      {/* 2. "The Way We Deliver" pinned Process section (id="process") */}
       <OurProcess />
 
       {/* 4. Sample audit section (id="sample-audit") */}

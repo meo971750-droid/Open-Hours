@@ -3,7 +3,6 @@ import Hero from '../sections/Hero';
 import DesignsSlider from '../sections/DesignsSlider';
 import WhatItDoes from '../sections/WhatItDoes';
 import PackagesSummary from '../sections/PackagesSummary';
-import HowItWorks from '../sections/HowItWorks';
 import SenjaEmbed from '../components/SenjaEmbed';
 import FAQShort from '../sections/FAQShort';
 import FinalCTA from '../sections/FinalCTA';
@@ -34,9 +33,6 @@ export default function HomePage({ onOpenAudit, onOpenPrivacy }: HomePageProps) 
 
       {/* 4. PackagesSummary (new) */}
       <PackagesSummary />
-
-      {/* 5. Slim "How it works" timeline (id="how-it-works") */}
-      <HowItWorks />
 
       {/* 6. Reviews (Senja, id="reviews") */}
       <SenjaEmbed onOpenPrivacy={onOpenPrivacy} />

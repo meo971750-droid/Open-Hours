@@ -5,7 +5,6 @@ import DesignsSlider from './sections/DesignsSlider';
 import WhatItDoes from './sections/WhatItDoes';
 import ConceptStudies from './sections/ConceptStudies';
 import VideoReviewSection from './sections/VideoReviewSection';
-import HowItWorks from './sections/HowItWorks';
 import OurProcess from './sections/OurProcess';
 import SampleAudit from './sections/SampleAudit';
 import WhatYouGet from './sections/WhatYouGet';
@@ -21,6 +20,7 @@ import Footer from './sections/Footer';
 import CookieBanner from './components/CookieBanner';
 import AuditModal from './components/AuditModal';
 import StickyBottomBar from './components/StickyBottomBar';
+import BackToTop from './components/BackToTop';
 import LegalPage from './pages/LegalPage';
 import { TradeName } from './content';
 
@@ -102,10 +102,6 @@ export default function App() {
     {
       id: 'video-review',
       component: <VideoReviewSection onOpenAudit={() => handleOpenAudit()} />,
-    },
-    {
-      id: 'how-it-works',
-      component: <HowItWorks />,
     },
     {
       id: 'process',
@@ -207,6 +203,9 @@ export default function App() {
 
       {/* Cookie Consent Banner */}
       <CookieBanner onOpenCookiesPage={() => handleNavigate('cookies')} />
+
+      {/* Floating Back to Top Button */}
+      <BackToTop />
     </div>
   );
 }

@@ -14,6 +14,8 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
   const shouldReduceMotion = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const vimeoPlayerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [videoSrc, setVideoSrc] = useState<string>(VIDEO_REVIEW.src);
@@ -47,16 +49,45 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
     };
   }, []);
 
-  // Load Vimeo player script
+  // Load Vimeo player script and initialize player
   useEffect(() => {
-    const scriptSrc = 'https://player.vimeo.com/api/player.js';
-    if (!document.querySelector(`script[src="${scriptSrc}"]`)) {
-      const script = document.createElement('script');
-      script.src = scriptSrc;
-      script.async = true;
-      document.body.appendChild(script);
+    let player: any = null;
+
+    const setupPlayer = () => {
+      if ((window as any).Vimeo && iframeRef.current) {
+        try {
+          player = new (window as any).Vimeo.Player(iframeRef.current);
+          vimeoPlayerRef.current = player;
+
+          player.on('play', () => setIsPlaying(true));
+          player.on('pause', () => setIsPlaying(false));
+          player.on('ended', () => setIsPlaying(false));
+        } catch (_) {}
+      }
+    };
+
+    if ((window as any).Vimeo) {
+      setupPlayer();
+    } else {
+      const scriptSrc = 'https://player.vimeo.com/api/player.js';
+      let script = document.querySelector(`script[src="${scriptSrc}"]`) as HTMLScriptElement;
+      if (!script) {
+        script = document.createElement('script');
+        script.src = scriptSrc;
+        script.async = true;
+        document.body.appendChild(script);
+      }
+      script.addEventListener('load', setupPlayer);
     }
-  }, []);
+
+    return () => {
+      if (player) {
+        try {
+          player.unload();
+        } catch (_) {}
+      }
+    };
+  }, [isCustomVideo]);
 
   // Check if captions file exists
   useEffect(() => {
@@ -71,7 +102,7 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
     }
   }, []);
 
-  // IntersectionObserver: Pause and show poster again when section leaves the viewport
+  // IntersectionObserver: Pause when section leaves the viewport
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -79,10 +110,15 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (!entry.isIntersecting && videoRef.current) {
-            videoRef.current.pause();
-            videoRef.current.currentTime = 0;
-            videoRef.current.load(); // Reset to poster
+          if (!entry.isIntersecting) {
+            if (videoRef.current) {
+              videoRef.current.pause();
+              videoRef.current.currentTime = 0;
+              videoRef.current.load();
+            }
+            if (vimeoPlayerRef.current) {
+              vimeoPlayerRef.current.pause().catch(() => {});
+            }
             setIsPlaying(false);
           }
         });
@@ -94,16 +130,45 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
     return () => observer.disconnect();
   }, []);
 
-  const handlePlayClick = () => {
-    if (!videoRef.current) return;
-    videoRef.current
-      .play()
-      .then(() => {
-        setIsPlaying(true);
-      })
-      .catch(() => {
-        setHasError(true);
-      });
+  const playVideo = (unmute = false) => {
+    if (isCustomVideo && videoRef.current) {
+      videoRef.current
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => setHasError(true));
+      return;
+    }
+
+    if (vimeoPlayerRef.current) {
+      if (unmute) {
+        vimeoPlayerRef.current.setMuted(false).catch(() => {});
+      }
+      vimeoPlayerRef.current
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(() => {
+          // If browser requires muted autoplay on hover
+          if (vimeoPlayerRef.current) {
+            vimeoPlayerRef.current.setMuted(true).then(() => {
+              vimeoPlayerRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+            }).catch(() => {});
+          }
+        });
+    } else if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage('{"method":"play"}', '*');
+      setIsPlaying(true);
+    }
+  };
+
+  const handleMouseEnter = () => {
+    playVideo(false);
+  };
+
+  const handlePlayClick = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    playVideo(true);
   };
 
   const handleVideoEnded = () => {
@@ -182,7 +247,8 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
                 whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
                 transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="relative aspect-[4/5] w-full rounded-[28px] overflow-hidden bg-[#0F2A35] shadow-[0_16px_36px_rgba(15,42,53,0.12)] border border-[rgba(15,42,53,0.08)] transition-all duration-200"
+                onMouseEnter={handleMouseEnter}
+                className="group relative aspect-[4/5] w-full rounded-[28px] overflow-hidden bg-[#0F2A35] shadow-[0_16px_36px_rgba(15,42,53,0.12)] border border-[rgba(15,42,53,0.08)] transition-all duration-200 cursor-pointer"
               >
                 {/* Hidden File Input for video selection in dev mode */}
                 {import.meta.env.DEV && (
@@ -204,6 +270,7 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
                       src={videoSrc}
                       controls
                       playsInline
+                      onEnded={handleVideoEnded}
                       className="w-full h-full object-cover"
                     />
                     {import.meta.env.DEV && (
@@ -224,12 +291,45 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
                   </>
                 ) : (
                   <iframe
+                    ref={iframeRef}
                     src="https://player.vimeo.com/video/1236873609?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479"
                     className="absolute inset-0 w-full h-full border-0"
                     allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
                     referrerPolicy="strict-origin-when-cross-origin"
                     title="Another happy client #freewebsite"
                   />
+                )}
+
+                {/* Centered round play button overlay if not playing */}
+                {!isPlaying && (
+                  <div
+                    onClick={handlePlayClick}
+                    className="absolute inset-0 z-20 flex items-center justify-center bg-black/25 backdrop-blur-[1px] cursor-pointer transition-opacity duration-300"
+                  >
+                    <motion.button
+                      type="button"
+                      onClick={handlePlayClick}
+                      aria-label={`Play video review about working with ${FOUNDER.name}`}
+                      animate={
+                        shouldReduceMotion
+                          ? {}
+                          : {
+                              boxShadow: [
+                                '0 0 0 0px rgba(255,255,255,0.4)',
+                                '0 0 0 16px rgba(255,255,255,0)',
+                              ],
+                            }
+                      }
+                      transition={{
+                        duration: 2.2,
+                        repeat: Infinity,
+                        ease: 'easeOut',
+                      }}
+                      className="w-[72px] h-[72px] rounded-full bg-white/95 hover:bg-white text-[#0F2A35] flex items-center justify-center shadow-2xl backdrop-blur-md transition-transform hover:scale-110 active:scale-95 cursor-pointer z-10"
+                    >
+                      <Play className="w-8 h-8 fill-[#0F2A35] ml-1 text-[#0F2A35]" />
+                    </motion.button>
+                  </div>
                 )}
               </motion.div>
 

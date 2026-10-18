@@ -836,8 +836,9 @@ export const PAGES = [
 ];
 
 import { config } from './config';
-export { config, CONFIG, type HeroProofAvatar, type HeroProofConfig } from './config';
+export { config, CONFIG, type HeroProofAvatar, type HeroProofConfig, type WayOfWorkingConfig, type WayOfWorkingScene } from './config';
 export const heroProof = config.heroProof;
+export const wayOfWorking = config.wayOfWorking;
 
 
 

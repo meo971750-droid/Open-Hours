@@ -1,26 +1,22 @@
-import Scene1Search from './Scene1Search';
-import Scene2Apply from './Scene2Apply';
-import Scene3Portal from './Scene3Portal';
-import Scene4Found from './Scene4Found';
-import Scene5SilentSalesman from './Scene5SilentSalesman';
-import Scene6AlwaysOn from './Scene6AlwaysOn';
+import Scene1Searches from './Scene1Searches';
+import Scene2Journey from './Scene2Journey';
+import Scene3Solve, { getActiveFrictionPairs } from './Scene3Solve';
+import Scene4Build from './Scene4Build';
+import Scene5Findable from './Scene5Findable';
+import Scene6Rank from './Scene6Rank';
+import Scene7AlwaysOn from './Scene7AlwaysOn';
+import Scene8Talk from './Scene8Talk';
 
 export {
-  Scene1Search,
-  Scene2Apply,
-  Scene3Portal,
-  Scene4Found,
-  Scene5SilentSalesman,
-  Scene6AlwaysOn,
+  Scene1Searches,
+  Scene2Journey,
+  Scene3Solve,
+  Scene4Build,
+  Scene5Findable,
+  Scene6Rank,
+  Scene7AlwaysOn,
+  Scene8Talk,
+  getActiveFrictionPairs,
 };
-
-export const SCENES = [
-  Scene1Search,
-  Scene2Apply,
-  Scene3Portal,
-  Scene4Found,
-  Scene5SilentSalesman,
-  Scene6AlwaysOn,
-] as const;
 
 export * from './types';
