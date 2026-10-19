@@ -11,6 +11,7 @@ import WhatYouGet from './sections/WhatYouGet';
 import BuiltFast from './sections/BuiltFast';
 import WhyOpenHours from './sections/WhyOpenHours';
 import Pricing from './sections/Pricing';
+import WhoIsThisFor from './sections/WhoIsThisFor';
 import InteractiveFeatures from './sections/InteractiveFeatures';
 import SenjaEmbed from './components/SenjaEmbed';
 import About from './sections/About';
@@ -126,6 +127,10 @@ export default function App() {
           onOpenAudit={(variant = 'feature') => handleOpenAudit(undefined, undefined, variant)}
         />
       ),
+    },
+    {
+      id: 'who-is-this-for',
+      component: <WhoIsThisFor onOpenAudit={() => handleOpenAudit()} />,
     },
     {
       id: 'pricing',

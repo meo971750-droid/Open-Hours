@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useReducedMotion } from 'motion/react';
-import { Play, Pause, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { ChevronDown, ArrowRight } from 'lucide-react';
 import { config } from '../config';
 import {
   Scene1Searches,
@@ -18,12 +18,37 @@ interface OurProcessProps {
   onOpenAudit?: () => void;
 }
 
+interface GlobalStep {
+  globalIndex: number;
+  sceneIndex: number;
+  stepIndex: number;
+  sceneId: string;
+  caption: string;
+  highlight: string;
+  isFirstStepInScene: boolean;
+  isLastStepInScene: boolean;
+}
+
 export default function OurProcess({ onOpenAudit }: OurProcessProps) {
-  const sectionRef = useRef<HTMLElement>(null);
+  const containerRef = useRef<HTMLElement>(null);
+  const stickyRef = useRef<HTMLDivElement>(null);
+  const tablistRef = useRef<HTMLDivElement>(null);
+
   const shouldReduceMotion = useReducedMotion();
   const [isMobile, setIsMobile] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
 
-  // Active Scenes based on feature flags
+  // Responsive check
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile, { passive: true });
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Filter scenes according to feature flags
   const activeScenes = useMemo(() => {
     const features = config.features;
     const canShowAlwaysOn = Boolean(
@@ -63,192 +88,234 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
 
   const totalScenes = activeScenes.length;
 
-  // Autoplay State
-  const [currentSceneIdx, setCurrentSceneIdx] = useState(0);
-  const [sceneProgress, setSceneProgress] = useState(0); // 0 to 1
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isSectionVisible, setIsSectionVisible] = useState(false);
-
-  // Responsive check
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile, { passive: true });
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // IntersectionObserver:
-  // Starts when >= 60% is visible; pauses when < 30% is visible.
-  useEffect(() => {
-    if (shouldReduceMotion) return;
-    const el = sectionRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.intersectionRatio >= 0.6) {
-            setIsSectionVisible(true);
-            setIsPlaying(true);
-          } else if (entry.intersectionRatio < 0.3) {
-            setIsSectionVisible(false);
-            setIsPlaying(false);
-          }
+  // Flatten active scenes into global sequential steps
+  const globalSteps: GlobalStep[] = useMemo(() => {
+    const list: GlobalStep[] = [];
+    activeScenes.forEach((scene, sIdx) => {
+      const steps = scene.steps || [{ caption: '', highlight: '' }];
+      steps.forEach((st, stepIdx) => {
+        list.push({
+          globalIndex: list.length,
+          sceneIndex: sIdx,
+          stepIndex: stepIdx,
+          sceneId: scene.id,
+          caption: st.caption,
+          highlight: st.highlight,
+          isFirstStepInScene: stepIdx === 0,
+          isLastStepInScene: stepIdx === steps.length - 1,
         });
-      },
-      {
-        threshold: [0.3, 0.6],
-      }
-    );
+      });
+    });
+    return list;
+  }, [activeScenes]);
 
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [shouldReduceMotion]);
+  const totalGlobalSteps = globalSteps.length;
 
-  // Tab visibility listener (pause on hidden tab, resume when visible if in view)
+  // Calculate scroll track height & scene scroll ranges
+  const { totalVh, sceneScrollRanges } = useMemo(() => {
+    const pace = config.wayOfWorking.pace;
+    const vhPerStep = isMobile ? (pace.mobileScrollVhPerStep || 20) : (pace.scrollVhPerStep || 25);
+    const sumVh = Math.max(300, totalGlobalSteps * vhPerStep + 100);
+
+    let stepCounter = 0;
+    const ranges = activeScenes.map((s, idx) => {
+      const sceneStepsCount = s.steps?.length || 1;
+      const startStep = stepCounter;
+      stepCounter += sceneStepsCount;
+      const endStep = stepCounter;
+      return {
+        sceneIndex: idx,
+        sceneId: s.id,
+        startFraction: totalGlobalSteps > 0 ? startStep / totalGlobalSteps : 0,
+        endFraction: totalGlobalSteps > 0 ? endStep / totalGlobalSteps : 1,
+        firstGlobalIndex: startStep,
+        lastGlobalIndex: endStep - 1,
+      };
+    });
+
+    return { totalVh: sumVh, sceneScrollRanges: ranges };
+  }, [totalGlobalSteps, activeScenes, isMobile]);
+
+  // Target step decided strictly by scroll position
+  const targetGlobalStepRef = useRef(0);
+
+  // Step player engine state
+  const playerRef = useRef({
+    index: 0,
+    phase: 'animating' as 'animating' | 'holding' | 'scene-transition' | 'rewinding',
+    phaseStartTime: performance.now(),
+  });
+
+  const [playerRenderState, setPlayerRenderState] = useState({
+    globalIndex: 0,
+    stepProgress: 0,
+    isSceneTransitioning: false,
+    isRewinding: false,
+  });
+
+  // Passive scroll listener (never hijacks wheel or touch)
   useEffect(() => {
-    const handleVisibility = () => {
-      if (document.hidden) {
-        setIsPlaying(false);
-      } else if (isSectionVisible) {
-        setIsPlaying(true);
+    const updateScrollTarget = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const scrollableDistance = containerRef.current.offsetHeight - window.innerHeight;
+      if (scrollableDistance <= 0) return;
+
+      const progress = Math.max(0, Math.min(1, -rect.top / scrollableDistance));
+      const targetStep = Math.min(
+        totalGlobalSteps - 1,
+        Math.floor(progress * totalGlobalSteps)
+      );
+      targetGlobalStepRef.current = targetStep;
+
+      if (progress > 0.02 && !hasScrolled) {
+        setHasScrolled(true);
       }
     };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [isSectionVisible]);
 
-  // Durations from config.wayOfWorking.timing
-  const timingConfig = config.wayOfWorking.timing || {
-    s1: 10000,
-    s2: 11000,
-    s3: 10000,
-    s4: 11000,
-    s5: 10000,
-    s6: 13000,
-    s7: 11000,
-    s8: 0,
-    speed: 1,
-    pauseOnHover: false,
-  };
+    window.addEventListener('scroll', updateScrollTarget, { passive: true });
+    updateScrollTarget();
 
-  const getSceneDuration = useCallback(
-    (idx: number) => {
-      const key = `s${idx + 1}` as keyof typeof timingConfig;
-      const raw = (timingConfig[key] as number) || 10000;
-      return raw * (timingConfig.speed || 1);
-    },
-    [timingConfig]
-  );
+    return () => {
+      window.removeEventListener('scroll', updateScrollTarget);
+    };
+  }, [totalGlobalSteps, hasScrolled]);
 
-  // Autoplay Timeline Loop via requestAnimationFrame
+  // Step Player Engine running in requestAnimationFrame
+  // Rules:
+  // - Step animation (~1200ms) + hold (~700ms) = min dwell 1900ms
+  // - Fast scrolling queues steps: plays in order, never skips or jumps ahead
+  // - Scrolling up rewinds: goes back one step at a time with 450ms transition
+  // - Scene transition takes 1000ms
+  // - Reduced motion: steps change instantly
   useEffect(() => {
-    if (!isPlaying || !isSectionVisible || shouldReduceMotion) return;
+    let rafId: number;
+    const pace = config.wayOfWorking.pace;
+    const STEP_ANIM_MS = pace.stepAnimMs || 1200;
+    const STEP_HOLD_MS = pace.stepHoldMs || 700;
+    const REWIND_MS = pace.rewindStepMs || 450;
+    const SCENE_TRANS_MS = pace.sceneTransitionMs || 1000;
 
-    // If on scene 8 (last scene), holds permanently and never loops
-    if (currentSceneIdx >= totalScenes - 1) {
-      setSceneProgress(1);
-      return;
-    }
+    const playerLoop = () => {
+      const now = performance.now();
+      const targetIdx = targetGlobalStepRef.current;
+      const current = playerRef.current;
 
-    const duration = getSceneDuration(currentSceneIdx);
-    let lastTime = performance.now();
-    let animId: number;
-
-    const tick = (now: number) => {
-      const delta = now - lastTime;
-      lastTime = now;
-
-      setSceneProgress((prev) => {
-        const next = prev + delta / duration;
-        if (next >= 1) {
-          // Transition to next scene
-          if (currentSceneIdx < totalScenes - 1) {
-            setCurrentSceneIdx((curr) => curr + 1);
-            return 0;
-          }
-          return 1;
+      if (shouldReduceMotion) {
+        if (current.index !== targetIdx) {
+          current.index = targetIdx;
+          current.phase = 'holding';
+          current.phaseStartTime = now;
+          setPlayerRenderState({
+            globalIndex: targetIdx,
+            stepProgress: 1,
+            isSceneTransitioning: false,
+            isRewinding: false,
+          });
         }
-        return next;
+        rafId = requestAnimationFrame(playerLoop);
+        return;
+      }
+
+      // State machine transitions
+      if (current.phase === 'rewinding') {
+        const elapsed = now - current.phaseStartTime;
+        if (elapsed >= REWIND_MS) {
+          const prevIdx = Math.max(0, current.index - 1);
+          current.index = prevIdx;
+          if (current.index > targetIdx) {
+            current.phase = 'rewinding';
+            current.phaseStartTime = now;
+          } else {
+            current.phase = 'holding';
+            current.phaseStartTime = now;
+          }
+        }
+      } else if (current.phase === 'scene-transition') {
+        const elapsed = now - current.phaseStartTime;
+        if (elapsed >= SCENE_TRANS_MS) {
+          current.index = Math.min(totalGlobalSteps - 1, current.index + 1);
+          current.phase = 'animating';
+          current.phaseStartTime = now;
+        }
+      } else if (current.phase === 'animating') {
+        const elapsed = now - current.phaseStartTime;
+        if (elapsed >= STEP_ANIM_MS) {
+          current.phase = 'holding';
+          current.phaseStartTime = now;
+        }
+      } else if (current.phase === 'holding') {
+        const elapsed = now - current.phaseStartTime;
+        if (targetIdx > current.index) {
+          // Can only advance after hold dwell time completes (~700ms)
+          if (elapsed >= STEP_HOLD_MS) {
+            const curStep = globalSteps[current.index];
+            const nextStep = globalSteps[current.index + 1];
+            if (nextStep) {
+              if (nextStep.sceneIndex !== curStep.sceneIndex) {
+                // Next step starts a new scene
+                current.phase = 'scene-transition';
+                current.phaseStartTime = now;
+              } else {
+                current.index = current.index + 1;
+                current.phase = 'animating';
+                current.phaseStartTime = now;
+              }
+            }
+          }
+        } else if (targetIdx < current.index) {
+          // User scrolled back up! Rewind one step
+          current.phase = 'rewinding';
+          current.phaseStartTime = now;
+        }
+      }
+
+      // Compute display progress for the step
+      let prog = 1;
+      if (current.phase === 'animating') {
+        const elapsed = now - current.phaseStartTime;
+        prog = Math.min(1, Math.max(0, elapsed / STEP_ANIM_MS));
+      } else {
+        prog = 1;
+      }
+
+      const isTrans = current.phase === 'scene-transition';
+      const isRewind = current.phase === 'rewinding';
+
+      // Update state when meaningful change occurs
+      setPlayerRenderState((prev) => {
+        if (
+          prev.globalIndex !== current.index ||
+          prev.isSceneTransitioning !== isTrans ||
+          prev.isRewinding !== isRewind ||
+          Math.abs(prev.stepProgress - prog) > 0.02 ||
+          (prog === 1 && prev.stepProgress !== 1)
+        ) {
+          return {
+            globalIndex: current.index,
+            stepProgress: prog,
+            isSceneTransitioning: isTrans,
+            isRewinding: isRewind,
+          };
+        }
+        return prev;
       });
 
-      animId = requestAnimationFrame(tick);
+      rafId = requestAnimationFrame(playerLoop);
     };
 
-    animId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animId);
-  }, [isPlaying, isSectionVisible, currentSceneIdx, totalScenes, getSceneDuration, shouldReduceMotion]);
+    rafId = requestAnimationFrame(playerLoop);
+    return () => cancelAnimationFrame(rafId);
+  }, [totalGlobalSteps, globalSteps, shouldReduceMotion]);
 
-  // Scene navigation controls
-  const goToScene = useCallback(
-    (idx: number) => {
-      const bounded = Math.max(0, Math.min(totalScenes - 1, idx));
-      setCurrentSceneIdx(bounded);
-      setSceneProgress(0);
-      setIsPlaying(true);
-    },
-    [totalScenes]
-  );
+  // Current active step and scene from player
+  const curGlobalStep = globalSteps[playerRenderState.globalIndex] || globalSteps[0];
+  const activeIndex = curGlobalStep ? curGlobalStep.sceneIndex : 0;
+  const activeScene = activeScenes[activeIndex] || activeScenes[0];
+  const sceneStepsCount = activeScene.steps?.length || 1;
+  const currentSceneProgress = (curGlobalStep.stepIndex + playerRenderState.stepProgress) / sceneStepsCount;
 
-  const handleNext = () => {
-    if (currentSceneIdx < totalScenes - 1) {
-      goToScene(currentSceneIdx + 1);
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentSceneIdx > 0) {
-      goToScene(currentSceneIdx - 1);
-    }
-  };
-
-  const handleReplay = () => {
-    setSceneProgress(0);
-    setIsPlaying(true);
-  };
-
-  const togglePlay = () => {
-    setIsPlaying((prev) => !prev);
-  };
-
-  // Keyboard accessibility
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isSectionVisible) return;
-      if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        handleNext();
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        handlePrev();
-      } else if (e.key === ' ') {
-        // Toggle play/pause only if user is not in a text input
-        const target = e.target as HTMLElement;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-        e.preventDefault();
-        togglePlay();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSectionVisible, currentSceneIdx, totalScenes]);
-
-  // Hover pause support if enabled
-  const handleMouseEnter = () => {
-    if (timingConfig.pauseOnHover) {
-      setIsPlaying(false);
-    }
-  };
-  const handleMouseLeave = () => {
-    if (timingConfig.pauseOnHover && isSectionVisible) {
-      setIsPlaying(true);
-    }
-  };
-
-  // Active scene & palette
-  const activeScene = activeScenes[currentSceneIdx] || activeScenes[0];
+  // Active scene palette
   const paletteConfig = config.wayOfWorking.palette || {};
   const currentPalette: ScenePalette =
     (paletteConfig[activeScene.paletteKey as keyof typeof paletteConfig] as ScenePalette) || {
@@ -262,82 +329,95 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
       isDark: true,
     };
 
-  // Helper to render current scene visual
-  const renderSceneVisual = (sceneId: string, progressVal: number) => {
+  // Smooth scroll to a specific scene when tab or progress bar segment is clicked
+  const scrollToScene = useCallback(
+    (index: number) => {
+      if (!containerRef.current) return;
+      const containerTop = containerRef.current.offsetTop;
+      const scrollableDistance = containerRef.current.offsetHeight - window.innerHeight;
+      const range = sceneScrollRanges[index];
+      const fraction = range ? range.startFraction + 0.005 : index / totalScenes;
+      const targetScroll = containerTop + fraction * scrollableDistance;
+
+      window.scrollTo({
+        top: targetScroll,
+        behavior: shouldReduceMotion ? 'auto' : 'smooth',
+      });
+    },
+    [sceneScrollRanges, totalScenes, shouldReduceMotion]
+  );
+
+  // Skip section button action
+  const handleSkipSection = () => {
+    const nextSection =
+      document.getElementById('included') ||
+      document.getElementById('after-process') ||
+      document.getElementById('pricing');
+
+    if (nextSection) {
+      nextSection.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' });
+      const heading = nextSection.querySelector('h2, h3, [tabindex]') as HTMLElement | null;
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus();
+      }
+    }
+  };
+
+  // Keyboard navigation for tablist (ArrowLeft, ArrowRight)
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const nextIndex = (index + 1) % totalScenes;
+      scrollToScene(nextIndex);
+      const nextTab = tablistRef.current?.children[nextIndex] as HTMLButtonElement;
+      nextTab?.focus();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prevIndex = (index - 1 + totalScenes) % totalScenes;
+      scrollToScene(prevIndex);
+      const prevTab = tablistRef.current?.children[prevIndex] as HTMLButtonElement;
+      prevTab?.focus();
+    }
+  };
+
+  // Helper to render scene visual component
+  const renderSceneVisual = (
+    sceneId: string,
+    prog: number,
+    sIdx: number,
+    sProg: number,
+    highlight: string,
+    mobileMode = false
+  ) => {
+    const props = {
+      progress: prog,
+      stepIndex: sIdx,
+      stepProgress: sProg,
+      activeHighlight: highlight,
+      isActive: true,
+      isMobile: mobileMode,
+      palette: currentPalette,
+      onOpenAudit,
+    };
+
     switch (sceneId) {
       case 'searches':
-        return (
-          <Scene1Searches
-            progress={progressVal}
-            isActive={true}
-            isMobile={isMobile}
-            palette={currentPalette}
-          />
-        );
+        return <Scene1Searches {...props} />;
       case 'journey':
-        return (
-          <Scene2Journey
-            progress={progressVal}
-            isActive={true}
-            isMobile={isMobile}
-            palette={currentPalette}
-          />
-        );
+        return <Scene2Journey {...props} />;
       case 'solve':
-        return (
-          <Scene3Solve
-            progress={progressVal}
-            isActive={true}
-            isMobile={isMobile}
-            palette={currentPalette}
-          />
-        );
+        return <Scene3Solve {...props} />;
       case 'build':
-        return (
-          <Scene4Build
-            progress={progressVal}
-            isActive={true}
-            isMobile={isMobile}
-            palette={currentPalette}
-          />
-        );
+        return <Scene4Build {...props} />;
       case 'findable':
-        return (
-          <Scene5Findable
-            progress={progressVal}
-            isActive={true}
-            isMobile={isMobile}
-            palette={currentPalette}
-          />
-        );
+        return <Scene5Findable {...props} />;
       case 'rank':
-        return (
-          <Scene6Rank
-            progress={progressVal}
-            isActive={true}
-            isMobile={isMobile}
-            palette={currentPalette}
-          />
-        );
+        return <Scene6Rank {...props} />;
       case 'always-on':
-        return (
-          <Scene7AlwaysOn
-            progress={progressVal}
-            isActive={true}
-            isMobile={isMobile}
-            palette={currentPalette}
-          />
-        );
+        return <Scene7AlwaysOn {...props} />;
       case 'talk':
-        return (
-          <Scene8Talk
-            progress={progressVal}
-            isActive={true}
-            isMobile={isMobile}
-            palette={currentPalette}
-            onOpenAudit={onOpenAudit}
-          />
-        );
+        return <Scene8Talk {...props} />;
       default:
         return null;
     }
@@ -368,8 +448,10 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
         </div>
 
         <div className="max-w-5xl mx-auto space-y-12">
-          {activeScenes.map((scene, idx) => {
-            const pal = (paletteConfig[scene.paletteKey as keyof typeof paletteConfig] as ScenePalette) || currentPalette;
+          {activeScenes.map((scene) => {
+            const pal =
+              (paletteConfig[scene.paletteKey as keyof typeof paletteConfig] as ScenePalette) || currentPalette;
+            const stepsCount = scene.steps?.length || 1;
             return (
               <div
                 key={scene.id}
@@ -387,28 +469,31 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
                   >
                     {scene.pillLabel}
                   </span>
-                  <h3
-                    style={{ color: pal.textPrimary }}
-                    className="text-xl sm:text-2xl font-bold leading-snug"
-                  >
+                  <h3 style={{ color: pal.textPrimary }} className="text-xl sm:text-2xl font-bold leading-snug">
                     {scene.headline}
                   </h3>
-                  <p
-                    style={{ color: pal.textSecondary }}
-                    className="text-sm mt-1.5 leading-relaxed"
-                  >
-                    {scene.text}
-                  </p>
+                  {scene.text && (
+                    <p style={{ color: pal.textSecondary }} className="text-sm mt-1.5 leading-relaxed">
+                      {scene.text}
+                    </p>
+                  )}
                 </div>
 
                 <div className="w-full min-h-[300px]">
-                  {renderSceneVisual(scene.id, 1)}
+                  {renderSceneVisual(scene.id, 1, stepsCount - 1, 1, '', true)}
                 </div>
 
-                <div
-                  style={{ color: pal.textSecondary }}
-                  className="text-[11px] text-right border-t border-black/10 pt-3"
-                >
+                {/* Full list of commentary captions for accessibility */}
+                <div className="border-t border-black/10 pt-4 space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-wider opacity-60">Step-by-step summary</p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs opacity-85">
+                    {scene.steps?.map((st, i) => (
+                      <li key={i}>{st.caption}</li>
+                    ))}
+                  </ol>
+                </div>
+
+                <div style={{ color: pal.textSecondary }} className="text-[11px] text-right border-t border-black/10 pt-3">
                   {scene.caption}
                 </div>
               </div>
@@ -425,25 +510,26 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
   }
 
   // --------------------------------------------------------------------------
-  // Full-Screen Autoplay Story Engine (100svh, never locks scrolling)
+  // Scroll-Driven Medium-Slow Step Player Story (Sticky 100svh Stage)
+  // Clean 3-Part Layout:
+  // 1. Top (about 25-28%): Tabs, Title, Headline
+  // 2. Center (about 55-58%): Visual Stage (overflow: hidden, nothing cut off)
+  // 3. Bottom (about 16-18%): Caption Box in normal flow + 8-segment Progress Bar
   // --------------------------------------------------------------------------
+  const { isSceneTransitioning } = playerRenderState;
+
   return (
     <section
-      ref={sectionRef}
+      ref={containerRef}
       id="process"
       aria-label={config.wayOfWorking.title}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        background: currentPalette.bg,
-        transition: 'background 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
-      }}
-      className="relative w-full h-[100svh] min-h-[640px] flex flex-col justify-between overflow-hidden select-none"
+      style={{ height: `${totalVh}vh` }}
+      className="relative w-full bg-[#0F2A35]"
     >
       {/* Anchor for backward compatibility with #how-it-works */}
       <div id="how-it-works" className="absolute top-0 left-0 scroll-mt-24 pointer-events-none" />
 
-      {/* Screen Reader Skip Link */}
+      {/* Screen reader skip link */}
       <a
         href="#after-process"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-[#0F2A35] focus:rounded-lg focus:shadow-lg focus:font-semibold"
@@ -451,205 +537,220 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
         Skip this section
       </a>
 
-      {/* ===================================================================
-          TOP AREA: Section Title, Tabs & Active Scene Header (< 35% height)
-         =================================================================== */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 flex flex-col gap-2 shrink-0 z-20">
-        {/* Row 1: Section Title & 8 Numbered Tabs */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-          {/* Section Title */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span
-              className="w-2 h-2 rounded-full animate-pulse"
-              style={{ backgroundColor: currentPalette.pillText }}
-            />
-            <h2
-              style={{ color: currentPalette.textPrimary }}
-              className="text-xs sm:text-sm font-bold tracking-tight uppercase"
+      {/* Sticky Full-Viewport Stage */}
+      <div
+        ref={stickyRef}
+        style={{
+          background: currentPalette.bg,
+          transition: 'background 1000ms cubic-bezier(0.22, 1, 0.36, 1)',
+        }}
+        className="sticky top-0 h-[100svh] min-h-[640px] max-h-[100svh] w-full flex flex-col justify-between overflow-hidden px-3 sm:px-6 lg:px-8 py-2 sm:py-3 select-none"
+      >
+        {/* ===================================================================
+            PART 1: TOP AREA (~25-28% height max)
+            Tabs, Title, Headline & Skip Button
+           =================================================================== */}
+        <div className="w-full max-w-7xl mx-auto flex flex-col justify-start shrink-0 z-20 max-h-[28svh] gap-1 sm:gap-2">
+          {/* Top Bar: Title, Tabs, and Always-Visible Skip Section Button */}
+          <div className="flex items-center justify-between gap-2.5">
+            {/* Section Title */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: currentPalette.pillText }}
+              />
+              <h2
+                style={{ color: currentPalette.textPrimary }}
+                className="text-xs sm:text-sm font-bold tracking-tight uppercase"
+              >
+                {config.wayOfWorking.title}
+              </h2>
+            </div>
+
+            {/* Numbered Pill Tabs (role="tablist") */}
+            <div
+              ref={tablistRef}
+              role="tablist"
+              aria-label="Story chapters"
+              className="hidden md:flex items-center gap-1 p-1 rounded-full bg-black/15 backdrop-blur-md border border-white/10 overflow-x-auto no-scrollbar max-w-full"
             >
-              {config.wayOfWorking.title}
-            </h2>
+              {activeScenes.map((scene, idx) => {
+                const isSelected = activeIndex === idx;
+                return (
+                  <button
+                    key={scene.id}
+                    role="tab"
+                    id={`tab-${scene.id}`}
+                    aria-selected={isSelected}
+                    aria-controls={`panel-${scene.id}`}
+                    tabIndex={isSelected ? 0 : -1}
+                    onClick={() => scrollToScene(idx)}
+                    onKeyDown={(e) => handleKeyDown(e, idx)}
+                    className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-medium transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
+                      isSelected
+                        ? 'bg-white text-[#12303D] font-bold shadow-md'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {scene.tab}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Always-Visible "Skip section" Button (at least 44px touch target) */}
+            <button
+              type="button"
+              onClick={handleSkipSection}
+              aria-label="Skip this section and jump to next"
+              className={`min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all duration-300 shadow-md cursor-pointer ${
+                currentPalette.isDark
+                  ? 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+                  : 'bg-black/10 hover:bg-black/20 text-[#1B2B34] border border-black/15'
+              }`}
+            >
+              <span>Skip section</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          {/* Numbered Pill Tabs (role="tablist") */}
+          {/* Row 2: Headline Block */}
+          <div className="text-center max-w-3xl mx-auto pt-0.5 sm:pt-1">
+            {/* Centered Pill Label */}
+            <span
+              style={{
+                backgroundColor: currentPalette.pillBg,
+                color: currentPalette.pillText,
+                borderColor: currentPalette.pillBorder,
+              }}
+              className="inline-block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full border mb-1 transition-colors duration-500"
+            >
+              {activeScene.pillLabel}
+            </span>
+
+            {/* Large Exact Headline */}
+            <h3
+              style={{ color: currentPalette.textPrimary }}
+              className="text-base sm:text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight leading-snug transition-colors duration-500"
+            >
+              {activeScene.headline}
+            </h3>
+
+            {/* Supporting line only on Scene 8 */}
+            {activeScene.text && (
+              <p
+                style={{ color: currentPalette.textSecondary }}
+                className="text-xs sm:text-sm mt-0.5 max-w-2xl mx-auto leading-relaxed transition-colors duration-500"
+              >
+                {activeScene.text}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ===================================================================
+            PART 2: CENTER VISUAL STAGE (~55-58% height)
+            Overflow hidden, graphics scaled to fit so nothing ever pushes caption
+           =================================================================== */}
+        <div
+          id={`panel-${activeScene.id}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${activeScene.id}`}
+          className="relative flex-1 min-h-0 h-[56svh] max-h-[58svh] w-full max-w-7xl mx-auto flex items-center justify-center overflow-hidden z-10 px-2 py-1"
+        >
           <div
-            role="tablist"
-            aria-label="Story scenes"
-            className="flex items-center gap-1 p-1 rounded-full bg-black/15 backdrop-blur-md border border-white/10 overflow-x-auto no-scrollbar max-w-full"
+            key={activeScene.id}
+            className={`w-full h-full flex items-center justify-center transition-all duration-700 ${
+              isSceneTransitioning
+                ? 'opacity-0 translate-x-12 scale-[0.98]'
+                : 'opacity-100 translate-x-0 scale-100'
+            }`}
           >
+            <div className="w-full h-full flex items-center justify-center origin-center transform scale-[0.92] sm:scale-100">
+              {renderSceneVisual(
+                activeScene.id,
+                currentSceneProgress,
+                curGlobalStep.stepIndex,
+                playerRenderState.stepProgress,
+                curGlobalStep.highlight,
+                isMobile
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ===================================================================
+            PART 3: BOTTOM AREA (~16-18% height max)
+            Synced Commentary Caption Bar in normal flow + 8 Progress Segments
+           =================================================================== */}
+        <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pb-1 sm:pb-2 flex flex-col justify-end shrink-0 z-20 gap-1.5 max-h-[18svh]">
+          {/* Scroll to continue hint on Scene 1 step 0 */}
+          {activeIndex === 0 && curGlobalStep.stepIndex === 0 && !hasScrolled && (
+            <div className="flex justify-center -mb-1 animate-bounce">
+              <div
+                style={{
+                  backgroundColor: currentPalette.pillBg,
+                  color: currentPalette.pillText,
+                  borderColor: currentPalette.pillBorder,
+                }}
+                className="px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 border backdrop-blur-md shadow-sm"
+              >
+                <span>Scroll to advance</span>
+                <ChevronDown className="w-3.5 h-3.5" />
+              </div>
+            </div>
+          )}
+
+          {/* Commentary Caption Bar (In bottom flow, NOT position: absolute) */}
+          <div
+            aria-live="polite"
+            aria-atomic="true"
+            className="w-full max-w-4xl mx-auto flex items-center justify-between gap-3 px-4 py-2 sm:py-2.5 rounded-2xl bg-black/25 backdrop-blur-md border border-white/10 shadow-lg min-h-[46px] sm:min-h-[52px]"
+          >
+            <p
+              key={`${activeIndex}-${curGlobalStep.stepIndex}`}
+              style={{
+                color: currentPalette.textPrimary,
+                fontSize: 'clamp(1.05rem, 2vw, 1.4rem)',
+              }}
+              className="flex-1 font-semibold tracking-tight leading-snug line-clamp-2"
+            >
+              {curGlobalStep.caption}
+            </p>
+            <span
+              style={{ color: currentPalette.textSecondary }}
+              className="text-[11px] sm:text-xs font-mono whitespace-nowrap shrink-0 opacity-80"
+            >
+              Step {curGlobalStep.stepIndex + 1} of {sceneStepsCount}
+            </span>
+          </div>
+
+          {/* 8 Clickable Progress Segments */}
+          <div className="w-full grid grid-cols-8 gap-1.5 sm:gap-2 pt-0.5">
             {activeScenes.map((scene, idx) => {
-              const isSelected = currentSceneIdx === idx;
+              let fillPct = 0;
+              if (idx < activeIndex) fillPct = 100;
+              else if (idx === activeIndex) fillPct = currentSceneProgress * 100;
+
               return (
                 <button
                   key={scene.id}
-                  role="tab"
-                  id={`tab-${scene.id}`}
-                  aria-selected={isSelected}
-                  aria-controls={`panel-${scene.id}`}
-                  tabIndex={isSelected ? 0 : -1}
-                  onClick={() => goToScene(idx)}
-                  className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-medium transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
-                    isSelected
-                      ? 'bg-white text-[#12303D] font-bold shadow-md'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
+                  type="button"
+                  onClick={() => scrollToScene(idx)}
+                  aria-label={`Scroll to scene ${idx + 1}: ${scene.tab}`}
+                  className="group relative h-1.5 sm:h-2 rounded-full bg-white/20 hover:bg-white/35 overflow-hidden cursor-pointer transition-colors"
                 >
-                  {scene.tab}
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${fillPct}%`,
+                      backgroundColor: currentPalette.pillText || '#FFFFFF',
+                      transitionDuration: '100ms',
+                    }}
+                  />
                 </button>
               );
             })}
-          </div>
-        </div>
-
-        {/* Row 2: Centered Scene Pill, Headline, and Supporting Line */}
-        <div className="text-center max-w-3xl mx-auto pt-1 sm:pt-2">
-          {/* Centered Pill Label */}
-          <span
-            style={{
-              backgroundColor: currentPalette.pillBg,
-              color: currentPalette.pillText,
-              borderColor: currentPalette.pillBorder,
-            }}
-            className="inline-block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full border mb-1 transition-colors duration-500"
-          >
-            {activeScene.pillLabel}
-          </span>
-
-          {/* Large Headline */}
-          <h3
-            style={{ color: currentPalette.textPrimary }}
-            className="text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight leading-snug transition-colors duration-500"
-          >
-            {activeScene.headline}
-          </h3>
-
-          {/* Short Supporting Line */}
-          <p
-            style={{ color: currentPalette.textSecondary }}
-            className="text-xs sm:text-sm mt-1 max-w-2xl mx-auto leading-relaxed transition-colors duration-500"
-          >
-            {activeScene.text}
-          </p>
-        </div>
-      </div>
-
-      {/* ===================================================================
-          STAGE AREA: Responsive Viewport Canvas (~60% height)
-         =================================================================== */}
-      <div
-        id={`panel-${activeScene.id}`}
-        role="tabpanel"
-        aria-labelledby={`tab-${activeScene.id}`}
-        className="relative flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1 flex items-center justify-center overflow-hidden z-10"
-      >
-        <div
-          key={activeScene.id}
-          className="w-full h-full flex items-center justify-center transition-all duration-700"
-          style={{
-            animation: 'fadeInScale 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards',
-          }}
-        >
-          {renderSceneVisual(activeScene.id, sceneProgress)}
-        </div>
-      </div>
-
-      {/* ===================================================================
-          BOTTOM CONTROL BAR: 8 Progress Segments, Play/Pause, Prev/Next, Replay
-         =================================================================== */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-3 sm:pb-4 flex flex-col gap-2 shrink-0 z-20">
-        {/* 8 Clickable Progress Segments */}
-        <div className="w-full grid grid-cols-8 gap-1.5 sm:gap-2">
-          {activeScenes.map((scene, idx) => {
-            let fillPct = 0;
-            if (idx < currentSceneIdx) fillPct = 100;
-            else if (idx === currentSceneIdx) fillPct = sceneProgress * 100;
-
-            return (
-              <button
-                key={scene.id}
-                type="button"
-                onClick={() => goToScene(idx)}
-                aria-label={`Jump to scene ${idx + 1}: ${scene.tab}`}
-                className="group relative h-2 sm:h-2.5 rounded-full bg-white/20 hover:bg-white/30 overflow-hidden cursor-pointer transition-colors"
-              >
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${fillPct}%`,
-                    backgroundColor: currentPalette.pillText || '#FFFFFF',
-                    transitionDuration: idx === currentSceneIdx ? '100ms' : '300ms',
-                  }}
-                />
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Playback Controls & Caption Bar */}
-        <div className="flex items-center justify-between text-xs pt-1">
-          {/* Controls: Prev, Play/Pause, Next, Replay */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePrev}
-              disabled={currentSceneIdx === 0}
-              aria-label="Previous scene"
-              className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={togglePlay}
-              aria-label={isPlaying ? 'Pause autoplay' : 'Resume autoplay'}
-              className="px-3 py-1 rounded-full bg-black/25 hover:bg-black/45 border border-white/10 text-white font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              {isPlaying ? (
-                <>
-                  <Pause className="w-3.5 h-3.5 fill-current" />
-                  <span className="text-[11px]">Pause</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span className="text-[11px]">Play</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleNext}
-              disabled={currentSceneIdx >= totalScenes - 1}
-              aria-label="Next scene"
-              className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleReplay}
-              aria-label="Replay current scene"
-              className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 transition-colors text-white cursor-pointer ml-1"
-              title="Replay scene"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Scene Counter & Keyboard Hint */}
-          <div
-            style={{ color: currentPalette.textSecondary }}
-            className="flex items-center gap-3 text-[11px]"
-          >
-            <span className="hidden sm:inline opacity-75">
-              Press Space to pause · Arrow keys to skip
-            </span>
-            <span className="font-mono font-semibold">
-              {String(currentSceneIdx + 1).padStart(2, '0')} / {String(totalScenes).padStart(2, '0')}
-            </span>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, MousePointer, Globe, PhoneCall, CheckCircle2, User, UserX, AlertTriangle } from 'lucide-react';
+import { Search, MousePointer, Globe, PhoneCall, CheckCircle2 } from 'lucide-react';
 import { SceneProps } from './types';
 import { config } from '../../config';
 
@@ -7,16 +7,16 @@ export function getActiveFrictionPairs() {
   const f = config.features;
   const base = [
     {
-      nodeId: 'search',
-      nodeIdx: 0,
-      problem: 'No website to click',
-      fix: 'A clear website with one next step',
-    },
-    {
       nodeId: 'click',
       nodeIdx: 1,
-      problem: 'Hard to contact on mobile',
-      fix: 'Call and quote buttons on every page',
+      problem: 'No website to click: they move on.',
+      fix: 'A clear website with one next step.',
+    },
+    {
+      nodeId: 'website',
+      nodeIdx: 2,
+      problem: 'Hard to contact on mobile: they give up.',
+      fix: 'Call and quote buttons on every page.',
     },
   ];
 
@@ -24,8 +24,8 @@ export function getActiveFrictionPairs() {
     base.push({
       nodeId: 'call',
       nodeIdx: 3,
-      problem: 'Missed call after hours',
-      fix: 'After-hours handling',
+      problem: 'Missed call after hours: they call someone else.',
+      fix: 'Missed calls get handled.',
     });
   }
 
@@ -33,234 +33,234 @@ export function getActiveFrictionPairs() {
     base.push({
       nodeId: 'followup',
       nodeIdx: 4,
-      problem: 'No follow-up',
-      fix: 'Every enquiry confirmed and logged',
+      problem: 'No follow-up: the enquiry goes cold.',
+      fix: 'Every enquiry is confirmed and logged.',
     });
   }
 
   return base;
 }
 
-export default function Scene2Journey({ progress, isMobile, palette }: SceneProps) {
-  // Autoplay Timeline (0.0 to 1.0)
-  // 1: Wavy line draws: 0.05 to 0.25
-  // 2: 5 nodes & white icon cards pop in: 0.15 to 0.45
-  // 3: Homeowner dot travels & encounters friction points: 0.40 to 0.85
-  // 4: Hold: 0.85 to 1.0
-
-  const lineProgress = Math.min(1, Math.max(0, (progress - 0.05) / 0.20));
-  const nodesProgress = Math.min(1, Math.max(0, (progress - 0.15) / 0.30));
-  const travelProgress = Math.min(1, Math.max(0, (progress - 0.35) / 0.50));
-
+export default function Scene2Journey({
+  progress,
+  stepIndex,
+  stepProgress,
+  activeHighlight,
+  isMobile,
+  palette,
+}: SceneProps) {
   const activePairs = getActiveFrictionPairs();
-  const activeFrictionProblems = new Set(activePairs.map((p) => p.problem));
+  const activeProblems = new Set(activePairs.map((p) => p.nodeId));
 
-  // Node positions along a wide 1200 x 420 viewBox
+  // 5 Steps mapping:
+  // Step 0 ('intro'): Overview
+  // Step 1 ('click'): Node 2 friction
+  // Step 2 ('website'): Node 3 friction
+  // Step 3 ('call'): Node 4 friction (if active)
+  // Step 4 ('followup'): Node 5 friction (if active)
+
   const nodes = [
     {
       id: 'search',
       numeral: '1',
       title: 'Search',
-      desc: 'Looking for a reliable trade nearby',
+      desc: 'Looking for a trade nearby',
       icon: Search,
-      x: 120,
-      y: 200,
+      x: 100,
+      y: 165,
       isTop: false,
-      friction: activeFrictionProblems.has('No website to click') ? 'No website to click' : null,
+      friction: null,
       thought: 'Looks for a roofer nearby',
+      stepNum: 0,
     },
     {
       id: 'click',
       numeral: '2',
       title: 'Click',
-      desc: 'Wants to see proof of recent work',
+      desc: 'Checks who you are',
       icon: MousePointer,
-      x: 360,
-      y: 120,
+      x: 310,
+      y: 100,
       isTop: true,
-      friction: activeFrictionProblems.has('Hard to contact on mobile') ? 'Hard to contact on mobile' : null,
-      thought: 'Wants to see their work',
+      friction: activeProblems.has('click') ? 'No website to click' : null,
+      thought: 'Wants to see work',
+      stepNum: 1,
     },
     {
       id: 'website',
       numeral: '3',
       title: 'Website',
-      desc: 'Checking services and location',
+      desc: 'Tries on mobile phone',
       icon: Globe,
-      x: 600,
-      y: 240,
+      x: 520,
+      y: 185,
       isTop: false,
-      friction: null,
-      thought: 'Wants an easy way to get in touch',
+      friction: activeProblems.has('website') ? 'Hard to contact on mobile' : null,
+      thought: 'Tries to find phone button',
+      stepNum: 2,
     },
     {
       id: 'call',
       numeral: '4',
       title: 'Call or form',
-      desc: 'Reaching out for a quote or repair',
+      desc: 'Calls late in the evening',
       icon: PhoneCall,
-      x: 840,
-      y: 130,
+      x: 730,
+      y: 105,
       isTop: true,
-      friction: activeFrictionProblems.has('Missed call after hours') ? 'Missed call after hours' : null,
-      thought: 'Calling after 6 PM',
+      friction: activeProblems.has('call') ? 'Missed call after hours' : null,
+      thought: 'Calls at 7:30 PM',
+      stepNum: 3,
     },
     {
       id: 'followup',
       numeral: '5',
       title: 'Follow-up',
-      desc: 'Awaiting confirmation & booking',
+      desc: 'Waiting for confirmation',
       icon: CheckCircle2,
-      x: 1080,
-      y: 220,
+      x: 940,
+      y: 175,
       isTop: false,
-      friction: activeFrictionProblems.has('No follow-up') ? 'No follow-up' : null,
-      thought: 'Waiting for a response',
+      friction: activeProblems.has('followup') ? 'No follow-up' : null,
+      thought: 'Waits for reply',
+      stepNum: 4,
     },
   ];
 
-  // Current position of traveling homeowner
-  const currentStepIdx = Math.min(4, Math.floor(travelProgress * 5));
-  const activeNode = nodes[currentStepIdx] || nodes[0];
+  const currentStep = nodes.find((n) => n.id === activeHighlight) || nodes[0];
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-between overflow-hidden select-none">
-      <div className="absolute top-2 right-4 text-[10px] uppercase tracking-wider text-[#1B2B34]/50 px-2 py-0.5 rounded bg-black/5 border border-black/10 z-20">
+    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden select-none px-2">
+      <div className="absolute top-1 right-2 text-[10px] uppercase tracking-wider text-[#1B2B34]/50 px-2 py-0.5 rounded bg-black/5 border border-black/10 z-20">
         Illustrative example
       </div>
 
-      <div className="relative w-full max-w-6xl mx-auto flex-1 flex items-center justify-center px-4 py-2">
-        <svg
-          className="w-full h-auto max-h-[460px]"
-          viewBox="0 0 1200 420"
-          preserveAspectRatio="xMidYMid meet"
-        >
+      <div className="relative w-full max-w-5xl mx-auto flex items-center justify-center py-1">
+        <svg className="w-full h-auto max-h-[330px]" viewBox="0 0 1060 330" preserveAspectRatio="xMidYMid meet">
           {/* Base Wavy Journey Line */}
           <path
-            d="M 60 210 Q 240 70, 360 120 T 600 240 T 840 130 T 1140 230"
+            d="M 40 165 Q 180 65, 310 100 T 520 185 T 730 105 T 1020 175"
             fill="none"
             stroke="#C8642E"
             strokeWidth="3.5"
-            strokeDasharray="1400"
-            strokeDashoffset={(1 - lineProgress) * 1400}
             strokeLinecap="round"
           />
 
-          {/* Dashed Red Friction Segments along the line */}
-          {lineProgress > 0.6 && (
-            <g stroke="#D64545" strokeWidth="4" strokeDasharray="8 6" fill="none">
-              <path d="M 120 200 Q 240 120, 360 120" opacity={travelProgress > 0.15 ? 0.9 : 0.2} />
-              <path d="M 360 120 Q 480 240, 600 240" opacity={travelProgress > 0.35 ? 0.9 : 0.2} />
-              {activeFrictionProblems.has('Missed call after hours') && (
-                <path d="M 600 240 Q 720 130, 840 130" opacity={travelProgress > 0.6 ? 0.9 : 0.2} />
-              )}
-            </g>
-          )}
+          {/* Dashed Red Friction Segments */}
+          <g stroke="#D64545" strokeWidth="4" strokeDasharray="8 6" fill="none">
+            {stepIndex >= 1 && <path d="M 100 165 Q 200 100, 310 100" opacity={0.9} />}
+            {stepIndex >= 2 && <path d="M 310 100 Q 420 185, 520 185" opacity={0.9} />}
+            {stepIndex >= 3 && activeProblems.has('call') && <path d="M 520 185 Q 630 105, 730 105" opacity={0.9} />}
+            {stepIndex >= 4 && activeProblems.has('followup') && <path d="M 730 105 Q 840 175, 940 175" opacity={0.9} />}
+          </g>
 
-          {/* 5 Nodes with Big Faint Numerals, White Cards & Alternating Labels */}
-          {nodes.map((node, idx) => {
-            const nodeReveal = Math.min(1, Math.max(0, (nodesProgress - idx * 0.18) / 0.28));
-            if (nodeReveal <= 0) return null;
-            const isFrictionHit = travelProgress >= (idx / 5) && Boolean(node.friction);
-            const isPastFriction = travelProgress > ((idx + 0.5) / 5) && Boolean(node.friction);
+          {/* 5 Nodes with Numerals and Icon Cards */}
+          {nodes.map((node) => {
+            const isCurrentNode = node.id === activeHighlight;
+            const hasPassed = stepIndex >= node.stepNum && node.stepNum > 0;
+            const hasFriction = Boolean(node.friction) && (hasPassed || isCurrentNode);
 
             return (
               <g
                 key={node.id}
                 transform={`translate(${node.x}, ${node.y})`}
-                opacity={nodeReveal}
-                style={{ transition: 'opacity 0.4s ease' }}
+                opacity={isCurrentNode || activeHighlight === 'intro' ? 1 : 0.75}
+                style={{ transition: 'opacity 0.3s ease' }}
               >
                 {/* Big Faint Numeral behind card */}
                 <text
                   x="0"
-                  y={node.isTop ? 28 : -22}
+                  y={node.isTop ? 24 : -18}
                   textAnchor="middle"
                   fill="#E9DFD2"
-                  fontSize="76"
+                  fontSize="64"
                   fontWeight="900"
                   fontFamily="sans-serif"
-                  style={{ userSelect: 'none' }}
                 >
                   {node.numeral}
                 </text>
 
-                {/* White Rounded-2xl Icon Card sitting on line */}
-                <g filter="drop-shadow(0 8px 18px rgba(27, 43, 52, 0.08))">
-                  <rect
-                    x="-26"
-                    y="-26"
-                    width="52"
-                    height="52"
-                    rx="18"
-                    fill="#FFFFFF"
-                    stroke={isFrictionHit ? '#D64545' : '#E9DFD2'}
-                    strokeWidth={isFrictionHit ? '2' : '1'}
+                {/* Soft pulse ring if active */}
+                {isCurrentNode && (
+                  <circle
+                    r="30"
+                    fill="none"
+                    stroke={hasFriction ? '#D64545' : '#C8642E'}
+                    strokeWidth="2"
+                    className="animate-pulse"
+                    opacity="0.4"
                   />
-                  <foreignObject x="-16" y="-16" width="32" height="32">
+                )}
+
+                {/* White Rounded-2xl Icon Card */}
+                <g filter="drop-shadow(0 6px 14px rgba(27, 43, 52, 0.08))">
+                  <rect
+                    x="-23"
+                    y="-23"
+                    width="46"
+                    height="46"
+                    rx="16"
+                    fill="#FFFFFF"
+                    stroke={hasFriction ? '#D64545' : isCurrentNode ? '#C8642E' : '#E9DFD2'}
+                    strokeWidth={hasFriction || isCurrentNode ? '2.5' : '1'}
+                  />
+                  <foreignObject x="-14" y="-14" width="28" height="28">
                     <div className="w-full h-full flex items-center justify-center text-[#1B2B34]">
-                      <node.icon className="w-5 h-5 text-[#C8642E]" />
+                      <node.icon className={`w-4 h-4 ${hasFriction ? 'text-[#D64545]' : 'text-[#C8642E]'}`} />
                     </div>
                   </foreignObject>
                 </g>
 
-                {/* Title & One-line Description placed alternately above & below */}
-                <g transform={`translate(0, ${node.isTop ? -45 : 48})`}>
+                {/* Title & Description strictly within bounded height */}
+                <g transform={`translate(0, ${node.isTop ? -38 : 38})`}>
                   <text
                     x="0"
                     y="0"
                     textAnchor="middle"
                     fill="#1B2B34"
-                    fontSize="13"
-                    fontWeight="700"
+                    fontSize="12"
+                    fontWeight={isCurrentNode ? '800' : '700'}
                   >
                     {node.title}
                   </text>
                   <text
                     x="0"
-                    y="16"
+                    y="14"
                     textAnchor="middle"
                     fill="#1B2B34"
-                    opacity="0.65"
-                    fontSize="10"
+                    opacity={isCurrentNode ? 0.9 : 0.6}
+                    fontSize="9.5"
                     fontWeight="500"
                   >
                     {node.desc}
                   </text>
                 </g>
 
-                {/* Red Friction Marker (Pulses with label) */}
-                {isFrictionHit && (
-                  <g transform={`translate(0, ${node.isTop ? 42 : -46})`}>
+                {/* Red Friction Marker */}
+                {hasFriction && (
+                  <g transform={`translate(0, ${node.isTop ? 38 : -40})`}>
                     <rect
                       x="-65"
-                      y="-12"
+                      y="-10"
                       width="130"
-                      height="24"
-                      rx="6"
+                      height="20"
+                      rx="5"
                       fill="#D64545"
-                      filter="drop-shadow(0 4px 10px rgba(214, 69, 69, 0.3))"
+                      filter="drop-shadow(0 3px 8px rgba(214, 69, 69, 0.3))"
                     />
-                    <text
-                      x="0"
-                      y="4"
-                      textAnchor="middle"
-                      fill="#FFFFFF"
-                      fontSize="9.5"
-                      fontWeight="700"
-                    >
+                    <text x="0" y="4" textAnchor="middle" fill="#FFFFFF" fontSize="8.5" fontWeight="700">
                       {node.friction}
                     </text>
                   </g>
                 )}
 
-                {/* Faded customer dropping away (lost visitor) */}
-                {isPastFriction && (
-                  <g transform="translate(0, 50)" opacity="0.45">
-                    <line x1="0" y1="0" x2="0" y2="24" stroke="#D64545" strokeWidth="1.5" strokeDasharray="3 3" />
-                    <circle cx="0" cy="30" r="5" fill="#D64545" />
-                    <text x="0" y="44" textAnchor="middle" fill="#D64545" fontSize="8.5" fontWeight="600">
-                      Customer leaves
+                {/* Faded customer dropping away */}
+                {hasFriction && (
+                  <g transform="translate(0, 48)" opacity="0.65">
+                    <line x1="0" y1="0" x2="0" y2="18" stroke="#D64545" strokeWidth="1.5" strokeDasharray="3 3" />
+                    <circle cx="0" cy="22" r="4" fill="#D64545" />
+                    <text x="0" y="34" textAnchor="middle" fill="#D64545" fontSize="8" fontWeight="600">
+                      Drops off
                     </text>
                   </g>
                 )}
@@ -269,37 +269,14 @@ export default function Scene2Journey({ progress, isMobile, palette }: SceneProp
           })}
 
           {/* Traveling Homeowner Dot with Thought Bubble */}
-          {travelProgress > 0 && (
-            <g
-              transform={`translate(${120 + travelProgress * (1080 - 120)}, ${
-                200 + Math.sin(travelProgress * Math.PI * 3.5) * -50
-              })`}
-            >
-              <circle r="14" fill="#C8642E" opacity="0.2" className="animate-ping" />
-              <circle r="7.5" fill="#C8642E" stroke="#FFFFFF" strokeWidth="2" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.2))" />
-
-              {/* Thought Bubble */}
+          {currentStep && (
+            <g transform={`translate(${currentStep.x}, ${currentStep.y + (currentStep.isTop ? -8 : 8)})`}>
+              <circle r="12" fill="#C8642E" opacity="0.25" className="animate-ping" />
+              <circle r="6.5" fill="#C8642E" stroke="#FFFFFF" strokeWidth="2" />
               <g transform="translate(0, -28)">
-                <rect
-                  x="-75"
-                  y="-14"
-                  width="150"
-                  height="22"
-                  rx="6"
-                  fill="#FFFFFF"
-                  stroke="#C8642E"
-                  strokeWidth="1"
-                  filter="drop-shadow(0 4px 8px rgba(0,0,0,0.1))"
-                />
-                <text
-                  x="0"
-                  y="1"
-                  textAnchor="middle"
-                  fill="#1B2B34"
-                  fontSize="9.5"
-                  fontWeight="600"
-                >
-                  "{activeNode.thought}"
+                <rect x="-65" y="-12" width="130" height="20" rx="5" fill="#FFFFFF" stroke="#C8642E" strokeWidth="1" />
+                <text x="0" y="2" textAnchor="middle" fill="#1B2B34" fontSize="8.5" fontWeight="600">
+                  "{currentStep.thought}"
                 </text>
               </g>
             </g>
