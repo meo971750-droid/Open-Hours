@@ -1,68 +1,154 @@
 import React, { useRef } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
-import {
-  Sparkles,
-  ShieldCheck,
-  Check,
-  Clock,
-  Zap,
-  Globe,
-  Award,
-  MapPin,
-  TrendingUp,
-  Key,
-  MessageSquare,
-  CheckCircle2,
-  PhoneCall,
-  ArrowRight,
-  Inbox,
-  Laptop,
-} from 'lucide-react';
+import { ArrowRight, Play, Phone } from 'lucide-react';
 import Container from '../components/Container';
 import { config } from '../config';
-
-// Twinkling dots decoration for Tile A and Tile B (deterministic positions, CSS animated)
-const TWINKLE_DOTS_A = [
-  { top: '14%', left: '12%', size: 3, delay: '0s', opacity: 0.35 },
-  { top: '22%', left: '85%', size: 2, delay: '1.2s', opacity: 0.25 },
-  { top: '45%', left: '20%', size: 2.5, delay: '0.6s', opacity: 0.4 },
-  { top: '70%', left: '78%', size: 3, delay: '1.8s', opacity: 0.3 },
-  { top: '82%', left: '15%', size: 2, delay: '2.4s', opacity: 0.25 },
-  { top: '35%', left: '60%', size: 2.5, delay: '0.9s', opacity: 0.35 },
-  { top: '58%', left: '90%', size: 2, delay: '1.5s', opacity: 0.3 },
-  { top: '88%', left: '45%', size: 2.5, delay: '2.1s', opacity: 0.25 },
-  { top: '12%', left: '48%', size: 2, delay: '0.4s', opacity: 0.3 },
-  { top: '65%', left: '32%', size: 3, delay: '1.1s', opacity: 0.35 },
-  { top: '28%', left: '35%', size: 2, delay: '2.0s', opacity: 0.25 },
-  { top: '78%', left: '65%', size: 2, delay: '0.8s', opacity: 0.3 },
-];
-
-const TWINKLE_DOTS_B = [
-  { top: '10%', left: '15%', size: 3, delay: '0.2s', opacity: 0.3 },
-  { top: '18%', left: '80%', size: 2, delay: '1.4s', opacity: 0.25 },
-  { top: '40%', left: '92%', size: 2.5, delay: '0.8s', opacity: 0.35 },
-  { top: '68%', left: '10%', size: 3, delay: '2.1s', opacity: 0.25 },
-  { top: '85%', left: '75%', size: 2, delay: '1.0s', opacity: 0.3 },
-  { top: '30%', left: '40%', size: 2, delay: '1.7s', opacity: 0.2 },
-  { top: '55%', left: '25%', size: 2.5, delay: '2.5s', opacity: 0.35 },
-  { top: '75%', left: '50%', size: 3, delay: '0.5s', opacity: 0.25 },
-  { top: '25%', left: '65%', size: 2, delay: '1.9s', opacity: 0.3 },
-  { top: '90%', left: '30%', size: 2, delay: '0.7s', opacity: 0.2 },
-  { top: '12%', left: '45%', size: 2.5, delay: '2.3s', opacity: 0.35 },
-  { top: '50%', left: '85%', size: 2, delay: '1.3s', opacity: 0.25 },
-];
+import { PACKAGES, SETUP_FROM } from '../content';
 
 export default function WhyOpenHours() {
   const sectionRef = useRef<HTMLElement>(null);
-  const isInView = useInView(sectionRef, { once: true, margin: '-8%' });
+  const isInView = useInView(sectionRef, { once: true, margin: '-6%' });
   const shouldReduceMotion = useReducedMotion();
 
-  const bento = config.bento;
-  const features = config.features;
-  const promises = config.promises || [];
-  const coreEssentials = config.coreEssentials || [];
+  const growth = config.growth || {
+    theme: 'light',
+    pill: 'Growth package',
+    title: 'Go Further',
+    titleAccent: 'Our Growth Package',
+    cards: {
+      pages: {
+        title: 'Pages for every service and area',
+        text: 'Clear, dedicated pages that help you show up when local customers search.',
+      },
+      profile: {
+        title: 'Responsive & Google Setup',
+        text: 'Our responsive approach ensures your website and Google profile adapt to every screen and search.',
+      },
+      list: {
+        title: 'Everything in Growth',
+      },
+    },
+  };
 
-  const handleScrollToCarePlan = (e: React.MouseEvent) => {
+  // 1. Data from pricing tiers (Growth)
+  const growthTier = PACKAGES.find((p) => p.id === 'growth');
+  const setupAmount = growthTier?.setupAmount ?? SETUP_FROM.growth;
+  const priceDisplay = setupAmount ? `€${setupAmount.toLocaleString('en-IE')}` : null;
+
+  // Check matching promises for "Fixed price. A written quote before we start."
+  const hasMatchingPromises = (config.promises || []).some(
+    (p) =>
+      p.toLowerCase().includes('quote before we start') ||
+      p.toLowerCase().includes('price stays the same')
+  );
+
+  // Growth tier feature checks for Card 1 & Card 2
+  const growthFeaturesList = growthTier?.features || [];
+  const hasServiceAreaPages = growthFeaturesList.some(
+    (f) =>
+      f.toLowerCase().includes('page') ||
+      f.toLowerCase().includes('area') ||
+      f.toLowerCase().includes('service')
+  );
+
+  const card1Title = hasServiceAreaPages
+    ? growth.cards?.pages?.title || 'Pages for every service and area'
+    : 'A website built to catch enquiries';
+
+  const card1Text =
+    growth.cards?.pages?.text ||
+    'Clear, dedicated pages that help you show up when local customers search.';
+
+  const card2Title =
+    growth.cards?.profile?.title || 'Responsive & Google Setup';
+
+  const card2Text =
+    growth.cards?.profile?.text ||
+    'Our responsive approach ensures your website and Google profile adapt to every screen and search.';
+
+  // Card 3 Bullet list items: features from Growth tier
+  const rawBullets: string[] = [];
+  if (growthTier?.featuresHeading) {
+    rawBullets.push(growthTier.featuresHeading);
+  }
+  growthFeaturesList.forEach((feat) => {
+    rawBullets.push(feat);
+  });
+
+  // Ensure 8 clean items for the two-column grid matching the reference
+  const fallbackBullets = [
+    'Dedicated service & area pages',
+    'Advanced Google Business Profile',
+    'Enquiry tracking & monthly report',
+    'Review-request automated flow',
+    'Google Ads campaign set-up',
+    'Speed & mobile optimisation',
+    'Local search foundations',
+    'Fixed price & direct phone support',
+  ];
+
+  const bulletItems =
+    rawBullets.length >= 6
+      ? rawBullets.slice(0, 8)
+      : fallbackBullets;
+
+  const midPoint = Math.ceil(bulletItems.length / 2);
+  const col1Bullets = bulletItems.slice(0, midPoint);
+  const col2Bullets = bulletItems.slice(midPoint);
+
+  // Client avatar photos from heroProof
+  const clientAvatars = (config.heroProof?.avatars || []).slice(0, 4);
+
+  // Smooth scroll and highlight Growth card in Pricing section
+  const handleScrollToGrowthPricing = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    const pricingEl = document.getElementById('pricing');
+    if (pricingEl) {
+      pricingEl.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' });
+      setTimeout(() => {
+        const h3s = Array.from(pricingEl.querySelectorAll('h3'));
+        const growthH3 = h3s.find((h) => h.textContent?.trim() === 'Growth');
+        const cardEl =
+          (growthH3?.closest('div[class*="rounded-[24px]"]') as HTMLElement) ||
+          (growthH3?.parentElement?.parentElement?.parentElement as HTMLElement);
+        if (cardEl) {
+          cardEl.classList.add(
+            'ring-4',
+            'ring-[#E07A5F]',
+            'ring-offset-4',
+            'transition-all',
+            'duration-300'
+          );
+          setTimeout(() => {
+            cardEl.classList.remove('ring-4', 'ring-[#E07A5F]', 'ring-offset-4');
+          }, 1500);
+        }
+      }, 400);
+    }
+  };
+
+  // Smooth scroll to contact form and preselect Growth option chip
+  const handleGetGrowth = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const aboutEl = document.getElementById('about') || document.getElementById('final-cta');
+    if (aboutEl) {
+      aboutEl.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' });
+      setTimeout(() => {
+        const radioGroup = document.querySelector(
+          '[role="radiogroup"][aria-label="Package option selection"]'
+        );
+        if (radioGroup) {
+          const buttons = Array.from(radioGroup.querySelectorAll('button'));
+          const growthBtn = buttons.find((b) => b.textContent?.includes('Growth'));
+          if (growthBtn && growthBtn.getAttribute('aria-checked') !== 'true') {
+            growthBtn.click();
+          }
+        }
+      }, 450);
+    }
+  };
+
+  const handleScrollToPricing = (e: React.MouseEvent) => {
     e.preventDefault();
     const pricingEl = document.getElementById('pricing');
     if (pricingEl) {
@@ -70,724 +156,569 @@ export default function WhyOpenHours() {
     }
   };
 
-  const getEssentialIcon = (name: string) => {
-    switch (name) {
-      case 'MapPin':
-        return MapPin;
-      case 'Globe':
-        return Globe;
-      case 'Zap':
-        return Zap;
-      case 'TrendingUp':
-        return TrendingUp;
-      case 'ShieldCheck':
-        return ShieldCheck;
-      case 'Award':
-        return Award;
-      default:
-        return Sparkles;
-    }
-  };
-
-  // Sample inbox rows for Tile B (all fictional, no KPI numbers or percentages)
-  const sampleEnquiries = [
-    {
-      avatar: 'T',
-      title: 'Roof repair quote',
-      client: 'Tom M. · Galway',
-      status: 'New',
-      time: 'Just now',
-      color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-    },
-    {
-      avatar: 'S',
-      title: 'Slate roof replacement',
-      client: 'Sarah C. · Oranmore',
-      status: 'New',
-      time: '14m ago',
-      color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-    },
-    {
-      avatar: 'P',
-      title: 'Gutter inspection',
-      client: 'Patrick B. · Salthill',
-      status: 'Replied',
-      time: '1h ago',
-      color: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
-    },
-    {
-      avatar: 'M',
-      title: 'Chimney flashing leak',
-      client: 'Michael K. · Athenry',
-      status: 'Replied',
-      time: '3h ago',
-      color: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
-    },
-  ];
+  const titleLine1 = growth.title || 'Go Further';
+  const titleAccent = growth.titleAccent || 'Our Growth Package';
 
   return (
     <section
       id="why-open-hours"
       ref={sectionRef}
-      className="relative w-full bg-white py-20 sm:py-28 md:py-32 overflow-hidden scroll-mt-24"
+      aria-label="Growth package details"
+      className="relative w-full overflow-hidden scroll-mt-24 bg-white text-[#0F2A35] py-20 sm:py-28 md:py-32"
     >
       {/* Anchor for backward compatibility with navbar "What you get" links */}
       <div id="what-you-get" className="sr-only scroll-mt-24" />
 
-      <Container>
+      <Container className="relative z-10">
         {/* =========================================================================
-            SECTION HEADER: Centered on white background
+            SECTION HEADER (Two Columns on Desktop, matching reference composition)
            ========================================================================= */}
-        <div className="flex flex-col items-center text-center mb-14 sm:mb-20 relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#E3B896]/20 border border-[#E3B896]/40 shadow-xs mb-4 text-xs font-semibold uppercase tracking-wider text-[#9E5D2A]">
-            <Sparkles className="w-3.5 h-3.5 text-[#C8642E]" />
-            <span>{bento.pill}</span>
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12 sm:mb-16"
+        >
+          {/* Left Column: Pill + 3-Line H2 */}
+          <div className="max-w-2xl">
+            {/* Small pill label */}
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-5 bg-[#EEF3F4] border border-[#0F2A35]/10 text-[#1E4A5C]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E07A5F]" />
+              <span>{growth.pill || 'Growth package'}</span>
+            </div>
+
+            {/* H2 Heading on three lines matching reference styling */}
+            <h2 className="text-[clamp(2.4rem,5vw,4.25rem)] font-bold tracking-tight leading-[1.06]">
+              <span className="block text-[#0F2A35]">
+                {titleLine1}
+              </span>
+              <span className="block text-[#0F2A35]">
+                with <span className="italic font-normal">Our </span>
+                <span className="italic font-normal bg-gradient-to-r from-[#D97724] via-[#E07A5F] to-[#C8642E] bg-clip-text text-transparent">
+                  {titleAccent.replace(/^Our\s+/i, '')}
+                </span>
+              </span>
+            </h2>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-[#0F2A35] max-w-3xl leading-[1.12]">
-            {bento.title}
-          </h2>
-
-          <p className="text-base sm:text-lg text-[#5E6F77] max-w-2xl mx-auto mt-3 font-normal leading-relaxed">
-            {bento.subtitle}
-          </p>
-        </div>
-
-        {/* =========================================================================
-            12-COLUMN BENTO GRID: Solid Opaque Tiles with Drop Shadows on White
-            Row 1: Tile A (4 cols) | Tile B (8 cols)
-            Row 2: Tile C (5 cols) | Tile D (4 cols) | Tile E (3 cols)
-            Row 3: Tile F (5 cols) | Tile G (7 cols)
-            Row 4: Full-width Chip Row (12 cols)
-           ========================================================================= */}
-        <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 relative z-10">
-          {/* =========================================================================
-              TILE A: Vivid Accent Tile (4 cols)
-              Peach/terracotta gradient with dark text & twinkling dots
-             ========================================================================= */}
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-6%' }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:col-span-4 bg-gradient-to-br from-[#E8B08F] via-[#E3B896] to-[#C8642E] rounded-3xl p-7 sm:p-8 relative overflow-hidden flex flex-col justify-between shadow-[0_20px_50px_rgba(11,27,34,0.18),0_2px_6px_rgba(11,27,34,0.08),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/20 min-h-[360px] group transition-transform duration-300 hover:-translate-y-1"
-          >
-            {/* Subtle Twinkling Dots inside Tile A */}
-            <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-              {TWINKLE_DOTS_A.map((dot, i) => (
-                <span
-                  key={i}
-                  className="absolute rounded-full bg-white animate-twinkle"
-                  style={{
-                    top: dot.top,
-                    left: dot.left,
-                    width: `${dot.size}px`,
-                    height: `${dot.size}px`,
-                    opacity: dot.opacity,
-                    animationDelay: dot.delay,
-                  }}
-                />
-              ))}
-            </div>
-
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/10 border border-black/10 text-xs font-bold text-[#0F2A35] uppercase tracking-wider mb-5">
-                <Sparkles className="w-3.5 h-3.5 text-[#0F2A35]" />
-                <span>All-in-one</span>
-              </div>
-
-              <h3 className="text-2xl sm:text-[28px] font-extrabold text-[#0F2A35] tracking-tight leading-tight mb-3">
-                {bento.tileA.heading}
-              </h3>
-
-              <p className="text-sm sm:text-base text-[#0F2A35]/85 leading-relaxed font-medium">
-                {bento.tileA.text}
-              </p>
-            </div>
-
-            {/* Interconnected 3-element strip at the bottom */}
-            <div className="relative z-10 pt-6 mt-6 border-t border-black/10 grid grid-cols-3 gap-2 text-center text-[11px] font-bold text-[#0F2A35]">
-              <div className="p-2 rounded-xl bg-white/40 backdrop-blur-xs flex flex-col items-center gap-1 shadow-xs">
-                <Globe className="w-4 h-4 text-[#0F2A35]" />
-                <span>Website</span>
-              </div>
-              <div className="p-2 rounded-xl bg-white/40 backdrop-blur-xs flex flex-col items-center gap-1 shadow-xs">
-                <MapPin className="w-4 h-4 text-[#0F2A35]" />
-                <span>Google Profile</span>
-              </div>
-              <div className="p-2 rounded-xl bg-white/40 backdrop-blur-xs flex flex-col items-center gap-1 shadow-xs">
-                <PhoneCall className="w-4 h-4 text-[#0F2A35]" />
-                <span>Enquiries</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* =========================================================================
-              TILE B: Large Solid Dark Tile with Tilted Dashboard Mockup (8 cols)
-              If features.enquiryInbox: clean inbox mockup
-              If false: sample trade website mockup
-             ========================================================================= */}
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-6%' }}
-            transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              background: 'linear-gradient(145deg, #102835 0%, #0C202B 100%)',
-            }}
-            className="lg:col-span-8 rounded-3xl p-7 sm:p-8 border border-white/10 shadow-[0_20px_50px_rgba(11,27,34,0.18),0_2px_6px_rgba(11,27,34,0.08),inset_0_1px_0_rgba(255,255,255,0.12)] relative overflow-hidden flex flex-col justify-between min-h-[360px] group transition-transform duration-300 hover:-translate-y-1"
-          >
-            {/* Twinkling dots behind dashboard inside Tile B */}
-            <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-              {TWINKLE_DOTS_B.map((dot, i) => (
-                <span
-                  key={i}
-                  className="absolute rounded-full bg-white animate-twinkle"
-                  style={{
-                    top: dot.top,
-                    left: dot.left,
-                    width: `${dot.size}px`,
-                    height: `${dot.size}px`,
-                    opacity: dot.opacity,
-                    animationDelay: dot.delay,
-                  }}
-                />
-              ))}
-            </div>
-
-            <div className="relative z-10 flex items-start justify-between gap-4 mb-4">
-              <div>
-                <span className="text-xs font-bold tracking-[0.14em] uppercase text-[#E3B896] block mb-1">
-                  {features.enquiryInbox ? bento.tileB.inboxLabel : 'Website'}
-                </span>
-                <h3 className="text-2xl sm:text-[28px] font-extrabold text-white tracking-tight leading-snug">
-                  {features.enquiryInbox ? bento.tileB.inboxHeading : bento.tileB.fallbackHeading}
-                </h3>
-                <p className="text-sm sm:text-base text-white/75 mt-1.5 max-w-lg leading-relaxed">
-                  {bento.tileB.inboxText}
-                </p>
-              </div>
-
-              <span className="shrink-0 text-[10px] uppercase font-mono tracking-wider text-white/40 px-2 py-0.5 rounded bg-white/5 border border-white/10">
-                {bento.tileB.tag}
-              </span>
-            </div>
-
-            {/* Tilted Dashboard Window */}
-            <div className="relative z-10 pt-2 perspective-[1200px] overflow-hidden sm:overflow-visible">
-              <div
-                className={`w-full bg-[#081822] rounded-2xl border border-white/15 shadow-2xl p-3.5 transition-all duration-500 ${
-                  shouldReduceMotion ? '' : 'sm:rotate-x-[6deg] sm:-rotate-y-[6deg] sm:hover:rotate-x-0 sm:hover:rotate-y-0'
-                }`}
-                style={{
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                {/* Window header */}
-                <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/10">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-red-400/80" />
-                    <span className="w-2 h-2 rounded-full bg-amber-400/80" />
-                    <span className="w-2 h-2 rounded-full bg-emerald-400/80" />
-                    <span className="text-[11px] font-mono text-white/60 ml-2">
-                      {bento.tileB.businessName} — {features.enquiryInbox ? 'Enquiry Inbox' : 'Live Website'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] text-white/50">
-                    {features.enquiryInbox ? (
-                      <>
-                        <Inbox className="w-3.5 h-3.5 text-[#E3B896]" />
-                        <span>Real-time</span>
-                      </>
-                    ) : (
-                      <>
-                        <Laptop className="w-3.5 h-3.5 text-[#E3B896]" />
-                        <span>Responsive</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Sample enquiries list (or clean website preview fallback) */}
-                {features.enquiryInbox ? (
-                  <div className="space-y-1.5">
-                    {sampleEnquiries.map((enq) => (
-                      <div
-                        key={enq.title + enq.client}
-                        className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/5 transition-colors gap-2"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-6 h-6 rounded-full bg-[#1E4A5C] text-[#E3B896] text-[11px] font-bold flex items-center justify-center shrink-0">
-                            {enq.avatar}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-white truncate">
-                              {enq.title}
-                            </p>
-                            <p className="text-[11px] text-white/60 truncate">
-                              {enq.client}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${enq.color}`}
-                          >
-                            {enq.status}
-                          </span>
-                          <span className="text-[10px] font-mono text-white/50 hidden sm:inline">
-                            {enq.time}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 text-center">
-                    <Laptop className="w-8 h-8 text-[#E3B896] mx-auto mb-2" />
-                    <p className="text-xs font-bold text-white mb-1">Modern trade website</p>
-                    <p className="text-[11px] text-white/60">Fast, clear and built to catch enquiries.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* =========================================================================
-              TILE C: Solid Dark Tile with Floating UI Cards (5 cols)
-              Soft fade at edges with gentle drifting notification cards
-             ========================================================================= */}
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-6%' }}
-            transition={{ duration: 0.55, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              background: 'linear-gradient(145deg, #102835 0%, #0C202B 100%)',
-            }}
-            className="lg:col-span-5 rounded-3xl p-7 sm:p-8 border border-white/10 shadow-[0_20px_50px_rgba(11,27,34,0.18),0_2px_6px_rgba(11,27,34,0.08),inset_0_1px_0_rgba(255,255,255,0.12)] relative overflow-hidden flex flex-col justify-between min-h-[380px] group transition-transform duration-300 hover:-translate-y-1"
-          >
-            <div className="relative z-10 flex items-start justify-between gap-4 mb-4">
-              <div>
-                <span className="text-xs font-bold tracking-[0.14em] uppercase text-[#E3B896] block mb-1">
-                  Enquiry Routing
-                </span>
-                <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug">
-                  {bento.tileC.heading}
-                </h3>
-                <p className="text-sm text-white/75 mt-1.5 leading-relaxed">
-                  {bento.tileC.text}
-                </p>
-              </div>
-
-              <span className="shrink-0 text-[10px] uppercase font-mono tracking-wider text-white/40 px-2 py-0.5 rounded bg-white/5 border border-white/10">
-                {bento.tileC.tag}
-              </span>
-            </div>
-
-            {/* Floating Drift Cards */}
-            <div className="relative z-10 space-y-3 pt-2">
-              {/* Card 1: New quote request */}
-              <div
-                className={`p-3.5 rounded-2xl bg-[#081822] border border-white/12 shadow-lg flex items-center justify-between gap-3 ${
-                  shouldReduceMotion ? '' : 'animate-card-drift-1'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                    <MessageSquare className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-white">New quote request</div>
-                    <div className="text-[11px] text-white/60 truncate">
-                      Slate roof leak repair · Tom Murphy, Galway
-                    </div>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
-                  New
-                </span>
-              </div>
-
-              {/* Card 2: Confirmation sent to customer */}
-              <div
-                className={`p-3.5 rounded-2xl bg-[#081822] border border-white/12 shadow-lg flex items-center justify-between gap-3 ${
-                  shouldReduceMotion ? '' : 'animate-card-drift-2'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-4 h-4 text-sky-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-white">Confirmation sent to customer</div>
-                    <div className="text-[11px] text-white/60 truncate">
-                      Automatic email & SMS confirmation dispatched
-                    </div>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0">
-                  Sent
-                </span>
-              </div>
-
-              {/* Card 3: Follow-up queued (conditioned on flags) */}
-              {(features.enquiryTracking || features.afterHoursAutoReply || features.missedCallTextBack) && (
-                <div
-                  className={`p-3.5 rounded-2xl bg-[#081822] border border-white/12 shadow-lg flex items-center justify-between gap-3 ${
-                    shouldReduceMotion ? '' : 'animate-card-drift-3'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
-                      <Clock className="w-4 h-4 text-amber-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-white">Follow-up queued</div>
-                      <div className="text-[11px] text-white/60 truncate">
-                        Next morning follow-up ready in queue
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-                    Queued
-                  </span>
-                </div>
-              )}
-            </div>
-          </motion.div>
-
-          {/* =========================================================================
-              TILE D: Solid Dark Tile with Speed and Timeline (4 cols)
-              Numbers from config.bento.timeline (conceptDays, goLiveDays)
-             ========================================================================= */}
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-6%' }}
-            transition={{ duration: 0.55, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              background: 'linear-gradient(145deg, #102835 0%, #0C202B 100%)',
-            }}
-            className="lg:col-span-4 rounded-3xl p-7 sm:p-8 border border-white/10 shadow-[0_20px_50px_rgba(11,27,34,0.18),0_2px_6px_rgba(11,27,34,0.08),inset_0_1px_0_rgba(255,255,255,0.12)] relative overflow-hidden flex flex-col justify-between min-h-[380px] group transition-transform duration-300 hover:-translate-y-1"
-          >
-            <div>
-              <span className="text-xs font-bold tracking-[0.14em] uppercase text-[#E3B896] block mb-1">
-                {bento.timeline.eyebrow}
-              </span>
-              <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug">
-                About {bento.timeline.conceptDays} working days to a homepage concept. About {bento.timeline.goLiveDays} to go live.
-              </h3>
-            </div>
-
-            {/* 2-Node Animated Timeline Graphic */}
-            <div className="py-6 my-auto">
-              <div className="relative flex items-center justify-between mb-2">
-                {/* Track background */}
-                <div className="absolute top-1/2 left-4 right-4 h-1.5 -translate-y-1/2 bg-white/10 rounded-full" />
-                {/* Animated connecting fill */}
-                <motion.div
-                  initial={{ width: '0%' }}
-                  animate={isInView ? { width: '100%' } : { width: '0%' }}
-                  transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute top-1/2 left-4 h-1.5 -translate-y-1/2 bg-gradient-to-r from-[#E3B896] to-emerald-400 rounded-full max-w-[calc(100%-2rem)]"
-                />
-
-                {/* Left Node: Concept */}
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-9 h-9 rounded-full bg-[#1E4A5C] border-2 border-[#E3B896] flex items-center justify-center text-xs font-bold text-white shadow-md">
-                    {bento.timeline.conceptDays}d
-                  </div>
-                  <span className="text-xs font-bold text-white mt-1.5">Concept</span>
-                  <span className="text-[10px] text-white/60">Day {bento.timeline.conceptDays}</span>
-                </div>
-
-                {/* Right Node: Go Live */}
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-9 h-9 rounded-full bg-emerald-700 border-2 border-emerald-400 flex items-center justify-center text-xs font-bold text-white shadow-md">
-                    {bento.timeline.goLiveDays}d
-                  </div>
-                  <span className="text-xs font-bold text-emerald-300 mt-1.5">Go live</span>
-                  <span className="text-[10px] text-white/60">Day {bento.timeline.goLiveDays}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-white/10">
-              <p className="text-xs text-white/65 leading-relaxed">
-                {bento.timeline.footnote}
-              </p>
-            </div>
-          </motion.div>
-
-          {/* =========================================================================
-              TILE E: Solid Dark Tile with Ownership (3 cols)
-              Rows with "Yours" chip: Your domain, Your website, Your content
-             ========================================================================= */}
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-6%' }}
-            transition={{ duration: 0.55, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              background: 'linear-gradient(145deg, #102835 0%, #0C202B 100%)',
-            }}
-            className="lg:col-span-3 rounded-3xl p-7 border border-white/10 shadow-[0_20px_50px_rgba(11,27,34,0.18),0_2px_6px_rgba(11,27,34,0.08),inset_0_1px_0_rgba(255,255,255,0.12)] relative overflow-hidden flex flex-col justify-between min-h-[380px] group transition-transform duration-300 hover:-translate-y-1"
-          >
-            <div>
-              <span className="text-xs font-bold tracking-[0.14em] uppercase text-[#E3B896] block mb-1">
-                {bento.ownership.eyebrow}
-              </span>
-              <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug mb-5">
-                {bento.ownership.heading}
-              </h3>
-
-              {/* 3 Rows with Icons and "Yours" Chips */}
-              <div className="space-y-2.5">
-                {bento.ownership.items.map((row, idx) => {
-                  const RowIcon = idx === 0 ? Globe : idx === 1 ? Key : ShieldCheck;
-                  return (
-                    <div
-                      key={row.label}
-                      className="px-3 py-2 rounded-2xl bg-white/[0.06] border border-white/10 flex items-center justify-between shadow-xs"
-                    >
-                      <div className="flex items-center gap-2 text-white min-w-0">
-                        <div className="w-6 h-6 rounded-full bg-[#1E4A5C] flex items-center justify-center shrink-0">
-                          <RowIcon className="w-3.5 h-3.5 text-[#E3B896]" />
-                        </div>
-                        <span className="text-xs font-semibold truncate">{row.label}</span>
-                      </div>
-                      <span className="text-[10px] font-bold text-[#0F2A35] bg-[#E3B896] px-2 py-0.5 rounded-full shrink-0">
-                        {row.chip}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {bento.ownership.noLockIn && (
-              <div className="pt-4 border-t border-white/10">
-                <p className="text-xs text-white/75 leading-relaxed font-medium">
-                  {bento.ownership.footer}
-                </p>
-              </div>
-            )}
-          </motion.div>
-
-          {/* =========================================================================
-              TILE F: Solid Dark Tile with Fixed Price (5 cols)
-              Check rows from config.promises
-             ========================================================================= */}
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-6%' }}
-            transition={{ duration: 0.55, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              background: 'linear-gradient(145deg, #102835 0%, #0C202B 100%)',
-            }}
-            className="lg:col-span-5 rounded-3xl p-7 sm:p-8 border border-white/10 shadow-[0_20px_50px_rgba(11,27,34,0.18),0_2px_6px_rgba(11,27,34,0.08),inset_0_1px_0_rgba(255,255,255,0.12)] relative overflow-hidden flex flex-col justify-between min-h-[300px] group transition-transform duration-300 hover:-translate-y-1"
-          >
-            <div>
-              <span className="text-xs font-bold tracking-[0.14em] uppercase text-[#E3B896] block mb-1">
-                {bento.fixedPrice.eyebrow}
-              </span>
-              <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug mb-5">
-                {bento.fixedPrice.heading}
-              </h3>
-
-              {/* Check rows from config.promises */}
-              <div className="space-y-3">
-                {promises.map((promise) => (
-                  <div key={promise} className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                    </div>
-                    <span className="text-sm font-medium text-white/90 leading-snug">
-                      {promise}
-                    </span>
-                  </div>
+          {/* Right Column: Avatars stack + Compact Info Block */}
+          <div className="flex flex-col lg:items-end text-left lg:text-right gap-3 pb-1">
+            {/* Client Avatars Stack with yellow '+' badge matching reference */}
+            <div className="flex items-center lg:justify-end gap-1.5">
+              <div className="flex -space-x-2.5 overflow-hidden">
+                {clientAvatars.map((av, idx) => (
+                  <img
+                    key={idx}
+                    src={av.localSrc || av.src}
+                    alt={av.name || 'Client photo'}
+                    className="inline-block w-8 h-8 rounded-full ring-2 ring-white object-cover shadow-2xs"
+                    loading="lazy"
+                  />
                 ))}
               </div>
-            </div>
-
-            <div className="pt-4 mt-6 border-t border-white/10">
-              <p className="text-xs text-white/70 leading-relaxed">
-                {bento.fixedPrice.footer}
-              </p>
-            </div>
-          </motion.div>
-
-          {/* =========================================================================
-              TILE G: Solid Dark Tile with Support (7 cols)
-              Support after you go live with link to care plan
-              "Lifetime" / "Zero extra charges" / "Support included" removed completely
-             ========================================================================= */}
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-6%' }}
-            transition={{ duration: 0.55, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              background: 'linear-gradient(145deg, #102835 0%, #0C202B 100%)',
-            }}
-            className="lg:col-span-7 rounded-3xl p-7 sm:p-8 border border-white/10 shadow-[0_20px_50px_rgba(11,27,34,0.18),0_2px_6px_rgba(11,27,34,0.08),inset_0_1px_0_rgba(255,255,255,0.12)] relative overflow-hidden flex flex-col justify-between min-h-[300px] group transition-transform duration-300 hover:-translate-y-1"
-          >
-            <div>
-              <div className="flex items-center gap-2.5 mb-2">
-                <span className="text-xs font-bold tracking-[0.14em] uppercase text-[#E3B896]">
-                  {bento.support.eyebrow}
-                </span>
-                <span className="text-[11px] font-semibold text-[#E3B896] bg-[#E3B896]/15 px-2.5 py-0.5 rounded-full border border-[#E3B896]/30">
-                  {bento.support.chip}
-                </span>
-              </div>
-
-              <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug mb-3">
-                {bento.support.heading}
-              </h3>
-
-              <p className="text-sm sm:text-base text-white/80 max-w-xl leading-relaxed">
-                {bento.support.text}
-              </p>
-
-              {bento.support.terms ? (
-                <p className="text-xs text-white/55 mt-2 leading-relaxed">
-                  {bento.support.terms}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="pt-5 mt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
-              <span className="text-xs text-white/60">
-                Transparent monthly hosting, security & updates.
-              </span>
-              <a
-                href="#pricing"
-                onClick={handleScrollToCarePlan}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-[#0F2A35] bg-white hover:bg-[#E3B896] transition-colors shadow-sm cursor-pointer"
+              <div
+                className="w-7 h-7 rounded-full bg-[#E59838] text-[#0F2A35] text-xs font-black flex items-center justify-center ring-2 ring-white shadow-2xs"
+                aria-hidden="true"
               >
-                <span>{bento.support.linkText}</span>
+                +
+              </div>
+            </div>
+
+            {/* Line 1: Growth package price */}
+            {priceDisplay && (
+              <p className="text-[17px] sm:text-[19px] font-semibold tracking-tight text-[#0F2A35]">
+                Growth package, from {priceDisplay}
+              </p>
+            )}
+
+            {/* Line 2: Fixed price promise */}
+            {hasMatchingPromises && (
+              <p className="text-sm max-w-sm text-[#5E6F77]">
+                Fixed price. A written quote before we start.
+              </p>
+            )}
+
+            {/* Button: Talk to Us */}
+            <div className="mt-1">
+              <a
+                href={config.bookingUrl || '#about'}
+                onClick={(e) => {
+                  if (!config.bookingUrl) {
+                    e.preventDefault();
+                    document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="inline-flex items-center gap-2 h-10 px-5 rounded-full text-xs font-semibold uppercase tracking-wider border border-[#0F2A35]/25 text-[#0F2A35] hover:bg-[#0F2A35]/5 hover:border-[#0F2A35]/50 transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E07A5F]"
+              >
+                <span>Talk to Us</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </a>
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          {/* =========================================================================
-              ROW 4: "Included in every build" Chip Row (Full-width, 12 cols)
-              Solid Dark Tile with derived count from config.coreEssentials.length
-             ========================================================================= */}
+        {/* =========================================================================
+            BENTO GRID (12 Columns, Desktop total height ~580-620px)
+           ========================================================================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:h-[600px]">
+          {/* =====================================================================
+              CARD 1 (Left, tall, light gray): 5 Columns, both rows
+             ===================================================================== */}
           <motion.div
-            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-4%' }}
-            transition={{ duration: 0.55, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+            transition={{ duration: 0.65, delay: shouldReduceMotion ? 0 : 0.1, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={shouldReduceMotion ? undefined : { y: -4 }}
+            className="lg:col-span-5 rounded-[28px] sm:rounded-[32px] bg-[#E9EDEF] p-7 sm:p-8 flex flex-col justify-between overflow-hidden relative shadow-[0_16px_40px_rgba(15,42,53,0.08)] min-h-[500px] lg:min-h-0 lg:h-full border border-[#0F2A35]/[0.08]"
             style={{
-              background: 'linear-gradient(145deg, #102835 0%, #0C202B 100%)',
+              backgroundImage: 'radial-gradient(rgba(15, 42, 53, 0.08) 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
             }}
-            className="lg:col-span-12 rounded-3xl p-6 sm:p-7 border border-white/10 shadow-[0_20px_50px_rgba(11,27,34,0.18),0_2px_6px_rgba(11,27,34,0.08),inset_0_1px_0_rgba(255,255,255,0.12)] mt-2"
           >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2 h-2 rounded-full bg-[#E3B896]" />
-                <h4 className="text-sm sm:text-base font-bold text-white tracking-tight uppercase">
-                  Included in every build
-                </h4>
-                <span className="text-xs font-semibold text-[#E3B896] bg-[#E3B896]/15 px-2.5 py-0.5 rounded-full border border-[#E3B896]/30">
-                  {coreEssentials.length} essentials
-                </span>
-              </div>
-              <span className="text-xs text-white/50">
-                Ready on day one with zero hidden setup fees
+            {/* Top Text Area */}
+            <div className="relative z-10">
+              <h3 className="text-[24px] sm:text-[28px] font-bold tracking-tight text-[#0F2A35] leading-snug mb-2.5">
+                {card1Title}
+              </h3>
+              <p className="text-[14.5px] leading-relaxed text-[#35505C] mb-5 max-w-sm">
+                {card1Text}
+              </p>
+
+              {/* Small outlined pill button */}
+              <button
+                type="button"
+                onClick={handleScrollToGrowthPricing}
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-[#0F2A35]/25 bg-white/80 hover:bg-white hover:border-[#0F2A35]/50 text-[#0F2A35] text-xs font-semibold shadow-2xs transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C]"
+              >
+                <span>See sample pages</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Illustrative tag in corner */}
+            <div className="absolute top-4 right-4 z-20">
+              <span className="text-[11px] font-mono tracking-tight text-[#5E6F77] bg-white/90 backdrop-blur-xs px-2 py-0.5 rounded-md border border-[#0F2A35]/10">
+                Live preview
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {coreEssentials.map((item) => {
-                const ItemIcon = getEssentialIcon(item.icon);
-                return (
-                  <div
-                    key={item.title}
-                    className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.07] transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-[#1E4A5C]/40 border border-[#E3B896]/20 flex items-center justify-center shrink-0">
-                      <ItemIcon className="w-4 h-4 text-[#E3B896]" />
-                    </div>
-                    <span className="text-xs sm:text-sm font-medium text-white/90">
-                      {item.title}
-                    </span>
+            {/* Bottom 55% Visual: Two overlapping phone mockups rising out of the bottom */}
+            <div className="relative w-full h-[270px] sm:h-[300px] mt-6 flex items-end justify-center pointer-events-none select-none">
+              <motion.div
+                animate={shouldReduceMotion ? undefined : { y: [0, -6, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                className="relative w-full h-full flex items-end justify-center"
+              >
+                {/* Phone 1 (Left & Foreground, dark chassis with dynamic island) */}
+                <div
+                  className="absolute -bottom-8 left-[4%] sm:left-[8%] w-[190px] sm:w-[210px] h-[325px] rounded-[32px] bg-[#0B1519] p-2.5 shadow-[0_24px_50px_rgba(15,42,53,0.3)] border-4 border-[#080E11] overflow-hidden z-10"
+                  aria-hidden="true"
+                >
+                  {/* Phone speaker pill / Dynamic Island */}
+                  <div className="w-14 h-3 bg-black rounded-full mx-auto mb-2 flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#1C2A30] ml-auto mr-2" />
                   </div>
-                );
-              })}
+
+                  {/* Phone screen UI */}
+                  <div className="bg-[#121E24] rounded-2xl p-2.5 h-full flex flex-col justify-start border border-white/10 text-white">
+                    {/* Brand bar */}
+                    <div className="flex items-center justify-between pb-1.5 border-b border-white/10 mb-2">
+                      <span className="text-[10px] font-bold text-white tracking-wide truncate">
+                        Apex Heat & Roofing
+                      </span>
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[#E59838] text-[#080E11] text-[8px] font-extrabold">
+                        <Phone className="w-2 h-2 fill-current" /> Call
+                      </span>
+                    </div>
+
+                    {/* Service & Area Highlight */}
+                    <p className="text-[11px] font-extrabold text-white leading-tight mb-1">
+                      Dublin & Wicklow Slate Roofs
+                    </p>
+                    <p className="text-[8px] text-white/70 leading-tight mb-2">
+                      SEAI Grant Registered · Free Quote
+                    </p>
+
+                    {/* Interactive quote request card */}
+                    <div className="bg-[#1B2B33] rounded-xl p-2 border border-white/10 shadow-2xs mb-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[8.5px] font-semibold text-[#EBB894]">Request Quote</span>
+                        <span className="text-[7.5px] text-white/50">10 min reply</span>
+                      </div>
+                      <div className="w-full h-3.5 bg-black/40 rounded text-[7.5px] px-1.5 text-white/60 flex items-center mb-1">
+                        Chimney repair & flashing...
+                      </div>
+                      <div className="w-full h-4 bg-[#E07A5F] hover:bg-[#C8642E] rounded text-white text-[8px] font-bold flex items-center justify-center shadow-xs">
+                        Get Trade Quote
+                      </div>
+                    </div>
+
+                    {/* Area coverage tags */}
+                    <div className="mt-auto pt-1.5 border-t border-white/10">
+                      <p className="text-[7.5px] text-white/60 font-mono truncate">
+                        Dublin 1–24 · Bray · Greystones
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phone 2 (Right & Background, angled slightly) */}
+                <div
+                  className="absolute -bottom-6 right-[4%] sm:right-[8%] w-[185px] sm:w-[200px] h-[310px] rounded-[30px] bg-[#142229] p-2.5 shadow-[0_20px_45px_rgba(15,42,53,0.25)] border-4 border-[#0F1B20] overflow-hidden transform rotate-3 origin-bottom-right"
+                  aria-hidden="true"
+                >
+                  {/* Dynamic Island */}
+                  <div className="w-12 h-2.5 bg-black rounded-full mx-auto mb-2" />
+
+                  {/* Enquiry Inbox card */}
+                  <div className="bg-[#192A33] rounded-2xl p-2.5 h-full flex flex-col justify-start border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[8.5px] font-bold text-white/70">Enquiry Dashboard</span>
+                      <span className="text-[7.5px] text-[#E59838] font-bold">New lead</span>
+                    </div>
+
+                    {/* Lead Card */}
+                    <div className="rounded-xl bg-[#213540] p-2 border border-white/10 shadow-xs mb-2">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-[9.5px] font-bold text-white truncate">David K. · Blackrock</span>
+                        <span className="px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 text-[7px] font-bold">
+                          Urgent
+                        </span>
+                      </div>
+                      <p className="text-[8px] text-white/70 leading-snug line-clamp-2">
+                        “Ridge tile loosened after storm. Need inspection this week.”
+                      </p>
+                    </div>
+
+                    {/* Quick Response Bar */}
+                    <div className="grid grid-cols-2 gap-1 mt-1">
+                      <div className="h-4 rounded bg-[#E07A5F] text-white text-[7.5px] font-bold flex items-center justify-center">
+                        Call Lead
+                      </div>
+                      <div className="h-4 rounded bg-white/10 text-white text-[7.5px] font-medium flex items-center justify-center">
+                        View Map
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </motion.div>
+
+          {/* =====================================================================
+              RIGHT SIDE COLUMN (7 Columns, Cards 2 & 3)
+             ===================================================================== */}
+          <div className="lg:col-span-7 flex flex-col gap-5 lg:h-full">
+            {/* ===================================================================
+                CARD 2 (Top Right, Golden-Amber Gradient): ~38% height
+               =================================================================== */}
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              transition={{ duration: 0.65, delay: shouldReduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
+              whileHover={shouldReduceMotion ? undefined : { y: -4 }}
+              className="lg:h-[38%] rounded-[28px] sm:rounded-[32px] p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between shadow-[0_16px_40px_rgba(217,119,36,0.22)] min-h-[220px]"
+              style={{
+                background: 'linear-gradient(135deg, #E59838 0%, #D97724 35%, #8C3D10 75%, #502008 100%)',
+              }}
+            >
+              {/* Soft light sweep highlight */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-25"
+                style={{
+                  background: 'linear-gradient(105deg, rgba(255,255,255,0.7) 0%, transparent 45%)',
+                }}
+                aria-hidden="true"
+              />
+
+              {/* Floating Rotating Text Badge with Play Icon (matching reference) */}
+              <a
+                href={config.bookingUrl || '#about'}
+                onClick={(e) => {
+                  if (!config.bookingUrl) {
+                    e.preventDefault();
+                    document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                aria-label="Get in touch"
+                className="absolute -top-1.5 right-6 z-20 w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-white hover:scale-105 transition-transform duration-200"
+              >
+                {/* Rotating SVG Circular Text */}
+                <motion.svg
+                  animate={shouldReduceMotion ? undefined : { rotate: 360 }}
+                  transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+                  viewBox="0 0 100 100"
+                  className="w-full h-full"
+                >
+                  <path
+                    id="circlePathBadge"
+                    d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0"
+                    fill="none"
+                  />
+                  <text className="text-[10px] font-bold tracking-[0.24em] fill-white drop-shadow-xs">
+                    <textPath href="#circlePathBadge">
+                      GET IN TOUCH • GET IN TOUCH •{' '}
+                    </textPath>
+                  </text>
+                </motion.svg>
+                {/* White circle with dark triangle play button in center */}
+                <span className="absolute w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-[#0F2A35] flex items-center justify-center shadow-md">
+                  <Play className="w-3.5 h-3.5 fill-[#0F2A35] ml-0.5" />
+                </span>
+              </a>
+
+              {/* Text content on left */}
+              <div className="relative z-10 max-w-[62%] sm:max-w-[66%]">
+                <h3 className="text-[24px] sm:text-[30px] font-bold tracking-tight text-white leading-tight mb-2">
+                  {card2Title}
+                </h3>
+                <p className="text-[13.5px] sm:text-[14.5px] font-medium leading-snug text-white/90">
+                  {card2Text}
+                </p>
+              </div>
+
+              {/* 3D Iridescent Faceted Crystal / Prism (matching reference artwork) */}
+              <div
+                className="absolute right-3 bottom-1 sm:right-7 sm:bottom-2 w-28 h-36 sm:w-36 sm:h-44 pointer-events-none select-none z-10"
+                aria-hidden="true"
+              >
+                <motion.svg
+                  animate={
+                    shouldReduceMotion
+                      ? undefined
+                      : {
+                          y: [0, -6, 0],
+                          rotate: [-1, 2, -1],
+                        }
+                  }
+                  transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+                  viewBox="0 0 140 180"
+                  className="w-full h-full drop-shadow-[0_20px_30px_rgba(0,0,0,0.45)]"
+                >
+                  <defs>
+                    {/* Prismatic Cyan / Blue Reflection Gradient */}
+                    <linearGradient id="prismCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#80E5FF" />
+                      <stop offset="45%" stopColor="#25A4E8" />
+                      <stop offset="100%" stopColor="#0B4B70" />
+                    </linearGradient>
+
+                    {/* Prismatic Center Highlight with Rainbow Caustics */}
+                    <linearGradient id="prismRainbow" x1="20%" y1="0%" x2="80%" y2="100%">
+                      <stop offset="0%" stopColor="#FFFFFF" />
+                      <stop offset="25%" stopColor="#FFF2A3" />
+                      <stop offset="60%" stopColor="#FF77B6" />
+                      <stop offset="85%" stopColor="#7EE6FF" />
+                      <stop offset="100%" stopColor="#1B384F" />
+                    </linearGradient>
+
+                    {/* Right facet golden reflection */}
+                    <linearGradient id="prismGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#FFE082" />
+                      <stop offset="50%" stopColor="#D97724" />
+                      <stop offset="100%" stopColor="#3E1A08" />
+                    </linearGradient>
+
+                    {/* Specular White Rim Highlight */}
+                    <linearGradient id="prismSpecular" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+                      <stop offset="70%" stopColor="#FFFFFF" stopOpacity="0.1" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Crystal Shadow on golden surface */}
+                  <ellipse cx="70" cy="168" rx="36" ry="7" fill="#250E04" opacity="0.45" />
+
+                  {/* Left Facet: Vivid Cyan & Electric Blue */}
+                  <polygon
+                    points="70,18 24,96 70,158"
+                    fill="url(#prismCyan)"
+                    stroke="rgba(255,255,255,0.4)"
+                    strokeWidth="1.2"
+                  />
+
+                  {/* Center Ridge Facet: Iridescent Spectral White & Pink Caustics */}
+                  <polygon
+                    points="70,18 70,158 98,92"
+                    fill="url(#prismRainbow)"
+                    stroke="rgba(255,255,255,0.6)"
+                    strokeWidth="1.2"
+                  />
+
+                  {/* Right Facet: Warm Golden Amber & Deep Bronze */}
+                  <polygon
+                    points="70,18 98,92 122,82"
+                    fill="url(#prismGold)"
+                    stroke="rgba(255,255,255,0.3)"
+                    strokeWidth="1.2"
+                  />
+
+                  {/* Bottom Right Facet */}
+                  <polygon
+                    points="70,158 98,92 122,82"
+                    fill="#4A1E06"
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth="1.2"
+                  />
+
+                  {/* Top Edge Specular Glint */}
+                  <line
+                    x1="70"
+                    y1="18"
+                    x2="24"
+                    y2="96"
+                    stroke="url(#prismSpecular)"
+                    strokeWidth="2"
+                  />
+                  <line
+                    x1="70"
+                    y1="18"
+                    x2="70"
+                    y2="158"
+                    stroke="#FFFFFF"
+                    strokeWidth="1.8"
+                    opacity="0.85"
+                  />
+                </motion.svg>
+              </div>
+            </motion.div>
+
+            {/* ===================================================================
+                CARD 3 (Bottom Right, Matte Dark Charcoal): ~62% height
+               =================================================================== */}
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              transition={{ duration: 0.65, delay: shouldReduceMotion ? 0 : 0.28, ease: [0.16, 1, 0.3, 1] }}
+              whileHover={shouldReduceMotion ? undefined : { y: -4 }}
+              className="lg:h-[62%] rounded-[28px] sm:rounded-[32px] bg-[#0F141C] p-7 sm:p-8 relative overflow-hidden flex flex-col justify-between shadow-[0_20px_50px_rgba(11,27,34,0.22)] min-h-[340px] border border-white/10"
+              style={{
+                backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px)',
+                backgroundSize: '20px 20px',
+              }}
+            >
+              <div>
+                {/* Title matching reference layout */}
+                <h3 className="text-[26px] sm:text-[32px] font-bold tracking-tight text-white mb-5">
+                  {growth.cards?.list?.title || 'Everything in Growth'}
+                </h3>
+
+                {/* Two-column bullet list with peach dots */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 max-w-xl">
+                  {/* Column 1 */}
+                  <ul className="space-y-2.5">
+                    {col1Bullets.map((bullet, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5 text-[0.92rem] sm:text-[0.95rem] text-[#D1D8DB] leading-snug">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#E07A5F] mt-1.5 flex-shrink-0" />
+                        <span>{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Column 2 */}
+                  <ul className="space-y-2.5">
+                    {col2Bullets.map((bullet, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5 text-[0.92rem] sm:text-[0.95rem] text-[#D1D8DB] leading-snug">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#E07A5F] mt-1.5 flex-shrink-0" />
+                        <span>{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Bottom Row: Buttons (Left) & 3D Pointer Cursor (Right) */}
+              <div className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-white/10 relative z-10">
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* Glowing outlined pill button "Get Growth" */}
+                  <button
+                    type="button"
+                    onClick={handleGetGrowth}
+                    className="inline-flex items-center gap-2 min-h-[44px] px-6 rounded-full border border-white text-white hover:bg-white/10 shadow-[0_0_24px_rgba(255,255,255,0.25)] hover:shadow-[0_0_32px_rgba(255,255,255,0.4)] text-sm font-semibold transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EBB894]"
+                  >
+                    <span>Get Growth</span>
+                    <ArrowRight className="w-4 h-4 text-white" />
+                  </button>
+
+                  {/* Secondary text link */}
+                  <button
+                    type="button"
+                    onClick={handleScrollToPricing}
+                    className="text-sm font-medium text-white/60 hover:text-white transition-colors cursor-pointer underline-offset-4 hover:underline"
+                  >
+                    See pricing
+                  </button>
+                </div>
+
+                {/* 3D Matte Dark Cursor / Pointer emerging from bottom-right (matching reference) */}
+                <div
+                  className="hidden sm:block absolute -right-4 -bottom-6 w-36 h-36 pointer-events-none select-none z-10"
+                  aria-hidden="true"
+                >
+                  <motion.svg
+                    animate={
+                      shouldReduceMotion
+                        ? undefined
+                        : {
+                            y: [0, -5, 0],
+                            x: [0, 4, 0],
+                          }
+                    }
+                    transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+                    viewBox="0 0 120 120"
+                    className="w-full h-full drop-shadow-[0_16px_28px_rgba(0,0,0,0.6)]"
+                  >
+                    <defs>
+                      {/* Top Matte Face */}
+                      <linearGradient id="cursorTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#2E3842" />
+                        <stop offset="60%" stopColor="#1B2228" />
+                        <stop offset="100%" stopColor="#10151A" />
+                      </linearGradient>
+
+                      {/* 3D Extrusion Side */}
+                      <linearGradient id="cursorSide" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#141A20" />
+                        <stop offset="100%" stopColor="#080C0F" />
+                      </linearGradient>
+
+                      {/* Top Edge Bevel Highlight */}
+                      <linearGradient id="cursorBevel" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#5B6A78" />
+                        <stop offset="100%" stopColor="#2A353E" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* 3D Extruded Shadow & Depth */}
+                    <path
+                      d="M28 22 L34 100 L56 78 L80 106 L96 92 L72 64 L104 60 Z"
+                      fill="url(#cursorSide)"
+                      transform="translate(4, 5)"
+                      opacity="0.9"
+                    />
+
+                    {/* Main Cursor Face */}
+                    <path
+                      d="M28 22 L34 100 L56 78 L80 106 L96 92 L72 64 L104 60 Z"
+                      fill="url(#cursorTop)"
+                      stroke="url(#cursorBevel)"
+                      strokeWidth="1.5"
+                    />
+
+                    {/* Subtle Top Facet Glint */}
+                    <path
+                      d="M28 22 L34 100 L56 78 Z"
+                      fill="#FFFFFF"
+                      opacity="0.08"
+                    />
+                  </motion.svg>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </Container>
-
-      {/* Embedded Animations for Twinkle and Card Drift */}
-      <style>{`
-        @keyframes twinkleAnim {
-          0%, 100% {
-            opacity: 0.15;
-            transform: scale(0.9);
-          }
-          50% {
-            opacity: 0.7;
-            transform: scale(1.15);
-          }
-        }
-        .animate-twinkle {
-          animation: twinkleAnim 4s ease-in-out infinite;
-        }
-
-        @keyframes cardDrift1 {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-4px);
-          }
-        }
-        .animate-card-drift-1 {
-          animation: cardDrift1 5s ease-in-out infinite;
-        }
-
-        @keyframes cardDrift2 {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(4px);
-          }
-        }
-        .animate-card-drift-2 {
-          animation: cardDrift2 6s ease-in-out infinite 0.5s;
-        }
-
-        @keyframes cardDrift3 {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-3px);
-          }
-        }
-        .animate-card-drift-3 {
-          animation: cardDrift3 5.5s ease-in-out infinite 1s;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .animate-twinkle,
-          .animate-card-drift-1,
-          .animate-card-drift-2,
-          .animate-card-drift-3 {
-            animation: none !important;
-            transform: none !important;
-          }
-        }
-      `}</style>
     </section>
   );
 }

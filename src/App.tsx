@@ -6,7 +6,7 @@ import WhatItDoes from './sections/WhatItDoes';
 import ConceptStudies from './sections/ConceptStudies';
 import VideoReviewSection from './sections/VideoReviewSection';
 import OurProcess from './sections/OurProcess';
-import SampleAudit from './sections/SampleAudit';
+import WhyChooseUs from './sections/WhyChooseUs';
 import WhatYouGet from './sections/WhatYouGet';
 import BuiltFast from './sections/BuiltFast';
 import WhyOpenHours from './sections/WhyOpenHours';
@@ -137,8 +137,8 @@ export default function App() {
       component: <Pricing onOpenAudit={() => handleOpenAudit()} />,
     },
     {
-      id: 'sample-audit',
-      component: <SampleAudit onOpenAudit={() => handleOpenAudit()} />,
+      id: 'why-choose-us',
+      component: <WhyChooseUs onOpenAudit={() => handleOpenAudit()} />,
     },
     {
       id: 'reviews',
@@ -162,6 +162,7 @@ export default function App() {
         <Footer
           onNavigatePage={handleNavigate}
           currentPage={currentPage}
+          onOpenAudit={() => handleOpenAudit()}
         />
       ),
     },

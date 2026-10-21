@@ -15,7 +15,6 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
@@ -29,7 +28,7 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
     setActiveIndex((prev) => (count > 0 ? (prev - 1 + count) % count : 0));
   }, [count]);
 
-  // Auto-slide every 5.5s, paused on hover/focus or reduced-motion
+  // Auto-slide every 3.8s (slightly faster), paused on hover/focus or reduced-motion
   useEffect(() => {
     if (count <= 1 || isPaused) {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -44,7 +43,7 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
 
     timerRef.current = setInterval(() => {
       nextSlide();
-    }, 5500);
+    }, 3800);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -85,13 +84,6 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
     setTouchStartX(null);
     setTouchEndX(null);
     setIsPaused(false);
-  };
-
-  const toggleExpand = (id: string) => {
-    setExpandedIds((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
   };
 
   if (count === 0) {
@@ -187,13 +179,13 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
 
         {/* 2. Review Cards Carousel */}
         <div
-          className="relative w-full max-w-4xl mx-auto px-2 sm:px-6"
+          className="relative w-full max-w-5xl mx-auto px-2 sm:px-6"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Card Frame Window */}
-          <div className="relative min-h-[300px] flex items-center justify-center">
+          {/* Card Frame Window with increased height for full glanceability */}
+          <div className="relative h-[500px] sm:h-[520px] flex items-center justify-center">
             {testimonials.map((item, idx) => {
               const offset = getOffset(idx);
               const isActive = idx === activeIndex;
@@ -204,6 +196,7 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
               if (!isVisible) return null;
 
               // Position & scale classes based on offset
+              // Reduced card width & shifted side cards so next and prev reviews are clearly visible
               let transformStyles: React.CSSProperties = {
                 transform: 'translate3d(0, 0, 0) scale(1)',
                 opacity: 1,
@@ -213,24 +206,19 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
 
               if (isPrev) {
                 transformStyles = {
-                  transform: 'translate3d(-28%, 0, 0) scale(0.88)',
-                  opacity: 0.35,
+                  transform: 'translate3d(-62%, 0, 0) scale(0.92)',
+                  opacity: 0.55,
                   zIndex: 10,
-                  filter: 'blur(1px)',
                   pointerEvents: 'auto',
                 };
               } else if (isNext) {
                 transformStyles = {
-                  transform: 'translate3d(28%, 0, 0) scale(0.88)',
-                  opacity: 0.35,
+                  transform: 'translate3d(62%, 0, 0) scale(0.92)',
+                  opacity: 0.55,
                   zIndex: 10,
-                  filter: 'blur(1px)',
                   pointerEvents: 'auto',
                 };
               }
-
-              const isExpanded = !!expandedIds[item.id];
-              const isLongText = item.text.length > 220;
 
               return (
                 <div
@@ -240,20 +228,22 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
                     if (isNext) nextSlide();
                   }}
                   style={transformStyles}
-                  className={`absolute top-0 w-full max-w-[620px] transition-all duration-500 ease-out ${
-                    !isActive ? 'cursor-pointer hidden sm:block' : ''
+                  className={`absolute top-0 w-[92vw] max-w-[440px] h-[480px] sm:h-[500px] transition-all duration-350 ease-out ${
+                    !isActive
+                      ? 'cursor-pointer hidden sm:block hover:opacity-85'
+                      : ''
                   }`}
                   aria-hidden={!isActive}
                 >
                   <article
-                    className={`w-full rounded-[28px] bg-white border border-[rgba(15,42,53,0.1)] p-6 sm:p-8 md:p-9 transition-shadow duration-300 ${
+                    className={`w-full h-full rounded-[28px] bg-white border border-[rgba(15,42,53,0.1)] p-6 sm:p-7 flex flex-col justify-between transition-shadow duration-300 ${
                       isActive
                         ? 'shadow-[0_20px_50px_rgba(15,42,53,0.12),0_4px_16px_rgba(15,42,53,0.06)] ring-1 ring-[rgba(15,42,53,0.05)]'
                         : 'shadow-md hover:shadow-lg'
                     }`}
                   >
                     {/* Top Row: Stars rating + Source badge */}
-                    <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-[rgba(15,42,53,0.06)]">
+                    <div className="flex items-center justify-between gap-4 pb-3 border-b border-[rgba(15,42,53,0.06)] flex-shrink-0">
                       {/* Star Rating */}
                       <div className="flex items-center gap-1" aria-label={`Rating: ${item.rating || 5} out of 5 stars`}>
                         {Array.from({ length: 5 }).map((_, starIdx) => {
@@ -296,45 +286,27 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
                       )}
                     </div>
 
-                    {/* Review Text */}
-                    <div className="relative mb-6">
-                      <blockquote
-                        className={`text-[15px] sm:text-[16px] leading-[1.65] text-[#243E48] font-normal whitespace-pre-line transition-all duration-300 ${
-                          !isExpanded && isLongText ? 'line-clamp-4' : ''
-                        }`}
-                      >
+                    {/* Review Text - Full review visible at a glance */}
+                    <div className="flex-1 flex flex-col justify-center my-3 overflow-y-auto pr-1">
+                      <blockquote className="text-[14px] sm:text-[15px] leading-[1.65] text-[#243E48] font-normal whitespace-pre-line">
                         “{item.text}”
                       </blockquote>
-
-                      {/* Read More button if text exceeds limit */}
-                      {isLongText && isActive && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleExpand(item.id);
-                          }}
-                          className="mt-2 text-xs font-semibold text-[#1E4A5C] hover:text-[#0F2A35] hover:underline cursor-pointer"
-                        >
-                          {isExpanded ? 'Show less' : 'Read more'}
-                        </button>
-                      )}
                     </div>
 
                     {/* Reviewer Details Row */}
-                    <div className="flex items-center justify-between gap-4 pt-4 border-t border-[rgba(15,42,53,0.06)]">
-                      <div className="flex items-center gap-3.5">
+                    <div className="flex items-center justify-between gap-4 pt-3.5 border-t border-[rgba(15,42,53,0.06)] flex-shrink-0">
+                      <div className="flex items-center gap-3">
                         <img
                           src={item.photo}
                           alt={item.fullName}
                           loading="lazy"
-                          className="w-11 h-11 rounded-full object-cover border border-[rgba(15,42,53,0.12)] shadow-xs"
+                          className="w-10 h-10 rounded-full object-cover border border-[rgba(15,42,53,0.12)] shadow-xs flex-shrink-0"
                         />
-                        <div className="text-left">
-                          <p className="text-[15px] font-semibold text-[#0F2A35] leading-snug">
+                        <div className="text-left min-w-0">
+                          <p className="text-[14px] font-semibold text-[#0F2A35] leading-snug truncate">
                             {item.fullName}
                           </p>
-                          <p className="text-xs text-[#5E6F77] leading-tight">
+                          <p className="text-xs text-[#5E6F77] leading-tight truncate">
                             {item.role}
                             {item.location ? ` · ${item.location}` : ''}
                           </p>
@@ -355,7 +327,7 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
           </div>
 
           {/* Navigation Controls: Prev / Next buttons & Dots */}
-          <div className="flex items-center justify-between mt-8 pt-4 max-w-[620px] mx-auto">
+          <div className="flex items-center justify-between mt-8 pt-4 max-w-[440px] mx-auto">
             {/* Prev Button */}
             <button
               type="button"

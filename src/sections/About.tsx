@@ -76,6 +76,7 @@ export default function About({ onOpenPrivacy }: AboutProps) {
     { id: 'starter', label: 'Starter', price: `from €${SETUP_FROM.starter}` },
     { id: 'standard', label: 'Standard', price: `from €${SETUP_FROM.standard}` },
     { id: 'growth', label: 'Growth', price: `from €${SETUP_FROM.growth}` },
+    { id: 'custom', label: 'Custom build', price: '' },
     { id: 'not-sure', label: 'Not sure yet', price: '' },
   ];
 
@@ -83,6 +84,19 @@ export default function About({ onOpenPrivacy }: AboutProps) {
   // "Get a design like this" buttons and case-study cards scroll here and prefill message and trade.
   // Pricing buttons preselect the matching option chip.
   useEffect(() => {
+    const handleCustomPrefill = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.option) setSelectedOption(detail.option);
+      if (detail?.message) setMessage(detail.message);
+      if (detail?.trade) setSelectedTrade(detail.trade);
+      if (sectionRef.current) {
+        sectionRef.current.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => {
+          messageInputRef.current?.focus();
+        }, 500);
+      }
+    };
+
     const handleGlobalClick = (e: MouseEvent) => {
       const btn = (e.target as HTMLElement)?.closest('button, a');
       if (!btn) return;
@@ -123,12 +137,17 @@ export default function About({ onOpenPrivacy }: AboutProps) {
       if (pricingSection) {
         const tierCard = btn.closest('article, .relative, [class*="rounded"]');
         const content = (tierCard?.textContent || '') + ' ' + text;
-        if (/growth/i.test(content)) {
+        if (/custom|request this quote/i.test(content)) {
+          setSelectedOption('Custom build');
+        } else if (/growth/i.test(content)) {
           setSelectedOption('Growth');
+          setMessage("I'm interested in the Growth package.");
         } else if (/standard/i.test(content)) {
           setSelectedOption('Standard');
+          setMessage("I'm interested in the Standard package.");
         } else if (/starter/i.test(content)) {
           setSelectedOption('Starter');
+          setMessage("I'm interested in the Starter package.");
         } else if (/1-page|free/i.test(content)) {
           setSelectedOption('1-Page starter');
         }
@@ -138,8 +157,12 @@ export default function About({ onOpenPrivacy }: AboutProps) {
       }
     };
 
+    window.addEventListener('openhours:prefill-contact', handleCustomPrefill);
     document.addEventListener('click', handleGlobalClick);
-    return () => document.removeEventListener('click', handleGlobalClick);
+    return () => {
+      window.removeEventListener('openhours:prefill-contact', handleCustomPrefill);
+      document.removeEventListener('click', handleGlobalClick);
+    };
   }, []);
 
   // Form submission handler

@@ -1,7 +1,7 @@
 import React from 'react';
 import PageHeader from '../components/PageHeader';
 import OurProcess from '../sections/OurProcess';
-import SampleAudit from '../sections/SampleAudit';
+import WhyChooseUs from '../sections/WhyChooseUs';
 import NeedFromYou from '../sections/NeedFromYou';
 import FinalCTA from '../sections/FinalCTA';
 
@@ -22,8 +22,8 @@ export default function HowItWorksPage({ onOpenAudit }: HowItWorksPageProps) {
       {/* 2. "The Way We Deliver" pinned Process section (id="process") */}
       <OurProcess />
 
-      {/* 4. Sample audit section (id="sample-audit") */}
-      <SampleAudit onOpenAudit={onOpenAudit} />
+      {/* 4. Why Choose Us section (id="why-choose-us") */}
+      <WhyChooseUs onOpenAudit={onOpenAudit} />
 
       {/* 5. NeedFromYou (new) */}
       <NeedFromYou />

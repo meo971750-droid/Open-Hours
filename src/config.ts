@@ -231,6 +231,97 @@ export interface TestimonialItem {
   isTrade: boolean;
 }
 
+export interface GrowthCardsConfig {
+  pages: {
+    title: string;
+    text: string;
+  };
+  profile: {
+    title: string;
+    text: string;
+  };
+  list: {
+    title: string;
+  };
+}
+
+export interface GrowthConfig {
+  theme: 'dark' | 'light';
+  pill: string;
+  title: string;
+  titleAccent: string;
+  cards: GrowthCardsConfig;
+}
+
+export interface WhyChooseUsItem {
+  number: string;
+  question: string;
+  answer: string;
+}
+
+export interface WhyChooseUsBannerConfig {
+  headlinePrefix: string;
+  headlineAccent: string;
+  headlineSuffix: string;
+  buttonText: string;
+}
+
+export interface WhyChooseUsConfig {
+  titlePrefix: string;
+  titleAccent: string;
+  subtitle: string;
+  items: WhyChooseUsItem[];
+  banner?: WhyChooseUsBannerConfig;
+}
+
+export interface PricingTierConfig {
+  id: string;
+  name: string;
+  price: number;
+  days: number;
+  description: string;
+  features?: string[];
+  tag?: string;
+  highlighted?: boolean;
+}
+
+export interface PricingConfig {
+  pill: string;
+  title: string;
+  titleAccent: string;
+  subtext?: string;
+  tiers: PricingTierConfig[];
+  smallPrint?: string;
+}
+
+export type BuilderFeatureGroup = 'Website' | 'Get found on Google' | 'Handle enquiries' | 'Ongoing';
+
+export interface BuilderFeatureConfig {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  billing: 'one-time' | 'monthly';
+  icon: string;
+  group: BuilderFeatureGroup;
+  flag?: string;
+  includedInTiers: Array<'starter' | 'standard' | 'growth'>;
+}
+
+export interface BuilderConfig {
+  title: string;
+  subtext?: string;
+  basePrice?: number;
+  includedPages: number;
+  pricePerExtraPage: number;
+  minPages: number;
+  maxPages: number;
+  pageExamples: string[];
+  features: BuilderFeatureConfig[];
+  alwaysIncluded: string[];
+  estimateNote: string;
+}
+
 export interface AppConfig {
   studioName: string;
   legalName: string;
@@ -242,6 +333,10 @@ export interface AppConfig {
   wayOfWorking: WayOfWorkingConfig;
   bento: BentoConfig;
   whoFor: WhoForConfig;
+  growth: GrowthConfig;
+  whyChooseUs: WhyChooseUsConfig;
+  pricing: PricingConfig;
+  builder: BuilderConfig;
   promises: string[];
   coreEssentials: CoreEssentialItem[];
   testimonials: TestimonialItem[];
@@ -449,6 +544,334 @@ export const config: AppConfig = {
         packageKey: 'growth',
       },
     ],
+  },
+  growth: {
+    theme: 'light',
+    pill: 'Growth package',
+    title: 'Go Further',
+    titleAccent: 'Our Growth Package',
+    cards: {
+      pages: {
+        title: 'Pages for every service and area',
+        text: 'Clear, dedicated pages that help you show up when local customers search.',
+      },
+      profile: {
+        title: 'Responsive & Google Setup',
+        text: 'Our responsive approach ensures your website and Google profile adapt to every screen and search.',
+      },
+      list: {
+        title: 'Everything in Growth',
+      },
+    },
+  },
+  whyChooseUs: {
+    titlePrefix: 'Why',
+    titleAccent: 'Choose Us?',
+    subtitle:
+      "Every trade and local business journey is unique, so our approach is never one-size-fits-all. We tailor our entire build process to the specifics of your trade and goals.",
+    items: [
+      {
+        number: '01',
+        question: 'What Does Maximizing Value Mean for You?',
+        answer:
+          'We focus on real enquiries rather than vanity metrics, agreeing on a clear written fixed price before work starts so there are never surprises.',
+      },
+      {
+        number: '02',
+        question: 'Control Your Future Involvement',
+        answer:
+          'You own your domain, code, design, and assets 100% from day one. No locked proprietary builders and complete freedom to take your site anywhere.',
+      },
+      {
+        number: '03',
+        question: 'Direct Access, No Middlemen',
+        answer:
+          'You work directly with the founder on video walkthroughs and WhatsApp. No endless ticket queues, junior hand-offs, or confusing tech jargon.',
+      },
+      {
+        number: '04',
+        question: 'How Do You Protect Your Reputation?',
+        answer:
+          "Your website honors your company's hard-earned reputation, ensuring it continues to win high-value jobs with lifetime support while hosted with us.",
+      },
+    ],
+    banner: {
+      headlinePrefix: 'Walk away',
+      headlineAccent: 'with the highest return and',
+      headlineSuffix: 'peace of mind.',
+      buttonText: "Let's Talk About Your Business",
+    },
+  },
+  pricing: {
+    pill: 'Pricing',
+    title: 'Simple pricing,',
+    titleAccent: 'fixed in writing',
+    subtext: 'Every build starts with a written quote agreed before we start. No hidden extras.',
+    tiers: [
+      {
+        id: 'starter',
+        name: 'Starter',
+        price: 790,
+        days: 7,
+        description: 'A small, complete website for your trade.',
+        features: [
+          '3 to 5 pages, mobile-first',
+          'Quote and site-visit request form, with call buttons',
+          'Google Business Profile set-up and tidy-up',
+          'HTTPS and spam-protected forms',
+          'Support after you go live',
+        ],
+      },
+      {
+        id: 'standard',
+        name: 'Standard',
+        price: 1290,
+        days: 10,
+        tag: 'Recommended',
+        highlighted: true,
+        description: 'A fuller site that handles enquiries, even after hours.',
+        features: [
+          '5 to 8 pages, with a project gallery and service-area pages',
+          'Copy written for each service, with FAQs',
+          'Photo quote requests: customers can send a picture of the job',
+          'After-hours auto-reply and missed-call text-back',
+          'Local search foundations',
+          'Review-request link set-up',
+        ],
+      },
+      {
+        id: 'growth',
+        name: 'Growth',
+        price: 2200,
+        days: 14,
+        description: 'For more services, more areas and bigger projects.',
+        features: [
+          'As many pages as your business needs, agreed in your written quote',
+          'A page for each service and area',
+          'Advanced Google Business Profile optimisation',
+          'Google Ads campaign set-up (ad spend paid directly to Google)',
+          'Enquiry tracking and a monthly report',
+          'Review-request flow',
+        ],
+      },
+    ],
+    smallPrint: "Ad spend is paid to Google directly. Domain is registered in the client's name.",
+  },
+  builder: {
+    title: 'Need something different?',
+    subtext: 'Choose the pages and features you want. The estimate updates as you go.',
+    basePrice: 790,
+    includedPages: 1,
+    pricePerExtraPage: 0, // OWNER: set your real price per extra page, hidden if 0
+    minPages: 1,
+    maxPages: 15,
+    pageExamples: ['Home', 'Services', 'About', 'Contact', 'Service areas'],
+    features: [
+      // OWNER: set real prices, rows with price 0 stay hidden
+
+      // Group: Website
+      {
+        id: 'projectGallery',
+        name: 'Project gallery',
+        description: 'Showcase photos of recent work to build confidence',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'images',
+        group: 'Website',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'serviceCopyFaqs',
+        name: 'Copy written for each service, with FAQs',
+        description: 'Clear, plain-language text and common questions for each service',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'file-text',
+        group: 'Website',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'securitySpam',
+        name: 'HTTPS and spam-protected forms',
+        description: 'SSL encryption and spam-protected enquiry forms',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'lock',
+        group: 'Website',
+        includedInTiers: ['starter', 'standard', 'growth'],
+      },
+
+      // Group: Get found on Google
+      {
+        id: 'gbp',
+        name: 'Google Business Profile set-up',
+        description: 'Profile set-up, verification guidance and tidy-up',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'map-pin',
+        group: 'Get found on Google',
+        flag: 'googleBusinessProfile',
+        includedInTiers: ['starter', 'standard', 'growth'],
+      },
+      {
+        id: 'advancedGbp',
+        name: 'Advanced Google Business Profile optimisation',
+        description: 'Full profile optimisation to help you stand out in local map searches',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'map-pin',
+        group: 'Get found on Google',
+        flag: 'googleBusinessProfile',
+        includedInTiers: ['growth'],
+      },
+      {
+        id: 'serviceAreaPages',
+        name: 'Service-area pages',
+        description: 'Dedicated pages for towns and localities you cover',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'layers',
+        group: 'Get found on Google',
+        flag: 'serviceAreaPages',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'localSearchFoundations',
+        name: 'Local search foundations',
+        description: 'Clean geographic structure so Google understands your location',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'globe',
+        group: 'Get found on Google',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'reviewRequests',
+        name: 'Review requests',
+        description: 'Link setup and automated flow to collect client reviews',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'star',
+        group: 'Get found on Google',
+        flag: 'reviewRequests',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'googleAds',
+        name: 'Google Ads campaign set-up',
+        description: 'Targeted local search campaign (ad spend paid directly to Google)',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'target',
+        group: 'Get found on Google',
+        includedInTiers: ['growth'],
+      },
+
+      // Group: Handle enquiries
+      {
+        id: 'quoteForm',
+        name: 'Quote request form',
+        description: 'Quote and site-visit request form with call buttons',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'form',
+        group: 'Handle enquiries',
+        includedInTiers: ['starter', 'standard', 'growth'],
+      },
+      {
+        id: 'photoQuote',
+        name: 'Photo quote requests',
+        description: 'Customers can attach photos of the job directly to quote requests',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'camera',
+        group: 'Handle enquiries',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'whatsapp',
+        name: 'WhatsApp button',
+        description: 'Direct chat button for fast enquiries from mobile visitors',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'message',
+        group: 'Handle enquiries',
+        includedInTiers: [],
+      },
+      {
+        id: 'afterHoursAutoReply',
+        name: 'After-hours auto-reply',
+        description: 'Automatic response and details capture when calls or forms arrive after hours',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'clock',
+        group: 'Handle enquiries',
+        flag: 'afterHoursAutoReply',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'missedCallTextBack',
+        name: 'Missed-call text-back',
+        description: "Automatic text sent back to callers when you cannot answer on a job",
+        price: 0, // OWNER: set real price
+        billing: 'monthly',
+        icon: 'phone',
+        group: 'Handle enquiries',
+        flag: 'missedCallTextBack',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'enquiryTracking',
+        name: 'Enquiry tracking',
+        description: 'Track phone calls, WhatsApp messages and quote forms with a monthly report',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'bar-chart',
+        group: 'Handle enquiries',
+        flag: 'enquiryTracking',
+        includedInTiers: ['growth'],
+      },
+      {
+        id: 'voiceAgent',
+        name: 'Voice agent',
+        description: 'Automated assistant answering calls when your tools are in hand',
+        price: 0, // OWNER: set real price
+        billing: 'monthly',
+        icon: 'mic',
+        group: 'Handle enquiries',
+        flag: 'voiceAgent',
+        includedInTiers: [],
+      },
+
+      // Group: Ongoing
+      {
+        id: 'carePlan',
+        name: 'Care plan',
+        description: 'Hosting, security, updates and backups',
+        price: 39,
+        billing: 'monthly',
+        icon: 'shield',
+        group: 'Ongoing',
+        includedInTiers: [],
+      },
+      {
+        id: 'supportAfterLive',
+        name: 'Support after you go live',
+        description: 'Ongoing support and fixes to what we build',
+        price: 0, // OWNER: set real price
+        billing: 'one-time',
+        icon: 'life-buoy',
+        group: 'Ongoing',
+        includedInTiers: ['starter', 'standard', 'growth'],
+      },
+    ],
+    alwaysIncluded: [
+      'Fixed price agreed in writing before we start',
+      'Domain and website owned 100% by you',
+      'Fast, mobile-friendly design',
+      'HTTPS security and spam protection',
+    ],
+    estimateNote: 'This is an estimate. We confirm a fixed price in writing before we start.',
   },
   promises: [
     'Quote before we start',
