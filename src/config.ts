@@ -34,89 +34,60 @@ export interface FrictionPair {
   requiresFlag: string | null;
 }
 
-export interface WayOfWorkingStep {
-  caption: string;
-  highlight: string;
-}
-
-export interface WayOfWorkingScene {
-  id: string;
-  tab: string;
-  headline: string;
-  text?: string;
-  caption: string;
-  steps: WayOfWorkingStep[];
-  pairs?: FrictionPair[];
-}
-
-export interface WayOfWorkingPace {
-  scrollVhPerStep: number;
-  mobileScrollVhPerStep: number;
-  stepAnimMs: number;
-  stepHoldMs: number;
-  rankStepDwellMs: number;
-  sceneTransitionMs: number;
-  elementStaggerMs: number;
-  lineDrawMs: number;
-  stepMinDwellMs?: number;
-  rewindStepMs?: number;
-  sceneVh?: number;
-  rankSceneVh?: number;
-  ctaSceneVh?: number;
-}
-
-export interface WayOfWorkingTiming {
-  s1: number;
-  s2: number;
-  s3: number;
-  s4: number;
-  s5: number;
-  s6: number;
-  s7: number;
-  s8: number;
-  speed: number;
-  pauseOnHover: boolean;
-}
-
 export interface WayOfWorkingPaletteItem {
-  id: string;
   bg: string;
-  bgSolid?: string;
-  bgStart?: string;
-  bgEnd?: string;
-  textPrimary: string;
-  textSecondary: string;
-  pillBg: string;
-  pillText: string;
-  pillBorder: string;
-  isDark: boolean;
+  bg2: string;
+  ink: string;
+  accent: string;
+  accent2: string;
   [key: string]: any;
 }
 
 export interface WayOfWorkingPalette {
-  s1: WayOfWorkingPaletteItem;
-  s2: WayOfWorkingPaletteItem;
-  s3: WayOfWorkingPaletteItem;
-  s4: WayOfWorkingPaletteItem;
-  s5: WayOfWorkingPaletteItem;
-  s6: WayOfWorkingPaletteItem;
-  s7: WayOfWorkingPaletteItem;
-  s8: WayOfWorkingPaletteItem;
+  searches: WayOfWorkingPaletteItem;
+  journey: WayOfWorkingPaletteItem;
+  solve: WayOfWorkingPaletteItem;
+  build: WayOfWorkingPaletteItem;
+  findable: WayOfWorkingPaletteItem;
+  rank: WayOfWorkingPaletteItem;
+  alwaysOn: WayOfWorkingPaletteItem;
+  talk: WayOfWorkingPaletteItem;
   [key: string]: WayOfWorkingPaletteItem;
 }
 
+export interface WayOfWorkingPace {
+  sceneSeconds: number;
+  holdAfterBeat: number;
+  sceneTransition: number;
+  stagger: number;
+  lineDraw: number;
+  captionDwellPerWord: number;
+  scrollVhPerScene: number;
+  [key: string]: any;
+}
+
+export interface WayOfWorkingSceneItem {
+  id: string;
+  title: string;
+  accentWord: string;
+  captions: string[];
+  enabledWhen?: string;
+  [key: string]: any;
+}
+
+export type WayOfWorkingScene = WayOfWorkingSceneItem;
+
 export interface WayOfWorkingConfig {
   title: string;
-  studioVoice: 'we';
-  ctaHeadline: string;
-  ctaText: string;
-  voiceAgentTag: string;
+  studioVoice: string; // "we" or "I", not decided; leave empty, do not guess
   sampleTown: string;
   sampleTrade: string;
-  timing: WayOfWorkingTiming;
+  voiceAgentTag: string;
+  storyLabel: string;
   palette: WayOfWorkingPalette;
   pace: WayOfWorkingPace;
-  scenes: WayOfWorkingScene[];
+  scenes: WayOfWorkingSceneItem[];
+  [key: string]: any;
 }
 
 export interface BentoTileA {
@@ -931,361 +902,112 @@ export const config: AppConfig = {
     ratingLabel: '',
   },
   wayOfWorking: {
-    title: 'The Way We Deliver',
-    studioVoice: 'we',
-    ctaHeadline: 'Want us to do this exact process with your business?',
-    ctaText: "Tell us your trade and your area, and we'll show you what your customers see today.",
+    title: 'The way we deliver',
+    studioVoice: '', // "we" or "I", not decided; leave empty, do not guess
+    sampleTown: 'Sampletown',
+    sampleTrade: 'roofer',
     voiceAgentTag: 'Optional add-on',
-    sampleTown: 'Galway',
-    sampleTrade: 'roofers',
-    timing: {
-      s1: 10000,
-      s2: 11000,
-      s3: 10000,
-      s4: 11000,
-      s5: 10000,
-      s6: 13000,
-      s7: 11000,
-      s8: 0, // holds indefinitely on final CTA
-      speed: 1, // default 1, higher is slower
-      pauseOnHover: false,
-    },
+    storyLabel: 'Illustrative story',
+    sampleAreas: ['North District', 'West End', 'Harbour View'],
     palette: {
-      s1: {
-        id: 'night',
-        bg: 'linear-gradient(135deg, #0B1B2B 0%, #12303D 100%)',
-        bgSolid: '#0B1B2B',
-        textPrimary: '#FFFFFF',
-        textSecondary: 'rgba(255, 255, 255, 0.72)',
-        pillBg: 'rgba(255, 255, 255, 0.1)',
-        pillText: '#F4B860',
-        pillBorder: 'rgba(244, 184, 96, 0.3)',
-        mapLines: '#2A5A6B',
-        accentAmber: '#F4B860',
-        missingRed: '#E5484D',
-        isDark: true,
-      },
-      s2: {
-        id: 'paper',
-        bg: '#FBF6EE',
-        bgSolid: '#FBF6EE',
-        textPrimary: '#1B2B34',
-        textSecondary: 'rgba(27, 43, 52, 0.72)',
-        pillBg: 'rgba(200, 100, 46, 0.1)',
-        pillText: '#C8642E',
-        pillBorder: 'rgba(200, 100, 46, 0.25)',
-        journeyLine: '#C8642E',
-        frictionRed: '#D64545',
-        faintNumeral: '#E9DFD2',
-        isDark: false,
-      },
-      s3: {
-        id: 'mint',
-        bg: '#EEF8F3',
-        bgStart: '#FBF6EE',
-        bgSolid: '#EEF8F3',
-        textPrimary: '#143828',
-        textSecondary: 'rgba(20, 56, 40, 0.72)',
-        pillBg: 'rgba(30, 158, 106, 0.12)',
-        pillText: '#1E9E6A',
-        pillBorder: 'rgba(30, 158, 106, 0.3)',
-        fixedEmerald: '#1E9E6A',
-        frictionRed: '#D64545',
-        faintNumeral: '#D5ECE0',
-        isDark: false,
-      },
-      s4: {
-        id: 'blueprint',
-        bg: '#12304A',
-        bgSolid: '#12304A',
-        textPrimary: '#FFFFFF',
-        textSecondary: 'rgba(255, 255, 255, 0.75)',
-        pillBg: 'rgba(232, 176, 143, 0.15)',
-        pillText: '#E8B08F',
-        pillBorder: 'rgba(232, 176, 143, 0.3)',
-        gridLine: 'rgba(255, 255, 255, 0.08)',
-        peachAccent: '#E8B08F',
-        isDark: true,
-      },
-      s5: {
-        id: 'sky',
-        bg: '#EAF3FF',
-        bgSolid: '#EAF3FF',
-        textPrimary: '#0F2A4A',
-        textSecondary: 'rgba(15, 42, 74, 0.72)',
-        pillBg: 'rgba(47, 107, 255, 0.1)',
-        pillText: '#2F6BFF',
-        pillBorder: 'rgba(47, 107, 255, 0.25)',
-        accentBlue: '#2F6BFF',
-        cardBg: '#FFFFFF',
-        isDark: false,
-      },
-      s6: {
-        id: 'dawn',
-        bgStart: '#1B1F4B',
-        bgEnd: '#F6C9A5',
-        bg: 'linear-gradient(135deg, #1B1F4B 0%, #F6C9A5 100%)',
-        bgSolid: '#1B1F4B',
-        textPrimary: '#FFFFFF',
-        textSecondary: 'rgba(255, 255, 255, 0.8)',
-        pillBg: 'rgba(242, 181, 68, 0.18)',
-        pillText: '#F2B544',
-        pillBorder: 'rgba(242, 181, 68, 0.35)',
-        businessGold: '#F2B544',
-        isDark: true,
-      },
-      s7: {
-        id: 'midnight',
-        bg: '#0A1220',
-        bgSolid: '#0A1220',
-        textPrimary: '#FFFFFF',
-        textSecondary: 'rgba(255, 255, 255, 0.75)',
-        pillBg: 'rgba(45, 212, 191, 0.15)',
-        pillText: '#2DD4BF',
-        pillBorder: 'rgba(45, 212, 191, 0.3)',
-        waveformTeal: '#2DD4BF',
-        phoneAmber: '#F4B860',
-        isDark: true,
-      },
-      s8: {
-        id: 'brand',
-        bg: '#12303D',
-        bgSolid: '#12303D',
-        textPrimary: '#FFFFFF',
-        textSecondary: 'rgba(255, 255, 255, 0.75)',
-        pillBg: 'rgba(232, 176, 143, 0.15)',
-        pillText: '#E8B08F',
-        pillBorder: 'rgba(232, 176, 143, 0.3)',
-        peachAccent: '#E8B08F',
-        isDark: true,
-      },
+      searches: { bg: '#0B1B2B', bg2: '#12303D', ink: '#F3F6F8', accent: '#F4B860', accent2: '#E5484D' },
+      journey:  { bg: '#FBF6EE', bg2: '#F3E9DA', ink: '#12303D', accent: '#C8642E', accent2: '#E8B08F' },
+      solve:    { bg: '#EEF8F3', bg2: '#DDF1E7', ink: '#0F3B2C', accent: '#1E9E6A', accent2: '#9ED9BC' },
+      build:    { bg: '#12304A', bg2: '#0B1F31', ink: '#EAF1F6', accent: '#E8B08F', accent2: '#7FA6C2' },
+      findable: { bg: '#EAF3FF', bg2: '#D7E7FB', ink: '#10284A', accent: '#2F6BFF', accent2: '#9DBCF7' },
+      rank:     { bg: '#1B1F4B', bg2: '#F6C9A5', ink: '#FFF7EE', accent: '#F2B544', accent2: '#F6C9A5' }, // deep navy-indigo, never violet or purple
+      alwaysOn: { bg: '#0A1220', bg2: '#0F1B2E', ink: '#E8EEF4', accent: '#2DD4BF', accent2: '#F4B860' },
+      talk:     { bg: '#12303D', bg2: '#0B1B22', ink: '#FFFFFF', accent: '#E8B08F', accent2: '#C8642E' },
     },
     pace: {
-      scrollVhPerStep: 25,
-      mobileScrollVhPerStep: 20,
-      stepAnimMs: 1200,
-      stepHoldMs: 700,
-      stepMinDwellMs: 1900,
-      rankStepDwellMs: 2600,
-      rewindStepMs: 450,
-      sceneTransitionMs: 1000,
-      elementStaggerMs: 300,
-      lineDrawMs: 2200,
+      sceneSeconds: 8,
+      holdAfterBeat: 1.4,
+      sceneTransition: 1.1,
+      stagger: 0.12,
+      lineDraw: 1.6,
+      captionDwellPerWord: 0.38,
+      scrollVhPerScene: 90,
     },
     scenes: [
       {
         id: 'searches',
-        tab: '01 Searches',
-        headline: "Your customers are searching. They just can't find you.",
-        caption: 'Illustrative example',
-        steps: [
-          {
-            caption: 'Someone in Galway searches on a phone.',
-            highlight: 'search',
-          },
-          {
-            caption: 'They see three competitors, not you.',
-            highlight: 'competitors',
-          },
-          {
-            caption: 'Your business is listed without a website.',
-            highlight: 'your-biz',
-          },
-          {
-            caption: 'The customer calls a competitor instead.',
-            highlight: 'veer',
-          },
+        title: "Your customers are searching. They just can't find you.",
+        accentWord: 'searching.',
+        captions: [
+          'A homeowner needs a roofer tonight.',
+          'Local roofers show up, each with a website.',
+          'You are listed, but there is nothing to click.',
+          'They tap a competitor instead.',
         ],
       },
       {
         id: 'journey',
-        tab: '02 Journey',
-        headline: 'We map your customer journey and find where it breaks.',
-        caption: 'Illustrative example',
-        steps: [
-          {
-            caption: 'We map your whole customer journey.',
-            highlight: 'intro',
-          },
-          {
-            caption: 'No website to click: they bounce.',
-            highlight: 'click',
-          },
-          {
-            caption: 'Hard to contact: they give up.',
-            highlight: 'website',
-          },
-          {
-            caption: 'Missed call after hours: customer lost.',
-            highlight: 'call',
-          },
-          {
-            caption: 'No follow-up: the enquiry goes cold.',
-            highlight: 'followup',
-          },
+        title: 'We map your customer journey and find where it breaks.',
+        accentWord: 'journey',
+        captions: [
+          'We follow your customer from search to call.',
+          'Four places where enquiries slip away.',
         ],
       },
       {
         id: 'solve',
-        tab: '03 Solve',
-        headline: 'This is what we actually solve.',
-        caption: 'Illustrative example.',
-        steps: [
-          {
-            caption: 'We find and fix every break.',
-            highlight: 'intro',
-          },
-          {
-            caption: 'A clear website with one action.',
-            highlight: 'fix-website',
-          },
-          {
-            caption: 'Call and quote buttons on every page.',
-            highlight: 'fix-mobile',
-          },
-          {
-            caption: 'Every missed call gets answered.',
-            highlight: 'fix-afterhours',
-          },
-          {
-            caption: 'Every enquiry is logged and confirmed.',
-            highlight: 'fix-followup',
-          },
-          {
-            caption: 'The customer reaches you every time.',
-            highlight: 'finish',
-          },
-        ],
-        pairs: [
-          {
-            problem: 'No website to click',
-            fix: 'A clear website with one next step',
-            requiresFlag: null,
-          },
-          {
-            problem: 'Hard to contact on mobile',
-            fix: 'Call and quote buttons on every page',
-            requiresFlag: null,
-          },
-          {
-            problem: 'Missed call after hours',
-            fix: 'After-hours handling',
-            requiresFlag: 'afterHours',
-          },
-          {
-            problem: 'No follow-up',
-            fix: 'Every enquiry confirmed and logged',
-            requiresFlag: 'enquiryTracking',
-          },
+        title: 'This is what we actually solve.',
+        accentWord: 'solve.',
+        captions: [
+          'Each gap gets a fix.',
+          'The customer reaches you.',
         ],
       },
       {
         id: 'build',
-        tab: '04 Build',
-        headline: 'We build a website made to catch enquiries.',
-        caption: 'Illustrative example',
-        steps: [
-          {
-            caption: 'We start with a fast blueprint.',
-            highlight: 'blueprint',
-          },
-          {
-            caption: 'Call button and headline always visible.',
-            highlight: 'header',
-          },
-          {
-            caption: 'Simple quote form for quick enquiries.',
-            highlight: 'quote',
-          },
-          {
-            caption: 'Every enquiry lands in your inbox.',
-            highlight: 'inbox',
-          },
+        title: 'We build a website made to catch enquiries.',
+        accentWord: 'enquiries.',
+        captions: [
+          'We draw the site around one goal.',
+          'Call button, headline, quote form.',
+          'Every enquiry gets confirmed.',
         ],
       },
       {
         id: 'findable',
-        tab: '05 Findable',
-        headline: 'We make it easy for Google to understand you.',
-        caption: 'Illustrative example',
-        steps: [
-          {
-            caption: 'Google needs clear signals about you.',
-            highlight: 'hub',
-          },
-          {
-            caption: 'A verified Google Business Profile.',
-            highlight: 'gbp',
-          },
-          {
-            caption: 'Dedicated pages for each service area.',
-            highlight: 'service-areas',
-          },
-          {
-            caption: 'Fresh reviews from your happy customers.',
-            highlight: 'reviews',
-          },
+        title: 'We make it easy for Google to understand you.',
+        accentWord: 'Google',
+        captions: [
+          'Your business profile gets set up properly.',
+          'Pages for the areas you cover.',
+          'A simple way to ask happy customers.',
         ],
       },
       {
         id: 'rank',
-        tab: '06 Rank',
-        headline: 'Ranking takes months, not days.',
-        caption: 'Illustrative. Results vary and take time.',
-        steps: [
-          {
-            caption: 'Local rankings build month by month.',
-            highlight: 'start',
-          },
-          {
-            caption: 'Over weeks, you start to appear.',
-            highlight: 'month2',
-          },
-          {
-            caption: 'Nobody guarantees rank. We stay honest.',
-            highlight: 'honesty',
-          },
+        title: 'Ranking takes months, not days.',
+        accentWord: 'days.',
+        captions: [
+          'Local rankings build slowly.',
+          'Groundwork adds up, month by month.',
+          'Nobody can promise a position. We never do.',
         ],
       },
       {
-        id: 'always-on',
-        tab: '07 Always on',
-        headline: 'Enquiries get handled around the clock.',
-        caption: 'Illustrative example',
-        steps: [
-          {
-            caption: 'A homeowner calls late at night.',
-            highlight: 'incoming-call',
-          },
-          {
-            caption: 'Our assistant answers and says so.',
-            highlight: 'ai-intro',
-          },
-          {
-            caption: 'It takes name, job, and postcode.',
-            highlight: 'ai-dialog',
-          },
-          {
-            caption: 'Every enquiry answered, even after hours.',
-            highlight: 'inbox-urgent',
-          },
+        id: 'alwaysOn',
+        title: 'Enquiries get handled around the clock.',
+        accentWord: 'around',
+        captions: [
+          'A call comes in at night.',
+          'The assistant says it is an AI.',
+          'Name, job and postcode are taken.',
+          'The enquiry is logged for the morning.',
         ],
+        enabledWhen: 'voiceAgent',
       },
       {
         id: 'talk',
-        tab: '08 Talk',
-        headline: 'Want us to do this exact process with your business?',
-        text: "Tell us your trade and your area, and we'll show you what your customers see today.",
-        caption: 'Illustrative story. Search results vary and take time to build. We never promise rankings or a set number of enquiries.',
-        steps: [
-          {
-            caption: 'Calls route, forms ping, quotes flow.',
-            highlight: 'recap',
-          },
-          {
-            caption: 'Ready to get more local work?',
-            highlight: 'cta',
-          },
+        title: 'Want us to do this exact process with your business?',
+        accentWord: 'process',
+        subline: "Tell us your trade and your area, and we'll show you what your customers see today.",
+        captions: [
+          'Calls route, forms ping, quotes flow.',
+          'Ready to get more local work?',
         ],
       },
     ],
