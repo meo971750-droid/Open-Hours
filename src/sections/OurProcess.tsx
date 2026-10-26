@@ -198,11 +198,11 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
       const st = scrollTargetRef.current;
       const progressDelta = st.targetProgress - st.currentProgress;
 
-      // Responsive interpolation (0.22) smooths mouse wheel ticks while keeping tracking immediate
+      // Responsive interpolation (0.18) smooths mouse wheel ticks while keeping tracking immediate and stopping cleanly on pause
       if (Math.abs(progressDelta) < 0.0001) {
         st.currentProgress = st.targetProgress;
       } else {
-        st.currentProgress += progressDelta * 0.22;
+        st.currentProgress += progressDelta * 0.18;
       }
 
       const progress = st.currentProgress;
@@ -213,8 +213,8 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
       const nextIndex = Math.max(0, Math.min(totalScenes - 1, Math.floor(rawSceneProgress)));
       const fraction = Math.max(0, Math.min(1, rawSceneProgress - nextIndex));
 
-      // 0 to 0.85 scrubs the scene animation frame-by-frame (0s to 8.0s); 0.85 to 1.0 is a stable hold at 8.0s
-      const calculatedElapsed = fraction < 0.85 ? (fraction / 0.85) * 8.0 : 8.0;
+      // 0 to 0.88 scrubs the scene animation frame-by-frame (0s to 8.0s); 0.88 to 1.0 is a stable hold at 8.0s
+      const calculatedElapsed = fraction < 0.88 ? (fraction / 0.88) * 8.0 : 8.0;
 
       setActiveSceneIndex(nextIndex);
       setSceneElapsed(Math.round(calculatedElapsed * 100) / 100);
@@ -227,15 +227,13 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
       let targetZoom = isMobile ? basePreset.mobileZoom : basePreset.zoom;
 
       if (currentSceneItem?.id === 'searches') {
-        if (calculatedElapsed >= 2.2) {
-          targetX = 640;
-          targetY = 460;
-          targetZoom = isMobile ? 1.45 : 1.4;
-        } else {
-          targetX = 740;
-          targetY = 460;
-          targetZoom = isMobile ? 1.15 : 1.0;
-        }
+        const zoomP = Math.max(0, Math.min(1, (calculatedElapsed - 2.0) / 1.5));
+        const easedP = 1 - Math.pow(1 - zoomP, 3);
+        const startZoom = isMobile ? 1.15 : 1.0;
+        const endZoom = isMobile ? 1.45 : 1.4;
+        targetX = 740 + (640 - 740) * easedP;
+        targetY = 460;
+        targetZoom = startZoom + (endZoom - startZoom) * easedP;
       }
 
       const cam = cameraRef.current;
@@ -243,7 +241,7 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
       cam.targetY = targetY;
       cam.targetZoom = targetZoom;
 
-      const camLerp = 0.12;
+      const camLerp = 0.25;
       cam.currentX += (cam.targetX - cam.currentX) * camLerp;
       cam.currentY += (cam.targetY - cam.currentY) * camLerp;
       cam.currentZoom += (cam.targetZoom - cam.currentZoom) * camLerp;
@@ -367,10 +365,8 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
     }
   }, [activeSceneIndex, totalScenes, handleScrollToScene, shouldReduceMotion]);
 
-  // Scroll vh per scene: 90vh desktop / 70vh mobile
-  const scrollVhPerScene = isMobile
-    ? wwdConfig.pace.scrollVhPerScene ? Math.min(70, wwdConfig.pace.scrollVhPerScene) : 70
-    : (wwdConfig.pace.scrollVhPerScene || 90);
+  // Scroll vh per scene: 180vh desktop / 140vh mobile (gives twice the scroll track so animations are slower, clearer, and easier to absorb)
+  const scrollVhPerScene = isMobile ? 140 : 180;
   const trackHeightVh = totalScenes * scrollVhPerScene + 100;
 
   return (
@@ -441,40 +437,6 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
           }
         }
 
-        @keyframes wwd-caret {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-
-        @keyframes wwd-pulse-slow {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 1; }
-        }
-
-        @keyframes wwd-ring-pulse-1 {
-          0% { transform: scale(1); opacity: 0.45; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-
-        @keyframes wwd-ring-pulse-2 {
-          0% { transform: scale(1); opacity: 0.45; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-
-        @keyframes wwd-pulse-soft {
-          0% { transform: scale(1); opacity: 0.45; }
-          100% { transform: scale(1.35); opacity: 0; }
-        }
-
-        @keyframes wwd-scene-fade {
-          0% { transform: scale(0.98); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes wwd-check-draw {
-          0% { stroke-dashoffset: 20; }
-          100% { stroke-dashoffset: 0; }
-        }
       `}</style>
 
       {/* ========================================================= */}
@@ -871,14 +833,72 @@ function StylizedStageView({
 }: StylizedStageViewProps) {
   const cameraTransformStyle = `translate(${800 - camX * camZoom}px, ${450 - camY * camZoom}px) scale(${camZoom})`;
 
+  // Easing and clamp helpers for frame-by-frame scroll scrubbing
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  const progressBetween = (t: number, tStart: number, tEnd: number) => {
+    if (t <= tStart) return 0;
+    if (t >= tEnd) return 1;
+    return (t - tStart) / (tEnd - tStart);
+  };
+  const easeOutCubic = (t: number) => {
+    const p = clamp01(t);
+    return 1 - Math.pow(1 - p, 3);
+  };
+
   // Subtle scroll-driven parallax offsets (far 0.4x, near 1.0x, max 24px total offset)
   const farOffset = isStatic ? 0 : Math.round((scrollProgress - 0.5) * 24 * 0.4);
   const nearOffset = isStatic ? 0 : Math.round((scrollProgress - 0.5) * 24 * 1.0);
 
-  // Search query text typed character by character in Scene 01 Beat 1
+  // Search query text typed character by character in Scene 01 Beat 1 (pure scroll scrub)
   const targetQuery = `${sampleTrade} near me`;
-  const charsTyped = Math.max(0, Math.min(targetQuery.length, Math.floor(Math.max(0, sceneElapsed - 0.4) / 0.045)));
+  const typeP = isStatic ? 1 : progressBetween(sceneElapsed, 0.4, 2.0);
+  const charsTyped = Math.max(0, Math.min(targetQuery.length, Math.floor(typeP * targetQuery.length)));
   const typedSearchText = sceneElapsed >= 2.0 ? targetQuery : targetQuery.slice(0, charsTyped);
+
+  // Scene 01 Pins (calculated frame-by-frame from scroll position)
+  const pinAProgress = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 2.0, 2.8));
+  const pinAY = 410 - (1 - pinAProgress) * 28;
+  const pinAScale = 0.75 + 0.25 * pinAProgress;
+  const pinADimProgress = isStatic ? 0 : progressBetween(sceneElapsed, 4.4, 5.2);
+  const pinAOpacity = pinAProgress * (1 - pinADimProgress * 0.45);
+  const pinADimmed = pinADimProgress > 0.5;
+
+  const pinBProgress = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 2.3, 3.1));
+  const pinBClickProgress = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 6.0, 6.8));
+  const pinBY = 380 - (1 - pinBProgress) * 28;
+  const pinBScale = 0.75 + 0.25 * pinBProgress + 0.12 * pinBClickProgress;
+  const pinBOpacity = pinBProgress;
+  const pinBColor = pinBClickProgress > 0.4 ? '#E5484D' : '#5E6F77';
+
+  const pinBRippleProgress = isStatic ? 0 : progressBetween(sceneElapsed, 6.2, 7.2);
+  const pinBRippleRadius = pinBRippleProgress > 0 ? 10 + pinBRippleProgress * 30 : 0;
+  const pinBRippleOpacity = (1 - pinBRippleProgress) * 0.45;
+
+  const pinCProgress = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 2.6, 3.4));
+  const pinCY = 440 - (1 - pinCProgress) * 28;
+  const pinCScale = 0.75 + 0.25 * pinCProgress;
+  const pinCDimProgress = isStatic ? 0 : progressBetween(sceneElapsed, 4.4, 5.2);
+  const pinCOpacity = pinCProgress * (1 - pinCDimProgress * 0.45);
+  const pinCDimmed = pinCDimProgress > 0.5;
+
+  const yourPinProgress = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 4.2, 5.0));
+  const yourPinY = 480 - (1 - yourPinProgress) * 28;
+  const yourPinScale = 0.75 + 0.25 * yourPinProgress;
+  const yourPinDim = isStatic ? 0 : progressBetween(sceneElapsed, 6.2, 7.0);
+  const yourPinOpacity = yourPinProgress * (1 - yourPinDim * 0.4);
+  const yourPinSaturate = 1 - yourPinDim * 0.4;
+  const yourPinFilter = yourPinSaturate < 1 ? `saturate(${yourPinSaturate})` : 'none';
+
+  // Scene 01 Phone entrance and elements (pure scroll scrub)
+  const phoneIntroP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.1, 0.8));
+  const phoneBaseX = isMobile ? 800 : 460;
+  const phoneBaseY = isMobile ? 500 : 490;
+  const phoneBaseScale = isMobile ? 0.78 : 0.92;
+  const phoneOffsetY = (1 - phoneIntroP) * 40;
+  const phoneOpacity = phoneIntroP;
+
+  const phoneMiniMapP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 1.8, 2.5));
+  const phonePillP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 6.0, 6.8));
 
   return (
     <div className="w-full h-full relative overflow-hidden select-none">
@@ -899,37 +919,20 @@ function StylizedStageView({
         {/* ------------------------------------------------------------- */}
         <g
           id="town"
-          style={
-            !isStatic
-              ? {
-                  transform: cameraTransformStyle,
-                  transformOrigin: '0 0',
-                  willChange: 'transform',
-                  opacity:
-                    activeSceneId === 'journey' || activeSceneId === 'solve'
-                      ? 0.06
-                      : activeSceneId === 'build' || activeSceneId === 'rank'
-                      ? 0
-                      : activeSceneId === 'alwaysOn'
-                      ? 0.30
-                      : activeSceneId === 'talk'
-                      ? 0.12
-                      : 1,
-                  transition: 'opacity 800ms var(--ease-out)',
-                }
-              : {
-                  opacity:
-                    activeSceneId === 'journey' || activeSceneId === 'solve'
-                      ? 0.06
-                      : activeSceneId === 'build' || activeSceneId === 'rank'
-                      ? 0
-                      : activeSceneId === 'alwaysOn'
-                      ? 0.30
-                      : activeSceneId === 'talk'
-                      ? 0.12
-                      : 1,
-                }
-          }
+          style={{
+            transform: cameraTransformStyle,
+            transformOrigin: '0 0',
+            opacity:
+              activeSceneId === 'journey' || activeSceneId === 'solve'
+                ? 0.06
+                : activeSceneId === 'build' || activeSceneId === 'rank'
+                ? 0
+                : activeSceneId === 'alwaysOn'
+                ? 0.30
+                : activeSceneId === 'talk'
+                ? 0.12
+                : 1,
+          }}
         >
           {/* Far Layer: Town Land Backdrop and River with subtle 0.4x parallax */}
           <g id="town-far" transform={`translate(0, ${farOffset})`}>
@@ -999,18 +1002,18 @@ function StylizedStageView({
           <circle cx="800" cy="580" r="48" fill={palette.bg2} stroke={`${palette.ink}2A`} strokeWidth="18" />
           <circle cx="800" cy="580" r="30" fill={`${palette.accent}14`} />
 
-          {/* Subtle Night Window Light Dots in Scene 01 (12 dots, 2 pulsing) */}
+          {/* Subtle Night Window Light Dots in Scene 01 */}
           {activeSceneId === 'searches' && (
             <g fill="#F4B860">
               <circle cx="200" cy="140" r="2.5" opacity="0.6" />
               <circle cx="460" cy="120" r="2.5" opacity="0.7" />
-              <circle cx="720" cy="130" r="3" style={{ animation: isStatic ? 'none' : 'wwd-pulse-slow 3.2s ease-in-out infinite' }} />
+              <circle cx="720" cy="130" r="3" opacity="0.85" />
               <circle cx="1040" cy="110" r="2.5" opacity="0.5" />
               <circle cx="1360" cy="130" r="2.5" opacity="0.65" />
 
               <circle cx="180" cy="460" r="2.5" opacity="0.6" />
               <circle cx="430" cy="450" r="2.5" opacity="0.5" />
-              <circle cx="940" cy="440" r="3" style={{ animation: isStatic ? 'none' : 'wwd-pulse-slow 3.2s ease-in-out infinite' }} />
+              <circle cx="940" cy="440" r="3" opacity="0.8" />
               <circle cx="1200" cy="450" r="2.5" opacity="0.7" />
               <circle cx="1420" cy="460" r="2.5" opacity="0.5" />
 
@@ -1036,84 +1039,65 @@ function StylizedStageView({
             <>
               {/* Competitor Pin A (Drops in Beat 2) */}
               <g
-                transform="translate(680, 410)"
-                style={{
-                  opacity: sceneElapsed >= 2.2 ? 1 : 0,
-                  transform: sceneElapsed >= 2.2 ? 'translate(680px, 410px) scale(1)' : 'translate(680px, 386px) scale(0.8)',
-                  transition: 'transform 500ms var(--ease-spring-soft), opacity 400ms var(--ease-out)',
-                }}
+                transform={`translate(680, ${pinAY}) scale(${pinAScale})`}
+                style={{ opacity: pinAOpacity }}
               >
                 <TeardropPin
                   color="#5E6F77"
                   label={`Local ${sampleTrade} A`}
                   subline="Website"
                   hasWebsite
-                  isDimmed={sceneElapsed >= 4.6}
+                  isDimmed={pinADimmed}
                 />
               </g>
 
               {/* Competitor Pin B (Drops in Beat 2, Tapped in Beat 4) */}
               <g
-                transform="translate(860, 380)"
-                style={{
-                  opacity: sceneElapsed >= 2.34 ? 1 : 0,
-                  transform:
-                    sceneElapsed >= 6.4
-                      ? 'translate(860px, 380px) scale(1.12)'
-                      : sceneElapsed >= 2.34
-                      ? 'translate(860px, 380px) scale(1)'
-                      : 'translate(860px, 356px) scale(0.8)',
-                  transition: 'transform 500ms var(--ease-spring-soft), opacity 400ms var(--ease-out)',
-                }}
+                transform={`translate(860, ${pinBY}) scale(${pinBScale})`}
+                style={{ opacity: pinBOpacity }}
               >
                 {/* Red tap ripple landing in Beat 4 */}
-                {sceneElapsed >= 6.4 && (
+                {pinBRippleRadius > 0 && (
                   <circle
                     cx="0"
                     cy="0"
-                    r="40"
+                    r={pinBRippleRadius}
                     fill="none"
                     stroke="#E5484D"
                     strokeWidth="3"
-                    opacity={0.4}
+                    opacity={pinBRippleOpacity}
                   />
                 )}
                 <TeardropPin
-                  color={sceneElapsed >= 6.4 ? '#E5484D' : '#5E6F77'}
+                  color={pinBColor}
                   label={`Local ${sampleTrade} B`}
                   subline="Website"
                   hasWebsite
-                  isHighlighted={sceneElapsed >= 6.4}
+                  isHighlighted={pinBClickProgress > 0.4}
                   isDimmed={false}
                 />
               </g>
 
               {/* Competitor Pin C (Drops in Beat 2) */}
               <g
-                transform="translate(1010, 440)"
-                style={{
-                  opacity: sceneElapsed >= 2.48 ? 1 : 0,
-                  transform: sceneElapsed >= 2.48 ? 'translate(1010px, 440px) scale(1)' : 'translate(1010px, 416px) scale(0.8)',
-                  transition: 'transform 500ms var(--ease-spring-soft), opacity 400ms var(--ease-out)',
-                }}
+                transform={`translate(1010, ${pinCY}) scale(${pinCScale})`}
+                style={{ opacity: pinCOpacity }}
               >
                 <TeardropPin
                   color="#5E6F77"
                   label={`Local ${sampleTrade} C`}
                   subline="Website"
                   hasWebsite
-                  isDimmed={sceneElapsed >= 4.6}
+                  isDimmed={pinCDimmed}
                 />
               </g>
 
               {/* Your Business Pin (Drops in Beat 3 in Amber #F4B860 with broken link) */}
               <g
-                transform="translate(780, 480)"
+                transform={`translate(780, ${yourPinY}) scale(${yourPinScale})`}
                 style={{
-                  opacity: sceneElapsed >= 4.6 ? 1 : 0,
-                  transform: sceneElapsed >= 4.6 ? 'translate(780px, 480px) scale(1)' : 'translate(780px, 456px) scale(0.8)',
-                  filter: sceneElapsed >= 6.4 ? 'saturate(0.6)' : 'none',
-                  transition: 'transform 550ms var(--ease-spring-soft), opacity 450ms var(--ease-out), filter 500ms var(--ease-out)',
+                  opacity: yourPinOpacity,
+                  filter: yourPinFilter,
                 }}
               >
                 <TeardropPin
@@ -1122,7 +1106,7 @@ function StylizedStageView({
                   subline="Listed, no website"
                   hasBrokenLink
                   isYourBusiness
-                  isDimmed={sceneElapsed >= 6.4}
+                  isDimmed={yourPinDim > 0.5}
                 />
               </g>
             </>
@@ -1149,23 +1133,8 @@ function StylizedStageView({
         {/* ------------------------------------------------------------- */}
         {activeSceneId === 'searches' && (
           <g
-            transform={
-              isMobile
-                ? 'translate(800, 500) scale(0.78)'
-                : 'translate(460, 490) scale(0.92)'
-            }
-            style={{
-              transform:
-                sceneElapsed >= 0.2
-                  ? isMobile
-                    ? 'translate(800px, 500px) scale(0.78)'
-                    : 'translate(460px, 490px) scale(0.92)'
-                  : isMobile
-                  ? 'translate(800px, 540px) scale(0.78)'
-                  : 'translate(460px, 530px) scale(0.92)',
-              opacity: sceneElapsed >= 0.1 ? 1 : 0,
-              transition: 'transform 700ms var(--ease-out), opacity 600ms var(--ease-out)',
-            }}
+            transform={`translate(${phoneBaseX}, ${phoneBaseY + phoneOffsetY}) scale(${phoneBaseScale})`}
+            style={{ opacity: phoneOpacity }}
           >
             {/* Phone Shadow */}
             <rect x="-156" y="-310" width="312" height="620" rx="46" fill="#000000" opacity="0.32" />
@@ -1191,12 +1160,12 @@ function StylizedStageView({
               <circle cx="-100" cy="1" r="5" fill="none" stroke="#F4B860" strokeWidth="1.5" />
               <line x1="-96" y1="5" x2="-91" y2="10" stroke="#F4B860" strokeWidth="1.5" strokeLinecap="round" />
 
-              {/* Typed Search Query with blinking caret */}
+              {/* Typed Search Query with cursor at exact typed point */}
               <text x="-80" y="5" fill="#FFFFFF" fontSize="13.5" fontWeight="500">
                 {typedSearchText}
               </text>
 
-              {sceneElapsed < 2.2 && (
+              {sceneElapsed < 2.0 && (
                 <line
                   x1={-80 + typedSearchText.length * 7.5}
                   y1="-6"
@@ -1204,14 +1173,13 @@ function StylizedStageView({
                   y2="8"
                   stroke="#F4B860"
                   strokeWidth="2"
-                  style={{ animation: 'wwd-caret 1s steps(1) infinite' }}
                 />
               )}
             </g>
 
             {/* Map view on phone screen in Beat 2+ */}
-            {sceneElapsed >= 2.0 && (
-              <g transform="translate(0, 10)">
+            {phoneMiniMapP > 0 && (
+              <g transform="translate(0, 10)" style={{ opacity: phoneMiniMapP }}>
                 <rect x="-126" y="-170" width="252" height="420" rx="16" fill="#122533" />
                 {/* Mini road lines */}
                 <line x1="-126" y1="-20" x2="126" y2="-20" stroke="#1F3647" strokeWidth="8" />
@@ -1219,22 +1187,27 @@ function StylizedStageView({
 
                 {/* Mini Pins on Phone Screen */}
                 <circle cx="-45" cy="-70" r="7" fill="#5E6F77" />
-                <circle cx="35" cy="-90" r="7" fill={sceneElapsed >= 6.4 ? '#E5484D' : '#5E6F77'} />
+                <circle cx="35" cy="-90" r="7" fill={pinBClickProgress > 0.4 ? '#E5484D' : '#5E6F77'} />
                 <circle cx="50" cy="40" r="7" fill="#5E6F77" />
                 <circle cx="-10" cy="-10" r="8" fill="#F4B860" />
 
                 {/* Phone bottom search result pill */}
-                <g transform="translate(0, 180)">
-                  <rect x="-114" y="-30" width="228" height="52" rx="12" fill="#0B1B2B" stroke="#253D50" strokeWidth="1" />
-                  <circle cx="-90" cy="-4" r="8" fill={sceneElapsed >= 6.4 ? '#E5484D' : '#5E6F77'} />
-                  <text x="-74" y="-8" fill="#FFFFFF" fontSize="11" fontWeight="600">
-                    Local {sampleTrade} B
-                  </text>
-                  <text x="-74" y="8" fill="#6B8594" fontSize="10">
-                    4.9 ★ · Website
-                  </text>
-                  <line x1="-38" y1="10" x2="-4" y2="10" stroke="#F4B860" strokeWidth="1.5" />
-                </g>
+                {phonePillP > 0 && (
+                  <g
+                    transform={`translate(0, ${180 + (1 - phonePillP) * 18})`}
+                    style={{ opacity: phonePillP }}
+                  >
+                    <rect x="-114" y="-30" width="228" height="52" rx="12" fill="#0B1B2B" stroke="#253D50" strokeWidth="1" />
+                    <circle cx="-90" cy="-4" r="8" fill={pinBClickProgress > 0.4 ? '#E5484D' : '#5E6F77'} />
+                    <text x="-74" y="-8" fill="#FFFFFF" fontSize="11" fontWeight="600">
+                      Local {sampleTrade} B
+                    </text>
+                    <text x="-74" y="8" fill="#6B8594" fontSize="10">
+                      4.9 ★ · Website
+                    </text>
+                    <line x1="-38" y1="10" x2="-4" y2="10" stroke="#F4B860" strokeWidth="1.5" />
+                  </g>
+                )}
               </g>
             )}
           </g>
@@ -1411,19 +1384,37 @@ function JourneySolveChoreography({
   // Filter cards if feature flags disable card 3 or 4 in Scene 03
   const cards = rawCards.filter((c) => c.enabled !== false);
 
-  // Path drawing progress (0 to 1 over 3.2s)
-  const drawProgress = isStatic ? 1 : Math.min(1, Math.max(0, sceneElapsed / 3.2));
+  // Pure scroll-driven calculations for wave path, healing gaps, and cards
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  const progressBetween = (t: number, tStart: number, tEnd: number) => {
+    if (t <= tStart) return 0;
+    if (t >= tEnd) return 1;
+    return (t - tStart) / (tEnd - tStart);
+  };
+  const easeOutCubic = (t: number) => {
+    const p = clamp01(t);
+    return 1 - Math.pow(1 - p, 3);
+  };
+
+  // Path drawing progress (0 to 1 over 3.4s)
+  const drawProgress = isStatic || isSolve ? 1 : easeOutCubic(clamp01(sceneElapsed / 3.4));
   const pathColor = isSolve ? '#1E9E6A' : '#C8642E';
+
+  // Healing animation for Scene 03: gap ticks slide together smoothly as user scrolls
+  const healProgress = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.4, 1.8));
+  const tickSpread = isSolve ? (1 - healProgress) * 6 : 6;
+  const gapMaskR = isSolve ? (1 - healProgress) * 11 : 11;
+
+  // Finish badge for Scene 03
+  const finishP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 3.2, 4.2));
 
   return (
     <g transform="translate(0, 0)">
       {/* 1. Blurred Numerals Background Layer (Static blur filter, 140px, 10% opacity) */}
       <g>
         {cards.map((c, idx) => {
-          // Card visibility timing based on draw progress
-          const triggerProgress = (idx + 0.3) / cards.length;
-          const isTriggered = isStatic || isSolve || drawProgress >= triggerProgress;
-
+          const cardStartSec = 0.4 + idx * 0.7;
+          const cardP = isStatic || isSolve ? 1 : easeOutCubic(progressBetween(sceneElapsed, cardStartSec, cardStartSec + 0.6));
           const xPos = c.anchorX;
           const yPos = c.cardY < 400 ? c.cardY + 80 : c.cardY + 140;
 
@@ -1436,9 +1427,9 @@ function JourneySolveChoreography({
               fill={pathColor}
               fontSize={isMobile ? '96' : '140'}
               fontWeight="800"
-              opacity={isTriggered ? 0.10 : 0}
+              opacity={cardP * 0.10}
               filter="url(#wwd-static-blur)"
-              className="transition-opacity duration-500 ease-out select-none"
+              className="select-none"
             >
               {c.num}
             </text>
@@ -1457,7 +1448,6 @@ function JourneySolveChoreography({
           strokeLinecap="round"
           strokeDasharray="1600"
           strokeDashoffset={isStatic ? 0 : 1600 * (1 - drawProgress)}
-          className="transition-colors duration-700 ease-out"
         />
       ) : (
         /* Vertical on Mobile */
@@ -1469,27 +1459,23 @@ function JourneySolveChoreography({
           strokeLinecap="round"
           strokeDasharray="1000"
           strokeDashoffset={isStatic ? 0 : 1000 * (1 - drawProgress)}
-          className="transition-colors duration-700 ease-out"
         />
       )}
 
       {/* Break Marks (Scene 02: gaps with 2 ticks; Scene 03: healing closure) */}
       {cards.map((c, idx) => {
-        const triggerProgress = (idx + 0.35) / cards.length;
-        const isTriggered = isStatic || isSolve || drawProgress >= triggerProgress;
-        if (!isTriggered) return null;
-
-        // In Scene 03, the gap ticks slide together (healing animation)
-        const tickSpread = isSolve ? (sceneElapsed >= 1.2 ? 0 : 6) : 6;
+        const cardStartSec = 0.4 + idx * 0.7;
+        const breakP = isStatic || isSolve ? 1 : progressBetween(sceneElapsed, cardStartSec - 0.2, cardStartSec + 0.3);
+        if (breakP <= 0 || gapMaskR <= 0.05) return null;
 
         return (
           <g
             key={`break-${c.num}`}
             transform={`translate(${c.anchorX}, ${c.anchorY})`}
-            className="transition-transform duration-500 ease-out"
+            style={{ opacity: breakP }}
           >
             {/* Break mask / gap circle */}
-            <circle cx="0" cy="0" r={tickSpread + 5} fill={palette.bg2} />
+            <circle cx="0" cy="0" r={gapMaskR} fill={palette.bg2} />
 
             {/* Tick 1 */}
             <line
@@ -1500,7 +1486,6 @@ function JourneySolveChoreography({
               stroke={pathColor}
               strokeWidth="2.5"
               strokeLinecap="round"
-              className="transition-all duration-500 ease-out"
             />
             {/* Tick 2 */}
             <line
@@ -1511,7 +1496,6 @@ function JourneySolveChoreography({
               stroke={pathColor}
               strokeWidth="2.5"
               strokeLinecap="round"
-              className="transition-all duration-500 ease-out"
             />
           </g>
         );
@@ -1519,22 +1503,30 @@ function JourneySolveChoreography({
 
       {/* 3. Cards Layer (Alternating Above/Below Desktop; 232px width, white card, soft shadow) */}
       {cards.map((c, idx) => {
-        const triggerProgress = (idx + 0.35) / cards.length;
-        const isTriggered = isStatic || isSolve || drawProgress >= triggerProgress;
-        const isLatestCard = idx === Math.min(cards.length - 1, Math.floor(drawProgress * cards.length));
-        const cardOpacity = !isTriggered ? 0 : isSolve ? 1 : isLatestCard ? 1 : 0.7;
+        const cardStartSec = 0.4 + idx * 0.7;
+        const cardEndSec = 1.1 + idx * 0.7;
+        const cardP = isStatic || isSolve ? 1 : easeOutCubic(progressBetween(sceneElapsed, cardStartSec, cardEndSec));
+        const cardYOffset = (1 - cardP) * 24;
+        const cardOpacity = cardP;
+
+        // In Scene 03, card transforms from friction to solved as user scrolls
+        const solveMorphP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.4 + idx * 0.45, 1.0 + idx * 0.45));
+        const isSolvedCard = isSolve && solveMorphP > 0.5;
+        const currentBorderColor = isSolvedCard ? '#1E9E6A33' : '#C8642E25';
+        const currentIconType = isSolvedCard ? c.fixIconType : c.iconType;
+        const currentIconColor = isSolvedCard ? '#1E9E6A' : '#C8642E';
+        const currentTitle = isSolvedCard ? c.fixTitle : c.frictionTitle;
+        const currentStatus = isSolvedCard ? 'SOLVED' : 'FRICTION';
+        const currentStatusBg = isSolvedCard ? '#1E9E6A14' : '#C8642E14';
+        const currentStatusColor = isSolvedCard ? '#1E9E6A' : '#C8642E';
+
+        if (cardOpacity <= 0) return null;
 
         return (
           <g
             key={`card-${c.num}`}
-            transform={`translate(${c.anchorX - 116}, ${c.cardY})`}
-            style={{
-              opacity: cardOpacity,
-              transform: isTriggered
-                ? `translate(${c.anchorX - 116}px, ${c.cardY}px)`
-                : `translate(${c.anchorX - 116}px, ${c.cardY + 24}px)`,
-              transition: 'transform 600ms var(--ease-out), opacity 400ms var(--ease-out)',
-            }}
+            transform={`translate(${c.anchorX - 116}, ${c.cardY + cardYOffset})`}
+            style={{ opacity: cardOpacity }}
           >
             {/* Card Background (White, radius 20px, soft shadow) */}
             <rect
@@ -1544,7 +1536,7 @@ function JourneySolveChoreography({
               height="164"
               rx="20"
               fill="#FFFFFF"
-              stroke={isSolve ? '#1E9E6A33' : '#C8642E25'}
+              stroke={currentBorderColor}
               strokeWidth="1.5"
               filter="drop-shadow(0px 14px 28px rgba(18,48,61,0.12))"
             />
@@ -1565,34 +1557,30 @@ function JourneySolveChoreography({
             <g transform="translate(24, 24)">
               <div style={{ width: 36, height: 36 }}>
                 <CustomLineIcon
-                  type={isSolve ? c.fixIconType : c.iconType}
-                  color={isSolve ? '#1E9E6A' : '#C8642E'}
+                  type={currentIconType}
+                  color={currentIconColor}
                 />
               </div>
             </g>
 
-            {/* Friction vs Fix Title (Crossfade transition) */}
+            {/* Friction vs Fix Title */}
             <text
               x="24"
               y="94"
               fill="#0F2A35"
               fontSize="14.5"
               fontWeight="600"
-              className="leading-snug transition-all duration-500"
+              className="leading-snug"
             >
-              {/* Multiline split */}
-              {((isSolve ? c.fixTitle : c.frictionTitle).split(' ')).reduce<string[][]>(
-                (acc, word) => {
-                  const lastLine = acc[acc.length - 1];
-                  if (!lastLine || lastLine.join(' ').length + word.length > 20) {
-                    acc.push([word]);
-                  } else {
-                    lastLine.push(word);
-                  }
-                  return acc;
-                },
-                []
-              ).map((lineWords, lIdx) => (
+              {currentTitle.split(' ').reduce<string[][]>((acc, word) => {
+                const lastLine = acc[acc.length - 1];
+                if (!lastLine || lastLine.join(' ').length + word.length > 20) {
+                  acc.push([word]);
+                } else {
+                  lastLine.push(word);
+                }
+                return acc;
+              }, []).map((lineWords, lIdx) => (
                 <tspan key={lIdx} x="24" dy={lIdx === 0 ? 0 : 20}>
                   {lineWords.join(' ')}
                 </tspan>
@@ -1604,21 +1592,21 @@ function JourneySolveChoreography({
               <rect
                 x="0"
                 y="-10"
-                width={isSolve ? "68" : "74"}
+                width={isSolvedCard ? "68" : "74"}
                 height="18"
                 rx="9"
-                fill={isSolve ? "#1E9E6A14" : "#C8642E14"}
+                fill={currentStatusBg}
               />
               <text
-                x={isSolve ? "34" : "37"}
+                x={isSolvedCard ? "34" : "37"}
                 y="3"
                 textAnchor="middle"
-                fill={isSolve ? "#1E9E6A" : "#C8642E"}
+                fill={currentStatusColor}
                 fontSize="10"
                 fontWeight="700"
                 letterSpacing="0.04em"
               >
-                {isSolve ? "SOLVED" : "FRICTION"}
+                {currentStatus}
               </text>
             </g>
           </g>
@@ -1626,17 +1614,10 @@ function JourneySolveChoreography({
       })}
 
       {/* Scene 03 Finish: Pin glyph & "The customer reaches you." (Focal moment) */}
-      {isSolve && (
+      {isSolve && finishP > 0 && (
         <g
-          transform="translate(1520, 450)"
-          style={{
-            transform:
-              sceneElapsed >= 3.6
-                ? 'translate(1520px, 450px) scale(1)'
-                : 'translate(1520px, 450px) scale(0.96)',
-            opacity: sceneElapsed >= 3.4 ? 1 : 0,
-            transition: 'transform 500ms var(--ease-out), opacity 400ms var(--ease-out)',
-          }}
+          transform={`translate(1520, 450) scale(${0.75 + 0.25 * finishP})`}
+          style={{ opacity: finishP }}
         >
           {/* Finish teardrop badge */}
           <circle cx="0" cy="0" r="24" fill="#1E9E6A" />
@@ -1680,7 +1661,7 @@ function TeardropPin({
   isHighlighted = false,
 }: TeardropPinProps) {
   return (
-    <g className="transition-opacity duration-300" opacity={isDimmed ? 0.55 : 1}>
+    <g opacity={isDimmed ? 0.55 : 1}>
       {/* Pin Shadow */}
       <ellipse cx="0" cy="18" rx="14" ry="5" fill="#000000" opacity="0.25" />
 
@@ -1855,13 +1836,53 @@ function SceneBuildChoreography({
   isMobile,
   isStatic = false,
 }: SceneBuildProps) {
-  const isFilled = isStatic || sceneElapsed >= 2.0;
-  const isFormComplete = isStatic || sceneElapsed >= 3.8;
-  const isSubmitted = isStatic || (sceneElapsed >= 4.8 && sceneElapsed < 5.4);
-  const isConfirmed = isStatic || sceneElapsed >= 5.6;
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  const progressBetween = (t: number, tStart: number, tEnd: number) => {
+    if (t <= tStart) return 0;
+    if (t >= tEnd) return 1;
+    return (t - tStart) / (tEnd - tStart);
+  };
+  const easeOutCubic = (t: number) => {
+    const p = clamp01(t);
+    return 1 - Math.pow(1 - p, 3);
+  };
 
-  // Wipe transition for Beat 2 (flood from line to solid left-to-right 700ms ease-out)
-  const fillWipeWidth = isStatic ? 284 : sceneElapsed >= 2.0 ? Math.min(284, ((sceneElapsed - 2.0) / 0.7) * 284) : 0;
+  // Beat 1: Wireframe stroke offsets
+  const hP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.1, 0.8));
+  const hl1P = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.3, 1.0));
+  const hl2P = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.5, 1.2));
+  const bP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.7, 1.4));
+  const s1P = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.9, 1.5));
+  const s2P = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 1.1, 1.7));
+  const s3P = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 1.3, 1.9));
+  const qP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 1.5, 2.2));
+
+  // Beat 2: Left-to-right wipe flood
+  const wipeProgress = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 2.2, 3.6));
+  const fillWipeWidth = wipeProgress * 284;
+
+  // Beat 3: Typed form fields & button press
+  const nameChars = isStatic ? 9 : Math.floor(progressBetween(sceneElapsed, 3.6, 4.2) * 9);
+  const isNameTyped = nameChars > 0;
+  const displayName = isNameTyped ? 'A. Murphy'.slice(0, nameChars) : 'Name';
+
+  const jobChars = isStatic ? 9 : Math.floor(progressBetween(sceneElapsed, 4.1, 4.7) * 9);
+  const isJobTyped = jobChars > 0;
+  const displayJob = isJobTyped ? 'Roof leak'.slice(0, jobChars) : 'Job description';
+
+  const postChars = isStatic ? 15 : Math.floor(progressBetween(sceneElapsed, 4.6, 5.2) * 15);
+  const isPostTyped = postChars > 0;
+  const displayPost = isPostTyped ? 'Sample postcode'.slice(0, postChars) : 'Postcode';
+
+  const pressP = progressBetween(sceneElapsed, 5.2, 5.6);
+  const btnScale = pressP > 0 && pressP < 1 ? 1 - 0.06 * Math.sin(pressP * Math.PI) : 1;
+
+  // Beat 4: Toast & Inbox
+  const toastP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 5.6, 6.4));
+  const inboxP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 5.8, 6.8));
+
+  // Dimensions opacity
+  const dimOpacity = isStatic ? 0.4 : sceneElapsed < 2.2 ? 0.9 : 0.9 - 0.5 * easeOutCubic(progressBetween(sceneElapsed, 2.2, 3.0));
 
   // Phone positioning: Desktop shifts slightly left if inbox card slides in on the right
   const phoneX = isMobile ? 800 : hasEnquiryTracking ? 690 : 800;
@@ -1909,7 +1930,7 @@ function SceneBuildChoreography({
               height="34"
               rx="6"
               strokeDasharray="300"
-              strokeDashoffset={isStatic ? 0 : Math.max(0, 300 - Math.min(1.4, sceneElapsed) * 220)}
+              strokeDashoffset={isStatic ? 0 : 300 * (1 - hP)}
             />
             {/* Headline blocks (2 lines) */}
             <rect
@@ -1919,7 +1940,7 @@ function SceneBuildChoreography({
               height="12"
               rx="3"
               strokeDasharray="200"
-              strokeDashoffset={isStatic ? 0 : Math.max(0, 200 - Math.max(0, sceneElapsed - 0.12) * 180)}
+              strokeDashoffset={isStatic ? 0 : 200 * (1 - hl1P)}
             />
             <rect
               x="-122"
@@ -1928,7 +1949,7 @@ function SceneBuildChoreography({
               height="10"
               rx="3"
               strokeDasharray="150"
-              strokeDashoffset={isStatic ? 0 : Math.max(0, 150 - Math.max(0, sceneElapsed - 0.24) * 150)}
+              strokeDashoffset={isStatic ? 0 : 150 * (1 - hl2P)}
             />
             {/* Primary button outline */}
             <rect
@@ -1938,7 +1959,7 @@ function SceneBuildChoreography({
               height="30"
               rx="15"
               strokeDasharray="180"
-              strokeDashoffset={isStatic ? 0 : Math.max(0, 180 - Math.max(0, sceneElapsed - 0.36) * 180)}
+              strokeDashoffset={isStatic ? 0 : 180 * (1 - bP)}
             />
             {/* 3-row services list */}
             <rect
@@ -1948,7 +1969,7 @@ function SceneBuildChoreography({
               height="22"
               rx="4"
               strokeDasharray="280"
-              strokeDashoffset={isStatic ? 0 : Math.max(0, 280 - Math.max(0, sceneElapsed - 0.48) * 240)}
+              strokeDashoffset={isStatic ? 0 : 280 * (1 - s1P)}
             />
             <rect
               x="-122"
@@ -1957,7 +1978,7 @@ function SceneBuildChoreography({
               height="22"
               rx="4"
               strokeDasharray="280"
-              strokeDashoffset={isStatic ? 0 : Math.max(0, 280 - Math.max(0, sceneElapsed - 0.6) * 240)}
+              strokeDashoffset={isStatic ? 0 : 280 * (1 - s2P)}
             />
             <rect
               x="-122"
@@ -1966,7 +1987,7 @@ function SceneBuildChoreography({
               height="22"
               rx="4"
               strokeDasharray="280"
-              strokeDashoffset={isStatic ? 0 : Math.max(0, 280 - Math.max(0, sceneElapsed - 0.72) * 240)}
+              strokeDashoffset={isStatic ? 0 : 280 * (1 - s3P)}
             />
             {/* Quote form box */}
             <rect
@@ -1976,14 +1997,14 @@ function SceneBuildChoreography({
               height="185"
               rx="8"
               strokeDasharray="450"
-              strokeDashoffset={isStatic ? 0 : Math.max(0, 450 - Math.max(0, sceneElapsed - 0.84) * 350)}
+              strokeDashoffset={isStatic ? 0 : 450 * (1 - qP)}
             />
           </g>
 
           {/* ------------------------------------------------------------- */}
           {/* BEAT 2+: FILLED WEBSITE ON PHONE (CLIP-PATH WIPE LEFT TO RIGHT) */}
           {/* ------------------------------------------------------------- */}
-          {(isStatic || sceneElapsed >= 1.9) && (
+          {(isStatic || wipeProgress > 0) && (
             <g clipPath="url(#phone-screen-clip)">
               {/* Wipe rectangle defining revealed area */}
               <g style={{ clipPath: `inset(0px ${Math.max(0, 284 - fillWipeWidth)}px 0px 0px)` }}>
@@ -2050,35 +2071,29 @@ function SceneBuildChoreography({
                   {/* Field 1: Name */}
                   <g transform="translate(-112, 32)">
                     <rect x="0" y="0" width="224" height="28" rx="6" fill="#FFFFFF" stroke="#D3DFE6" strokeWidth="1" />
-                    <text x="10" y="18" fill={isFormComplete ? '#12303D' : '#94A3B8'} fontSize="11" fontWeight={isFormComplete ? '600' : '400'}>
-                      {isFormComplete ? 'A. Murphy' : 'Name'}
+                    <text x="10" y="18" fill={isNameTyped ? '#12303D' : '#94A3B8'} fontSize="11" fontWeight={isNameTyped ? '600' : '400'}>
+                      {displayName}
                     </text>
                   </g>
 
                   {/* Field 2: Job */}
                   <g transform="translate(-112, 68)">
                     <rect x="0" y="0" width="224" height="28" rx="6" fill="#FFFFFF" stroke="#D3DFE6" strokeWidth="1" />
-                    <text x="10" y="18" fill={isFormComplete ? '#12303D' : '#94A3B8'} fontSize="11" fontWeight={isFormComplete ? '600' : '400'}>
-                      {isFormComplete ? 'Roof leak' : 'Job description'}
+                    <text x="10" y="18" fill={isJobTyped ? '#12303D' : '#94A3B8'} fontSize="11" fontWeight={isJobTyped ? '600' : '400'}>
+                      {displayJob}
                     </text>
                   </g>
 
                   {/* Field 3: Postcode */}
                   <g transform="translate(-112, 104)">
                     <rect x="0" y="0" width="224" height="28" rx="6" fill="#FFFFFF" stroke="#D3DFE6" strokeWidth="1" />
-                    <text x="10" y="18" fill={isFormComplete ? '#12303D' : '#94A3B8'} fontSize="11" fontWeight={isFormComplete ? '600' : '400'}>
-                      {isFormComplete ? 'Sample postcode' : 'Postcode'}
+                    <text x="10" y="18" fill={isPostTyped ? '#12303D' : '#94A3B8'} fontSize="11" fontWeight={isPostTyped ? '600' : '400'}>
+                      {displayPost}
                     </text>
                   </g>
 
-                  {/* Send Button (Press effect at ~4.8s) */}
-                  <g
-                    transform="translate(0, 158)"
-                    style={{
-                      transform: isSubmitted ? 'translate(0px, 158px) scale(0.96)' : 'translate(0px, 158px) scale(1)',
-                      transition: 'transform 160ms ease-out',
-                    }}
-                  >
+                  {/* Send Button (Press effect scrubbed with scroll) */}
+                  <g transform={`translate(0, 158) scale(${btnScale})`}>
                     <rect x="-112" y="0" width="224" height="30" rx="15" fill="#12303D" />
                     <text x="0" y="19" textAnchor="middle" fill="#FFFFFF" fontSize="11.5" fontWeight="600">
                       Send enquiry
@@ -2089,31 +2104,29 @@ function SceneBuildChoreography({
                 {/* --------------------------------------------------------- */}
                 {/* BEAT 4: CONFIRMATION TOAST SLIDES UP ON PHONE SCREEN      */}
                 {/* --------------------------------------------------------- */}
-                <g
-                  transform="translate(0, 168)"
-                  style={{
-                    transform: isConfirmed ? 'translate(0px, 168px)' : 'translate(0px, 230px)',
-                    opacity: isConfirmed ? 1 : 0,
-                    transition: 'transform 450ms var(--ease-spring-soft), opacity 400ms var(--ease-out)',
-                  }}
-                >
-                  <rect
-                    x="-120"
-                    y="0"
-                    width="240"
-                    height="42"
-                    rx="10"
-                    fill="#12303D"
-                    stroke="#1E9E6A"
-                    strokeWidth="1.5"
-                    filter="drop-shadow(0 4px 12px rgba(0,0,0,0.3))"
-                  />
-                  <circle cx="-96" cy="21" r="8" fill="#1E9E6A" />
-                  <path d="M -99,21 L -97,23 L -93,19" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <text x="-80" y="25" fill="#FFFFFF" fontSize="11.5" fontWeight="600">
-                    Thanks, we got your enquiry.
-                  </text>
-                </g>
+                {toastP > 0 && (
+                  <g
+                    transform={`translate(0, ${168 + (1 - toastP) * 50})`}
+                    style={{ opacity: toastP }}
+                  >
+                    <rect
+                      x="-120"
+                      y="0"
+                      width="240"
+                      height="42"
+                      rx="10"
+                      fill="#12303D"
+                      stroke="#1E9E6A"
+                      strokeWidth="1.5"
+                      filter="drop-shadow(0 4px 12px rgba(0,0,0,0.3))"
+                    />
+                    <circle cx="-96" cy="21" r="8" fill="#1E9E6A" />
+                    <path d="M -99,21 L -97,23 L -93,19" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <text x="-80" y="25" fill="#FFFFFF" fontSize="11.5" fontWeight="600">
+                      Thanks, we got your enquiry.
+                    </text>
+                  </g>
+                )}
               </g>
             </g>
           )}
@@ -2128,7 +2141,7 @@ function SceneBuildChoreography({
         </text>
 
         {/* Dimension marks & Real Text Technical Labels (around phone in Beat 1) */}
-        <g stroke="#7FA6C2" opacity={isStatic || sceneElapsed < 2.0 ? 0.9 : 0.4} className="transition-opacity duration-500">
+        <g stroke="#7FA6C2" style={{ opacity: dimOpacity }}>
           {/* Top dimension line */}
           <line x1="-150" y1="-325" x2="150" y2="-325" strokeWidth="1" strokeDasharray="3 3" />
           <line x1="-150" y1="-330" x2="-150" y2="-320" strokeWidth="1.5" />
@@ -2158,24 +2171,14 @@ function SceneBuildChoreography({
       {/* ------------------------------------------------------------- */}
       {/* BEAT 4: INBOX CARD SLIDES IN (Desktop: right / Mobile: below)  */}
       {/* ------------------------------------------------------------- */}
-      {hasEnquiryTracking && (
+      {hasEnquiryTracking && inboxP > 0 && (
         <g
           transform={
             isMobile
-              ? `translate(800, 680) scale(0.9)`
-              : `translate(1060, 440) scale(1)`
+              ? `translate(800, ${680 + (1 - inboxP) * 40}) scale(0.9)`
+              : `translate(${1060 + (1 - inboxP) * 60}, 440) scale(1)`
           }
-          style={{
-            transform: isConfirmed
-              ? isMobile
-                ? 'translate(800px, 680px) scale(0.9)'
-                : 'translate(1060px, 440px) scale(1)'
-              : isMobile
-              ? 'translate(800px, 720px) scale(0.9)'
-              : 'translate(1120px, 440px) scale(0.95)',
-            opacity: isConfirmed ? 1 : 0,
-            transition: 'transform 600ms var(--ease-spring-soft), opacity 500ms var(--ease-out)',
-          }}
+          style={{ opacity: inboxP }}
         >
           {/* Card Frame */}
           <rect
@@ -2254,13 +2257,28 @@ function SceneFindableChoreography({
   isMobile,
   isStatic = false,
 }: SceneFindableProps) {
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  const progressBetween = (t: number, tStart: number, tEnd: number) => {
+    if (t <= tStart) return 0;
+    if (t >= tEnd) return 1;
+    return (t - tStart) / (tEnd - tStart);
+  };
+  const easeOutCubic = (t: number) => {
+    const p = clamp01(t);
+    return 1 - Math.pow(1 - p, 3);
+  };
+
   const hasGbp = features.googleBusinessProfile;
   const hasAreas = features.serviceAreaPages;
   const hasReviews = features.reviewRequests;
 
-  const isGbpActive = isStatic || (hasGbp && sceneElapsed >= 0.2);
-  const isAreasActive = isStatic || (hasAreas && sceneElapsed >= 2.6);
-  const isReviewsActive = isStatic || (hasReviews && sceneElapsed >= 5.0);
+  // Pure scroll-driven animations
+  const gbpP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.4, 1.8));
+  const a1 = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 2.0, 3.0));
+  const a2 = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 2.3, 3.3));
+  const a3 = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 2.6, 3.6));
+  const lblP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 3.0, 3.8));
+  const revP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 4.2, 5.4));
 
   const areasList = sampleAreas && sampleAreas.length > 0 ? sampleAreas : ['Area 1', 'Area 2', 'Area 3'];
 
@@ -2272,44 +2290,38 @@ function SceneFindableChoreography({
       {hasAreas && (
         <g id="service-areas">
           {/* Circle 1 */}
-          <g
-            style={{
-              transform: isAreasActive ? 'scale(1)' : 'scale(0.6)',
-              opacity: isAreasActive ? 0.22 : 0,
-              transformOrigin: '800px 450px',
-              transition: 'transform 700ms var(--ease-spring-soft), opacity 600ms var(--ease-out)',
-            }}
-          >
-            <circle cx="800" cy="450" r="185" fill="#2F6BFF" stroke="#2F6BFF" strokeWidth="2" strokeDasharray="6 4" />
-          </g>
+          {a1 > 0 && (
+            <g
+              transform={`translate(800, 450) scale(${0.5 + 0.5 * a1})`}
+              style={{ opacity: a1 * 0.22 }}
+            >
+              <circle cx="0" cy="0" r="185" fill="#2F6BFF" stroke="#2F6BFF" strokeWidth="2" strokeDasharray="6 4" />
+            </g>
+          )}
 
           {/* Circle 2 */}
-          <g
-            style={{
-              transform: isAreasActive ? 'scale(1)' : 'scale(0.6)',
-              opacity: isAreasActive ? 0.18 : 0,
-              transformOrigin: '670px 390px',
-              transition: 'transform 700ms var(--ease-spring-soft) 140ms, opacity 600ms var(--ease-out) 140ms',
-            }}
-          >
-            <circle cx="670" cy="390" r="145" fill="#2F6BFF" stroke="#2F6BFF" strokeWidth="2" strokeDasharray="6 4" />
-          </g>
+          {a2 > 0 && (
+            <g
+              transform={`translate(670, 390) scale(${0.5 + 0.5 * a2})`}
+              style={{ opacity: a2 * 0.18 }}
+            >
+              <circle cx="0" cy="0" r="145" fill="#2F6BFF" stroke="#2F6BFF" strokeWidth="2" strokeDasharray="6 4" />
+            </g>
+          )}
 
           {/* Circle 3 */}
-          <g
-            style={{
-              transform: isAreasActive ? 'scale(1)' : 'scale(0.6)',
-              opacity: isAreasActive ? 0.19 : 0,
-              transformOrigin: '940px 500px',
-              transition: 'transform 700ms var(--ease-spring-soft) 280ms, opacity 600ms var(--ease-out) 280ms',
-            }}
-          >
-            <circle cx="940" cy="500" r="155" fill="#2F6BFF" stroke="#2F6BFF" strokeWidth="2" strokeDasharray="6 4" />
-          </g>
+          {a3 > 0 && (
+            <g
+              transform={`translate(940, 500) scale(${0.5 + 0.5 * a3})`}
+              style={{ opacity: a3 * 0.19 }}
+            >
+              <circle cx="0" cy="0" r="155" fill="#2F6BFF" stroke="#2F6BFF" strokeWidth="2" strokeDasharray="6 4" />
+            </g>
+          )}
 
           {/* Soft Area Labels */}
-          {isAreasActive && (
-            <g fontSize="11" fontWeight="700" textAnchor="middle">
+          {lblP > 0 && (
+            <g fontSize="11" fontWeight="700" textAnchor="middle" style={{ opacity: lblP }}>
               {areasList[0] && (
                 <g transform="translate(800, 250)">
                   <rect x="-45" y="-12" width="90" height="24" rx="12" fill="#FFFFFF" stroke="#2F6BFF" strokeWidth="1.25" filter="drop-shadow(0 2px 8px rgba(0,0,0,0.12))" />
@@ -2342,14 +2354,10 @@ function SceneFindableChoreography({
       {/* BEAT 1 [features.googleBusinessProfile]: BUSINESS PROFILE CARD */}
       {/* (Neutral card: NO Google logo or trademarked artwork)        */}
       {/* ------------------------------------------------------------- */}
-      {hasGbp && (
+      {hasGbp && gbpP > 0 && (
         <g
-          transform="translate(800, 290)"
-          style={{
-            transform: isGbpActive ? 'translate(800px, 290px)' : 'translate(800px, 320px)',
-            opacity: isGbpActive ? 1 : 0,
-            transition: 'transform 700ms var(--ease-spring-soft), opacity 600ms var(--ease-out)',
-          }}
+          transform={`translate(800, ${290 + (1 - gbpP) * 35}) scale(${0.92 + 0.08 * gbpP})`}
+          style={{ opacity: gbpP }}
         >
           {/* Card Container */}
           <rect
@@ -2407,20 +2415,14 @@ function SceneFindableChoreography({
       {/* BEAT 3 [features.reviewRequests]: REVIEW REQUEST CARD         */}
       {/* (NO filled stars, NO ratings numbers, NO fake reviews)       */}
       {/* ------------------------------------------------------------- */}
-      {hasReviews && (
+      {hasReviews && revP > 0 && (
         <g
-          transform={isMobile ? 'translate(800, 590)' : 'translate(1140, 380)'}
-          style={{
-            transform: isReviewsActive
-              ? isMobile
-                ? 'translate(800px, 590px)'
-                : 'translate(1140px, 380px)'
-              : isMobile
-              ? 'translate(800px, 620px)'
-              : 'translate(1180px, 380px)',
-            opacity: isReviewsActive ? 1 : 0,
-            transition: 'transform 700ms var(--ease-spring-soft), opacity 600ms var(--ease-out)',
-          }}
+          transform={
+            isMobile
+              ? `translate(800, ${590 + (1 - revP) * 35})`
+              : `translate(${1140 + (1 - revP) * 50}, 380)`
+          }
+          style={{ opacity: revP }}
         >
           <rect
             x="-125"
@@ -2444,18 +2446,24 @@ function SceneFindableChoreography({
 
           {/* Star Outline Row (Strictly unfilled stars, NO numbers, NO fake ratings) */}
           <g transform="translate(-105, 5)">
-            {[0, 1, 2, 3, 4].map((sIdx) => (
-              <path
-                key={sIdx}
-                d="M 8,0 L 10.5,5 L 16,5.8 L 12,9.7 L 13,15.2 L 8,12.5 L 3,15.2 L 4,9.7 L 0,5.8 L 5.5,5 Z"
-                transform={`translate(${sIdx * 20}, 0)`}
-                fill="none"
-                stroke="#2F6BFF"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
+            {[0, 1, 2, 3, 4].map((sIdx) => {
+              const sP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 4.8 + sIdx * 0.18, 5.2 + sIdx * 0.18));
+              return (
+                <path
+                  key={sIdx}
+                  d="M 8,0 L 10.5,5 L 16,5.8 L 12,9.7 L 13,15.2 L 8,12.5 L 3,15.2 L 4,9.7 L 0,5.8 L 5.5,5 Z"
+                  transform={`translate(${sIdx * 20}, 0)`}
+                  fill="none"
+                  stroke="#2F6BFF"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeDasharray="45"
+                  strokeDashoffset={isStatic ? 0 : 45 * (1 - sP)}
+                  style={{ opacity: sP }}
+                />
+              );
+            })}
           </g>
 
           {/* Send request pill button */}
@@ -2489,8 +2497,19 @@ function SceneRankChoreography({
   isMobile,
   isStatic = false,
 }: SceneRankProps) {
-  // Dawn crossfades over 6s using two stacked layers (opacity crossfade, no gradient animation)
-  const dawnOpacity = isStatic ? 0.72 : Math.min(1, Math.max(0, sceneElapsed / 6)) * 0.72;
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  const progressBetween = (t: number, tStart: number, tEnd: number) => {
+    if (t <= tStart) return 0;
+    if (t >= tEnd) return 1;
+    return (t - tStart) / (tEnd - tStart);
+  };
+  const easeOutCubic = (t: number) => {
+    const p = clamp01(t);
+    return 1 - Math.pow(1 - p, 3);
+  };
+
+  // Dawn crossfades smoothly with scroll scrub over 5.5s
+  const dawnOpacity = isStatic ? 0.72 : easeOutCubic(clamp01(sceneElapsed / 5.5)) * 0.72;
 
   // 4 months on mobile (390px), 6 on desktop
   const monthCount = isMobile ? 4 : 6;
@@ -2506,6 +2525,8 @@ function SceneRankChoreography({
   const startX = isMobile ? 530 : 435;
   const baselineY = 660;
 
+  const fnOpacity = isStatic ? 0.85 : easeOutCubic(progressBetween(sceneElapsed, 3.2, 4.2)) * 0.85;
+
   return (
     <g id="scene-rank">
       <defs>
@@ -2520,7 +2541,7 @@ function SceneRankChoreography({
       {/* Layer 1: Solid Deep Navy-Indigo Base Rect */}
       <rect x="0" y="0" width="1600" height="900" fill="#1B1F4B" />
 
-      {/* Layer 2: Dawn Overlay Crossfaded over 6s */}
+      {/* Layer 2: Dawn Overlay Crossfaded with scroll */}
       <rect
         x="0"
         y="0"
@@ -2528,9 +2549,6 @@ function SceneRankChoreography({
         height="900"
         fill="url(#wwd-dawn-overlay)"
         opacity={dawnOpacity}
-        style={{
-          transition: isStatic ? 'none' : 'opacity 600ms linear',
-        }}
       />
 
       {/* Chart Baseline */}
@@ -2542,13 +2560,10 @@ function SceneRankChoreography({
         const barH = groundworkHeights[idx];
         const yourY = yourYOffsets[idx];
 
-        // Choreography: stagger 260ms, bars grow scaleY 0 -> 1, 600ms ease-out
-        const barStartSec = idx * 0.26;
-        const isBarGrown = isStatic || sceneElapsed >= barStartSec;
-        const barProgress = isStatic ? 1 : Math.min(1, Math.max(0, (sceneElapsed - barStartSec) / 0.6));
-
-        // Gentle marker wobble
-        const wobbleY = isStatic ? 0 : Math.sin(sceneElapsed * 2.2 + idx) * 4;
+        // Choreography: bars grow with scroll position
+        const barStartSec = 0.4 + idx * 0.4;
+        const barProgress = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, barStartSec, barStartSec + 0.9));
+        const markerProgress = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, barStartSec + 0.2, barStartSec + 1.0));
 
         return (
           <g key={mLabel} transform={`translate(${colX}, 0)`}>
@@ -2572,7 +2587,7 @@ function SceneRankChoreography({
               height={barH * barProgress}
               rx="8"
               fill="#F2B544"
-              opacity={0.88}
+              opacity={0.2 + 0.68 * barProgress}
             />
 
             {/* Month Label below baseline */}
@@ -2583,8 +2598,7 @@ function SceneRankChoreography({
               fill="#FFF7EE"
               fontSize="13"
               fontWeight="600"
-              opacity={isBarGrown ? 0.9 : 0.2}
-              style={{ transition: 'opacity 400ms ease-out' }}
+              opacity={0.2 + 0.7 * barProgress}
             >
               {mLabel}
             </text>
@@ -2596,12 +2610,10 @@ function SceneRankChoreography({
             <circle cx="0" cy={baselineY - 50} r="4.5" fill="#8496B0" opacity="0.4" />
 
             {/* YOUR Gold Marker (#F2B544) — Settles mid-pack, NEVER top, NEVER #1 */}
-            {isBarGrown && (
+            {markerProgress > 0 && (
               <g
-                transform={`translate(0, ${baselineY + yourY + wobbleY})`}
-                style={{
-                  transition: 'transform 1.2s cubic-bezier(.65,0,.35,1)',
-                }}
+                transform={`translate(0, ${baselineY + yourY * markerProgress})`}
+                style={{ opacity: markerProgress }}
               >
                 {/* Gold glow pulse ring */}
                 <circle cx="0" cy="0" r="14" fill="#F2B544" opacity="0.22" />
@@ -2628,7 +2640,7 @@ function SceneRankChoreography({
         fill="#F6C9A5"
         fontSize="12"
         fontWeight="500"
-        opacity="0.85"
+        opacity={fnOpacity}
       >
         Illustrative example. Results vary.
       </text>
@@ -2661,11 +2673,47 @@ function SceneAlwaysOnChoreography({
   const hasInboxTracking = Boolean(config.features.enquiryTracking || config.features.voiceAgent);
   const hasAutoReply = Boolean(config.features.missedCallTextBack || config.features.afterHoursAutoReply);
 
-  // Beat milestones
-  const isBeat2 = isStatic || (hasVoiceAgent && sceneElapsed >= 2.0);
-  const isBeat3 = isStatic || (hasVoiceAgent && sceneElapsed >= 3.8);
-  const isBeat4 = isStatic || (hasInboxTracking && sceneElapsed >= 5.4);
-  const isBeat5 = isStatic || (hasAutoReply && sceneElapsed >= 6.4);
+  // Pure scroll-driven clamp and easing helpers
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  const progressBetween = (t: number, tStart: number, tEnd: number) => {
+    if (t <= tStart) return 0;
+    if (t >= tEnd) return 1;
+    return (t - tStart) / (tEnd - tStart);
+  };
+  const easeOutCubic = (t: number) => {
+    const p = clamp01(t);
+    return 1 - Math.pow(1 - p, 3);
+  };
+
+  // Beat 1: Phone entrance and incoming call rings
+  const phoneIntroP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.1, 0.8));
+  const isRingActive = !isStatic && sceneElapsed < (hasVoiceAgent ? 2.0 : 4.8);
+  const ringCycle1 = isRingActive ? (sceneElapsed % 1.6) / 1.6 : 0;
+  const ring1R = 32 + ringCycle1 * 16;
+  const ring1Opacity = isRingActive ? (1 - ringCycle1) * 0.45 : 0;
+
+  const ringCycle2 = isRingActive ? ((sceneElapsed + 0.8) % 1.6) / 1.6 : 0;
+  const ring2R = 32 + ringCycle2 * 16;
+  const ring2Opacity = isRingActive ? (1 - ringCycle2) * 0.45 : 0;
+
+  // Beat 2 [features.voiceAgent]: Call connects, AI voice waveform & transcript
+  const connectP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 1.8, 2.5));
+  const isBeat2 = isStatic || (hasVoiceAgent && connectP > 0.5);
+  const waveformEntranceP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 2.0, 2.8));
+  const transcriptP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 2.2, 3.2));
+
+  // Beat 3 [features.voiceAgent]: 3 Field chips fill in with checks
+  const isBeat3 = isStatic || (hasVoiceAgent && sceneElapsed >= 3.6);
+  const chipsCardP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 3.6, 4.3));
+  const f1CheckP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 3.8, 4.2));
+  const f2CheckP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 4.2, 4.6));
+  const f3CheckP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 4.6, 5.0));
+
+  // Beat 4 [features.enquiryTracking || voiceAgent]: Inbox row
+  const inboxP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 5.2, 6.2));
+
+  // Beat 5 [features.missedCallTextBack || features.afterHoursAutoReply]: Automated SMS
+  const smsP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 6.2, 7.2));
 
   // Desktop positioning: if inbox/SMS cards slide in on right, phone shifts slightly left
   const phoneX = isMobile ? 800 : (hasInboxTracking || hasAutoReply) ? 660 : 800;
@@ -2679,7 +2727,7 @@ function SceneAlwaysOnChoreography({
   ];
 
   return (
-    <g id="scene-always-on" className="transition-all duration-400 ease-out">
+    <g id="scene-always-on">
       <defs>
         <clipPath id="phone-alwayson-clip">
           <rect x="-142" y="-297" width="284" height="594" rx="36" />
@@ -2712,7 +2760,10 @@ function SceneAlwaysOnChoreography({
       </g>
 
       {/* Main Centred Phone Object */}
-      <g transform={`translate(${phoneX}, ${phoneY}) scale(${phoneScale})`}>
+      <g
+        transform={`translate(${phoneX}, ${phoneY + (1 - phoneIntroP) * 30}) scale(${phoneScale})`}
+        style={{ opacity: phoneIntroP }}
+      >
         {/* Contact Shadow Under Phone (scales with lift/tilt) */}
         <ellipse cx="0" cy="324" rx="146" ry="16" fill="#000000" opacity="0.45" filter="url(#wwd-static-blur)" />
 
@@ -2740,32 +2791,32 @@ function SceneAlwaysOnChoreography({
 
           {/* ----------------------------------------------------------- */}
           {/* BEAT 1: INCOMING CALL CARD (Caller: Unknown number)         */}
-          {/* Ring animation = two concentric rings scaling 1 -> 1.5      */}
+          {/* Pure scroll-driven concentric rings: scales 1 -> 1.5         */}
           {/* ----------------------------------------------------------- */}
           <g transform="translate(0, -180)">
-            {/* Call Icon with Animated Concentric Rings (max 3 repeats) */}
+            {/* Call Icon with Scroll-Driven Concentric Rings */}
             <g transform="translate(0, 0)">
-              {!isBeat2 && !isStatic && (
-                <>
-                  <circle
-                    cx="0"
-                    cy="0"
-                    r="32"
-                    fill="none"
-                    stroke="#F4B860"
-                    strokeWidth="1.5"
-                    className="wwd-ring-1"
-                  />
-                  <circle
-                    cx="0"
-                    cy="0"
-                    r="32"
-                    fill="none"
-                    stroke="#F4B860"
-                    strokeWidth="1.5"
-                    className="wwd-ring-2"
-                  />
-                </>
+              {ring1Opacity > 0 && (
+                <circle
+                  cx="0"
+                  cy="0"
+                  r={ring1R}
+                  fill="none"
+                  stroke="#F4B860"
+                  strokeWidth="1.5"
+                  opacity={ring1Opacity}
+                />
+              )}
+              {ring2Opacity > 0 && (
+                <circle
+                  cx="0"
+                  cy="0"
+                  r={ring2R}
+                  fill="none"
+                  stroke="#F4B860"
+                  strokeWidth="1.5"
+                  opacity={ring2Opacity}
+                />
               )}
 
               <circle
@@ -2819,67 +2870,70 @@ function SceneAlwaysOnChoreography({
 
           {/* ----------------------------------------------------------- */}
           {/* BEAT 2 [features.voiceAgent]: WAVEFORM & TRANSCRIPT         */}
-          {/* 24 bars (scaleY loop, transform only, 900ms staggered)      */}
+          {/* Pure scroll-driven waveform & transcript entrance           */}
           {/* Transcript identifies itself as AI in first line            */}
           {/* ----------------------------------------------------------- */}
           {hasVoiceAgent && isBeat2 && (
             <g transform="translate(0, -22)">
-              {/* 24-Bar Waveform */}
-              <g transform="translate(-64, 0)">
+              {/* 24-Bar Waveform - Pure Scroll Scrubbing */}
+              <g transform="translate(-64, 0)" style={{ opacity: waveformEntranceP }}>
                 {waveformHeights.map((h, wIdx) => {
                   const animScale = isStatic || isBeat3
                     ? 0.55
-                    : 0.35 + 0.65 * Math.abs(Math.sin(sceneElapsed * 5.5 + wIdx * 0.4));
+                    : (0.35 + 0.65 * Math.abs(Math.sin((sceneElapsed / 0.9) * Math.PI + wIdx * 0.35))) * waveformEntranceP;
                   return (
                     <rect
                       key={wIdx}
                       x={wIdx * 5.5}
-                      y={-h / 2}
+                      y={(-h / 2) * animScale}
                       width="3"
-                      height={h}
+                      height={h * animScale}
                       rx="1.5"
                       fill="#2DD4BF"
                       opacity={0.88}
-                      style={{
-                        transformOrigin: `${wIdx * 5.5 + 1.5}px 0px`,
-                        transform: `scaleY(${animScale})`,
-                        transition: 'transform 80ms ease-out',
-                      }}
                     />
                   );
                 })}
               </g>
 
               {/* Spoken Transcript Card */}
-              <g transform="translate(0, 32)">
-                <rect
-                  x="-126"
-                  y="0"
-                  width="252"
-                  height="76"
-                  rx="12"
-                  fill="#0E1E30"
-                  stroke="#2DD4BF33"
-                  strokeWidth="1.25"
-                />
-                {/* AI Assistant Disclosure (REQUIRED in first line) */}
-                <text x="-114" y="22" fill="#2DD4BF" fontSize="10.5" fontWeight="700">
-                  "Hello, this is an AI assistant
-                </text>
-                <text x="-114" y="38" fill="#E8EEF4" fontSize="10.5" fontWeight="600">
-                  for the business.
-                </text>
-                <text x="-114" y="58" fill="#A0B6C7" fontSize="10">
-                  Can I take your name, the job and postcode?"
-                </text>
-              </g>
+              {transcriptP > 0 && (
+                <g
+                  transform={`translate(0, ${32 + (1 - transcriptP) * 16})`}
+                  style={{ opacity: transcriptP }}
+                >
+                  <rect
+                    x="-126"
+                    y="0"
+                    width="252"
+                    height="76"
+                    rx="12"
+                    fill="#0E1E30"
+                    stroke="#2DD4BF33"
+                    strokeWidth="1.25"
+                  />
+                  {/* AI Assistant Disclosure (REQUIRED in first line) */}
+                  <text x="-114" y="22" fill="#2DD4BF" fontSize="10.5" fontWeight="700">
+                    "Hello, this is an AI assistant
+                  </text>
+                  <text x="-114" y="38" fill="#E8EEF4" fontSize="10.5" fontWeight="600">
+                    for the business.
+                  </text>
+                  <text x="-114" y="58" fill="#A0B6C7" fontSize="10">
+                    Can I take your name, the job and postcode?"
+                  </text>
+                </g>
+              )}
 
               {/* ------------------------------------------------------- */}
               {/* BEAT 3 [features.voiceAgent]: 3 FIELD CHIPS WITH CHECKS */}
               {/* Name: "A. Murphy", Job: "Roof leak", Postcode: "Sample" */}
               {/* ------------------------------------------------------- */}
-              {isBeat3 && (
-                <g transform="translate(0, 122)">
+              {isBeat3 && chipsCardP > 0 && (
+                <g
+                  transform={`translate(0, ${122 + (1 - chipsCardP) * 18})`}
+                  style={{ opacity: chipsCardP }}
+                >
                   <rect
                     x="-126"
                     y="0"
@@ -2900,6 +2954,8 @@ function SceneAlwaysOnChoreography({
                       stroke="#FFFFFF"
                       strokeWidth="1.5"
                       strokeLinecap="round"
+                      strokeDasharray="20"
+                      strokeDashoffset={20 * (1 - f1CheckP)}
                     />
                     <text x="22" y="0" fill="#E8EEF4" fontSize="11" fontWeight="600">
                       Name: A. Murphy
@@ -2915,6 +2971,8 @@ function SceneAlwaysOnChoreography({
                       stroke="#FFFFFF"
                       strokeWidth="1.5"
                       strokeLinecap="round"
+                      strokeDasharray="20"
+                      strokeDashoffset={20 * (1 - f2CheckP)}
                     />
                     <text x="22" y="0" fill="#E8EEF4" fontSize="11" fontWeight="600">
                       Job: Roof leak
@@ -2930,6 +2988,8 @@ function SceneAlwaysOnChoreography({
                       stroke="#FFFFFF"
                       strokeWidth="1.5"
                       strokeLinecap="round"
+                      strokeDasharray="20"
+                      strokeDashoffset={20 * (1 - f3CheckP)}
                     />
                     <text x="22" y="0" fill="#E8EEF4" fontSize="11" fontWeight="600">
                       Postcode: Sample
@@ -2954,24 +3014,14 @@ function SceneAlwaysOnChoreography({
       {/* BEAT 4 [features.enquiryTracking || voiceAgent]: INBOX ROW    */}
       {/* "New enquiry, follow-up due in the morning" with status dot   */}
       {/* ------------------------------------------------------------- */}
-      {hasInboxTracking && (
+      {hasInboxTracking && inboxP > 0 && (
         <g
           transform={
             isMobile
-              ? `translate(800, 680) scale(0.9)`
-              : `translate(1080, 360) scale(1)`
+              ? `translate(800, ${720 - inboxP * 40}) scale(0.9)`
+              : `translate(${1140 - inboxP * 60}, 360) scale(${0.95 + 0.05 * inboxP})`
           }
-          style={{
-            transform: isBeat4
-              ? isMobile
-                ? 'translate(800px, 680px) scale(0.9)'
-                : 'translate(1080px, 360px) scale(1)'
-              : isMobile
-              ? 'translate(800px, 720px) scale(0.9)'
-              : 'translate(1140px, 360px) scale(0.95)',
-            opacity: isBeat4 ? 1 : 0,
-            transition: 'transform 600ms var(--ease-spring-soft), opacity 500ms var(--ease-out)',
-          }}
+          style={{ opacity: inboxP }}
         >
           <rect
             x="-150"
@@ -3013,24 +3063,14 @@ function SceneAlwaysOnChoreography({
       {/* BEAT 5 [missedCallTextBack || afterHoursAutoReply]: SMS CARD  */}
       {/* "Thanks for calling. We'll get back to you first thing."      */}
       {/* ------------------------------------------------------------- */}
-      {hasAutoReply && (
+      {hasAutoReply && smsP > 0 && (
         <g
           transform={
             isMobile
-              ? `translate(800, 800) scale(0.9)`
-              : `translate(1080, 520) scale(1)`
+              ? `translate(800, ${840 - smsP * 40}) scale(0.9)`
+              : `translate(${1140 - smsP * 60}, 520) scale(${0.95 + 0.05 * smsP})`
           }
-          style={{
-            transform: isBeat5
-              ? isMobile
-                ? 'translate(800px, 800px) scale(0.9)'
-                : 'translate(1080px, 520px) scale(1)'
-              : isMobile
-              ? 'translate(800px, 840px) scale(0.9)'
-              : 'translate(1140px, 520px) scale(0.95)',
-            opacity: isBeat5 ? 1 : 0,
-            transition: 'transform 600ms var(--ease-spring-soft), opacity 500ms var(--ease-out)',
-          }}
+          style={{ opacity: smsP }}
         >
           <rect
             x="-150"
@@ -3085,7 +3125,7 @@ function SceneAlwaysOnChoreography({
 // Wrap world, calm, sunrise gold tint.
 // The whole town map zooms out and dims to 12%.
 // Pin remains glowing softly (pulse 2.4s, max 4 repeats then rest).
-// Calm settled state — not another complex animation.
+// Calm settled state — frame-by-frame scroll scrubbing.
 // =========================================================================
 interface SceneTalkProps {
   palette: WayOfWorkingPaletteItem;
@@ -3108,6 +3148,30 @@ function SceneTalkChoreography({
 }: SceneTalkProps) {
   const pinX = 800;
   const pinY = isMobile ? 220 : 260;
+
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  const progressBetween = (t: number, tStart: number, tEnd: number) => {
+    if (t <= tStart) return 0;
+    if (t >= tEnd) return 1;
+    return (t - tStart) / (tEnd - tStart);
+  };
+  const easeOutCubic = (t: number) => {
+    const p = clamp01(t);
+    return 1 - Math.pow(1 - p, 3);
+  };
+
+  // Soft glow around your business pin (pulse 2.4s, max 4 repeats = 9.6s total)
+  const isPulseActive = !isStatic && sceneElapsed < 9.6;
+  const pulseCycle1 = isPulseActive ? (sceneElapsed % 2.4) / 2.4 : 0;
+  const pulseR1 = 32 + pulseCycle1 * 26;
+  const pulseOp1 = isPulseActive ? (1 - pulseCycle1) * 0.45 : 0;
+
+  const pulseCycle2 = isPulseActive ? ((sceneElapsed + 0.3) % 2.4) / 2.4 : 0;
+  const pulseR2 = 36 + pulseCycle2 * 32;
+  const pulseOp2 = isPulseActive ? (1 - pulseCycle2) * 0.35 : 0;
+
+  // Calm settlement card entrance
+  const cardP = isStatic ? 1 : easeOutCubic(progressBetween(sceneElapsed, 0.3, 1.2));
 
   // Primary action button handler: triggers audit modal if available, or scrolls to contact and focuses input
   const handleTalkToUs = () => {
@@ -3138,36 +3202,30 @@ function SceneTalkChoreography({
   };
 
   return (
-    <g id="scene-talk" className="transition-all duration-400 ease-out">
+    <g id="scene-talk">
       {/* Center Business Pin with Soft Ambient Glow (pulse 2.4s, max 4 repeats then rest) */}
       <g transform={`translate(${pinX}, ${pinY})`}>
-        {!isStatic && (
-          <>
-            <circle
-              cx="0"
-              cy="0"
-              r="40"
-              fill="none"
-              stroke="#C8642E"
-              strokeWidth="1.5"
-              style={{
-                animation: 'wwd-pulse-soft 2.4s ease-out 4',
-                opacity: 0,
-              }}
-            />
-            <circle
-              cx="0"
-              cy="0"
-              r="54"
-              fill="none"
-              stroke="#C8642E"
-              strokeWidth="1"
-              style={{
-                animation: 'wwd-pulse-soft 2.4s ease-out 300ms 4',
-                opacity: 0,
-              }}
-            />
-          </>
+        {pulseOp1 > 0 && (
+          <circle
+            cx="0"
+            cy="0"
+            r={pulseR1}
+            fill="none"
+            stroke="#C8642E"
+            strokeWidth="1.5"
+            opacity={pulseOp1}
+          />
+        )}
+        {pulseOp2 > 0 && (
+          <circle
+            cx="0"
+            cy="0"
+            r={pulseR2}
+            fill="none"
+            stroke="#C8642E"
+            strokeWidth="1"
+            opacity={pulseOp2}
+          />
         )}
         <circle cx="0" cy="0" r="32" fill="#C8642E" opacity="0.2" />
         <TeardropPin color="#C8642E" label="Your business" isYourBusiness />
@@ -3177,9 +3235,10 @@ function SceneTalkChoreography({
       <g
         transform={
           isMobile
-            ? 'translate(800, 560)'
-            : 'translate(800, 520)'
+            ? `translate(800, ${580 - cardP * 20})`
+            : `translate(800, ${540 - cardP * 20})`
         }
+        style={{ opacity: cardP }}
       >
         <rect
           x={isMobile ? -170 : -360}
@@ -3257,7 +3316,6 @@ function SceneTalkChoreography({
               fill="#0E151B"
               stroke="#E8B08F"
               strokeWidth="1.5"
-              className="transition-transform duration-200 group-hover:scale-[1.03]"
               filter="drop-shadow(0 6px 16px rgba(0,0,0,0.4))"
             />
             <text
@@ -3292,7 +3350,6 @@ function SceneTalkChoreography({
               fill="transparent"
               stroke="#E8B08F66"
               strokeWidth="1.5"
-              className="transition-transform duration-200 group-hover:scale-[1.03] group-hover:stroke-[#E8B08F]"
             />
             <text
               x={isMobile ? 75 : 90}

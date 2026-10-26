@@ -1,9 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { Video, Play, ArrowRight, AlertCircle, Upload, RotateCcw } from 'lucide-react';
+import { Play, ArrowRight, Upload, RotateCcw, Star } from 'lucide-react';
 import Container from '../components/Container';
 import Accent from '../components/Accent';
 import { VIDEO_REVIEW, FOUNDER, CTA } from '../content';
+import { config } from '../config';
 import { getCustomVideo, saveCustomVideo, removeCustomVideo } from '../lib/videoStorage';
 
 interface VideoReviewSectionProps {
@@ -223,12 +224,7 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
         {/* Light mist panel (mist #EEF3F4, radius 40px, padding 64px 40px; 40px 20px mobile) */}
         <div className="rounded-[32px] sm:rounded-[40px] bg-[#EEF3F4] border border-[rgba(15,42,53,0.06)] px-5 py-10 sm:px-10 sm:py-16">
           {/* Header (Centred, same style as other sections) */}
-          <div className="flex flex-col items-center text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[rgba(15,42,53,0.08)] shadow-xs mb-4 text-[13px] font-semibold text-[#1E4A5C]">
-              <Video className="w-3.5 h-3.5 text-[#1E4A5C]" />
-              <span>Video review</span>
-            </div>
-
+          <div className="flex flex-col items-center text-center mb-10 sm:mb-14">
             <h2 className="text-[clamp(32px,4.4vw,56px)] font-normal tracking-[-0.03em] leading-[1.08] text-[#0F2A35] max-w-3xl mb-4">
               A past client on working with <Accent>{FOUNDER.name}</Accent>
             </h2>
@@ -379,19 +375,32 @@ export default function VideoReviewSection({ onOpenAudit }: VideoReviewSectionPr
                   {reviewerDisplay} recorded this video about working with {FOUNDER.name}, founder of Open Hours.
                 </p>
 
-                {/* Disclosure Chip (only if non-empty) */}
-                {VIDEO_REVIEW.disclosure.trim() && (
-                  <div className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-[#DCE9EC] text-[#1E4A5C] text-[15px] font-semibold mb-4">
-                    <span>{VIDEO_REVIEW.disclosure.trim()}</span>
+                {/* Star rating driven by config.videoTestimonial.rating */}
+                {typeof config.videoTestimonial?.rating === 'number' && config.videoTestimonial.rating > 0 && (
+                  <div
+                    className="flex items-center gap-1 mb-4"
+                    aria-label={`Rated ${config.videoTestimonial.rating} out of 5`}
+                    role="img"
+                  >
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-5 h-5 ${
+                          i < (config.videoTestimonial?.rating ?? 5)
+                            ? 'text-[#F2B544] fill-[#F2B544]'
+                            : 'text-gray-300'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    ))}
                   </div>
                 )}
 
-                {/* Dev mode reminder if disclosure is empty */}
-                {import.meta.env.DEV && !VIDEO_REVIEW.disclosure.trim() && (
-                  <div className="mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 text-[12px] font-medium border border-amber-500/20">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                    <span>TODO: add an incentive disclosure if it applies</span>
-                  </div>
+                {/* Small muted disclosure text only when non-empty */}
+                {Boolean((config.videoTestimonial?.disclosure || VIDEO_REVIEW.disclosure).trim()) && (
+                  <p className="text-xs text-[#5E6F77] mb-4">
+                    {(config.videoTestimonial?.disclosure || VIDEO_REVIEW.disclosure).trim()}
+                  </p>
                 )}
 
                 {/* Shared with permission */}

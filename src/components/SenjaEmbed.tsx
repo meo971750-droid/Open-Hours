@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Quote, ChevronLeft, ChevronRight, Star, ExternalLink, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, ExternalLink, ShieldCheck } from 'lucide-react';
 import Container from './Container';
 import Accent from './Accent';
 import { config, TestimonialItem } from '../config';
@@ -114,11 +114,6 @@ export default function SenjaEmbed({ onOpenPrivacy }: ReviewsCarouselProps) {
       <Container>
         {/* Section Header */}
         <div className="flex flex-col items-center text-center mb-10 sm:mb-14">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF3F4] border border-[rgba(15,42,53,0.08)] shadow-xs mb-4 text-[13px] font-semibold text-[#1E4A5C]">
-            <Quote className="w-3.5 h-3.5 text-[#1E4A5C]" />
-            <span>Kind words</span>
-          </div>
-
           <h2 className="text-[clamp(32px,4.4vw,56px)] font-normal tracking-[-0.03em] leading-[1.08] text-[#0F2A35] max-w-3xl mb-4">
             What past clients <Accent>say</Accent>
           </h2>

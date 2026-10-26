@@ -168,11 +168,6 @@ export default function WhatItDoes() {
         <Container>
           {/* Header: Centred, same style as other sections */}
           <div className="flex flex-col items-center text-center mb-14 sm:mb-20">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#DCE9EC] text-[#1E4A5C] text-[13px] font-semibold mb-4">
-              <MessageSquareReply className="w-3.5 h-3.5 text-[#1E4A5C]" />
-              <span>{WHAT_IT_DOES_CONTENT.pill}</span>
-            </div>
-
             <h2 className="text-[clamp(32px,4.4vw,56px)] font-normal tracking-[-0.03em] leading-[1.08] text-[#0F2A35] max-w-3xl mb-4">
               Your website handles the <Accent>first reply</Accent>
             </h2>

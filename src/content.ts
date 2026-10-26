@@ -80,7 +80,7 @@ export const CTA_CONFIG = {
   ] as string[],
   cta: {
     badge: "Get in touch",
-    headline: "Ready to talk about your *1-page website*?",
+    headline: "Ready to talk about your *new website*?",
     points: [
       "Concept ready in about 3 working days",
       "Fixed price agreed before you start",
@@ -89,7 +89,7 @@ export const CTA_CONFIG = {
   },
 };
 
-export function whatsappLink(message: string = "Hi Open Hours, I'd like a 1-page website for my business: "): string | null {
+export function whatsappLink(message: string = "Hi Open Hours, I'd like to talk about a website for my business: "): string | null {
   const digitsOnly = CONTACT.whatsappNumber.replace(/\D/g, "");
   if (!digitsOnly || digitsOnly.length < 5) {
     return null;

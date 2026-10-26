@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  LayoutTemplate,
   ArrowUpRight,
 } from 'lucide-react';
 import Container from '../components/Container';
@@ -11,11 +10,11 @@ import { CONFIG } from '../config';
 const SCREENSHOTS_VERSION = "1";
 
 const ROOFING_CARDS = [
-  { id: 1, name: "XYZ Roofing",           image: `/roofing-sites/1-xyz-roofing.png?v=${SCREENSHOTS_VERSION}`,            domain: "xyzroofing.com",           trade: "Roofers", location: "[ADD LOCATION]", note: "Concept for a roofing business" },
-  { id: 2, name: "ABC Roofing",           image: `/roofing-sites/2-abc-roofing.png?v=${SCREENSHOTS_VERSION}`,            domain: "abcroofing.com",           trade: "Roofers", location: "[ADD LOCATION]", note: "Concept for a roofing business" },
-  { id: 3, name: "Alex Roofing",          image: `/roofing-sites/3-alex-roofing.png?v=${SCREENSHOTS_VERSION}`,           domain: "alexroofing.com",          trade: "Roofers", location: "[ADD LOCATION]", note: "Concept for a roofing business" },
-  { id: 4, name: "Roofen",                image: `/roofing-sites/4-roofen.png?v=${SCREENSHOTS_VERSION}`,                 domain: "roofen.com",               trade: "Roofers", location: "[ADD LOCATION]", note: "Concept for a roofing business" },
-  { id: 5, name: "Atlantic Slate Roofing", image: `/roofing-sites/5-atlantic-slate-roofing.png?v=${SCREENSHOTS_VERSION}`, domain: "atlanticslateroofing.com", trade: "Roofers", location: "[ADD LOCATION]", note: "Concept for a roofing business" }
+  { id: 1, name: "XYZ Roofing",           image: `/roofing-sites/1-xyz-roofing.png?v=${SCREENSHOTS_VERSION}`,            domain: "xyzroofing.com",           trade: "Roofers", location: "", note: "Concept for a roofing business" },
+  { id: 2, name: "ABC Roofing",           image: `/roofing-sites/2-abc-roofing.png?v=${SCREENSHOTS_VERSION}`,            domain: "abcroofing.com",           trade: "Roofers", location: "", note: "Concept for a roofing business" },
+  { id: 3, name: "Alex Roofing",          image: `/roofing-sites/3-alex-roofing.png?v=${SCREENSHOTS_VERSION}`,           domain: "alexroofing.com",          trade: "Roofers", location: "", note: "Concept for a roofing business" },
+  { id: 4, name: "Roofen",                image: `/roofing-sites/4-roofen.png?v=${SCREENSHOTS_VERSION}`,                 domain: "roofen.com",               trade: "Roofers", location: "", note: "Concept for a roofing business" },
+  { id: 5, name: "Atlantic Slate Roofing", image: `/roofing-sites/5-atlantic-slate-roofing.png?v=${SCREENSHOTS_VERSION}`, domain: "atlanticslateroofing.com", trade: "Roofers", location: "", note: "Concept for a roofing business" }
 ];
 
 function CardScreenshot({ card, index }: { card: typeof ROOFING_CARDS[number]; index: number }) {
@@ -413,7 +412,6 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
 
   // Active card details for Info Bar
   const activeCard = ROOFING_CARDS[centeredIndex] || ROOFING_CARDS[0];
-  const showActiveLocation = !import.meta.env.PROD || !activeCard.location.startsWith('[');
 
   return (
     <section
@@ -424,12 +422,7 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
     >
       <Container>
         {/* Header (Centred, same style as other sections) */}
-        <div className="flex flex-col items-center text-center mb-3 sm:mb-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F4F6F8] border border-[rgba(15,42,53,0.08)] shadow-xs mb-4 text-[13px] font-semibold text-[#1E4A5C]">
-            <LayoutTemplate className="w-3.5 h-3.5 text-[#1E4A5C]" />
-            <span>Our designs</span>
-          </div>
-
+        <div className="flex flex-col items-center text-center mb-6 sm:mb-8">
           <h2 className="text-[clamp(32px,4.4vw,56px)] font-normal tracking-[-0.03em] leading-[1.08] text-[#0F2A35] max-w-3xl mb-3">
             Designs built to <Accent>catch enquiries</Accent>
           </h2>
@@ -580,29 +573,7 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
                       <span className="text-[14px] sm:text-[15px] font-bold text-[#0F2A35] truncate">
                         {card.name}
                       </span>
-                      {showLocation && card.location ? (
-                        <span className="text-[12px] text-[#5E6F77] shrink-0">
-                          {card.location}
-                        </span>
-                      ) : null}
                     </div>
-
-                    <p className="text-[11px] sm:text-[12px] text-[#5E6F77] line-clamp-1 italic">
-                      {card.note}
-                    </p>
-
-                    {/* Button: Pure instant click without any drag/swipe interference */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleGetDesign(card.trade as TradeName, card.name);
-                      }}
-                      className="w-full mt-1.5 py-1.5 px-3 rounded-lg bg-[#0F2A35] hover:bg-[#1E4A5C] text-white text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
-                    >
-                      <span>Get a design like this</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 </article>
               </div>
@@ -624,27 +595,6 @@ export default function DesignsSlider({ id = 'designs', onOpenAudit }: DesignsSl
             <div className="text-[13px] font-semibold text-[#1E4A5C] bg-[#F4F6F8] border border-[rgba(15,42,53,0.08)] px-3 py-0.5 rounded-full mb-2">
               {String(centeredIndex + 1).padStart(2, '0')} / {String(ROOFING_CARDS.length).padStart(2, '0')}
             </div>
-
-            <h3 className="text-[20px] font-semibold text-[#0F2A35]">
-              {activeCard.name}
-              {showActiveLocation && activeCard.location ? (
-                <span className="text-[#5E6F77] font-normal text-[16px]"> ({activeCard.location})</span>
-              ) : null}
-            </h3>
-
-            <p className="text-[14px] text-[#5E6F77] mt-1 italic">
-              {activeCard.note}
-            </p>
-
-            {/* Quick action link for current centered card */}
-            <button
-              type="button"
-              onClick={() => handleGetDesign(activeCard.trade as TradeName, activeCard.name)}
-              className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#1E4A5C] hover:text-[#0F2A35] underline decoration-[#1E4A5C]/40 underline-offset-4 cursor-pointer"
-            >
-              <span>Get a design like {activeCard.name}</span>
-              <ArrowUpRight className="w-4 h-4" />
-            </button>
           </div>
 
           {/* Optional live demo site link if config.liveDemoUrl is set */}

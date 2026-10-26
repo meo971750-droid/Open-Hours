@@ -21,27 +21,27 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
     items: [
       {
         number: '01',
-        question: 'What Does Maximizing Value Mean for You?',
+        question: 'What Does Maximising Value Mean for You?',
         answer:
-          'We focus on more than price, structuring a deal that aligns with your financial goals and future involvement.',
+          'We focus on real enquiries rather than vanity metrics, agreeing on a clear written fixed price before work starts so there are never surprises.',
       },
       {
         number: '02',
         question: 'Control Your Future Involvement',
         answer:
-          'Do you want to stay involved, step away completely, or ease into retirement? The right deal should align with your lifestyle goals.',
+          'You own your domain, code, design and assets from day one. No locked proprietary builders and complete freedom to take your site anywhere.',
       },
       {
         number: '03',
-        question: 'What Happens to Your Employees?',
+        question: 'Direct Access, No Middlemen',
         answer:
-          'We help you find buyers who value your employees, ensuring job security, continuity, and a workplace culture that remains strong.',
+          'You work directly with the founder on video walkthroughs and WhatsApp. No endless ticket queues, junior hand-offs, or confusing tech jargon.',
       },
       {
         number: '04',
-        question: 'How Do You Protect Your Legacy?',
+        question: 'How Do You Protect Your Reputation?',
         answer:
-          "The right deal should honor your company's identity, ensuring it continues to thrive while reflecting the values you've built it on.",
+          "Your website honors your company's hard-earned reputation, ensuring it continues to win high-value jobs with lifetime support while hosted with us.",
       },
     ],
     banner: {
@@ -70,37 +70,37 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
       <div id="sample-audit" className="sr-only" aria-hidden="true" tabIndex={-1} />
 
       <Container className="max-w-[920px] mx-auto px-4 sm:px-6">
-        {/* Main Card Container with pure white background */}
+        {/* Content sits directly on the page background */}
         <motion.div
           initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 25 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 25 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-[28px] sm:rounded-[36px] overflow-hidden bg-white shadow-[0_12px_44px_rgba(15,42,53,0.06)] border border-slate-200"
+          className="w-full"
         >
-          {/* Top Block with pure white background */}
-          <div className="bg-white p-8 sm:p-12 md:p-16 lg:p-20 text-center">
+          {/* Top Block */}
+          <div className="text-center">
             {/* Header Block */}
             <div className="max-w-xl mx-auto mb-14 sm:mb-18 md:mb-20">
-              <h2 className="text-[clamp(2.5rem,5.5vw,4.25rem)] font-extrabold tracking-tight text-[#0F2A35] leading-[1.08] mb-4 sm:mb-5">
+              <h2 className="text-[clamp(2.5rem,5.5vw,4.25rem)] font-extrabold tracking-tight text-[#12303D] leading-[1.08] mb-4 sm:mb-5">
                 <span>{data.titlePrefix} </span>
-                <span className="bg-gradient-to-r from-[#FF5C38] via-[#F24E27] to-[#CF3517] bg-clip-text text-transparent">
+                <span className="text-[#C8642E]">
                   {data.titleAccent}
                 </span>
               </h2>
-              <p className="text-[15px] sm:text-[16px] text-[#5E6F77] leading-relaxed max-w-lg mx-auto font-normal">
+              <p className="text-[15px] sm:text-[16px] text-[#12303D]/85 leading-relaxed max-w-lg mx-auto font-normal">
                 {data.subtitle}
               </p>
             </div>
 
-            {/* 2x2 Bento Grid with hairline cross-divider */}
+            {/* 2x2 Bento Grid with subtle hairline cross-divider */}
             <div className="grid grid-cols-1 md:grid-cols-2 text-left">
               {items.map((item, index) => {
                 const isTopRow = index < 2;
                 const isLeftCol = index % 2 === 0;
 
                 const borderClasses = `
-                  ${isTopRow ? 'border-b border-slate-200' : 'border-b md:border-b-0 border-slate-200'}
-                  ${isLeftCol ? 'md:border-r border-slate-200' : ''}
+                  ${isTopRow ? 'border-b border-[#12303D]/10' : 'border-b md:border-b-0 border-[#12303D]/10'}
+                  ${isLeftCol ? 'md:border-r border-[#12303D]/10' : ''}
                 `;
 
                 const paddingClasses = `
@@ -113,31 +113,23 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
                     key={item.number || index}
                     className={`relative flex flex-col ${borderClasses} ${paddingClasses}`}
                   >
-                    {/* Background Number with bottom fade gradient & mask */}
+                    {/* Numeral on its own line with terracotta accent and clean spacing below */}
                     <div
                       aria-hidden="true"
-                      className="relative mb-[-36px] sm:mb-[-44px] select-none pointer-events-none z-0"
+                      className="mb-2 sm:mb-3 select-none pointer-events-none"
                     >
-                      <span
-                        className="font-black text-7xl sm:text-8xl lg:text-[98px] tracking-tight leading-none inline-block bg-gradient-to-b from-[#FF5E38] via-[#E24622] to-transparent bg-clip-text text-transparent"
-                        style={{
-                          WebkitMaskImage:
-                            'linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0.15) 85%, transparent 100%)',
-                          maskImage:
-                            'linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0.15) 85%, transparent 100%)',
-                        }}
-                      >
+                      <span className="font-extrabold text-5xl sm:text-6xl tracking-tight leading-none inline-block text-[#C8642E]">
                         {item.number}
                       </span>
                     </div>
 
-                    {/* Question / Heading layered directly over the fading bottom of the number */}
-                    <h3 className="relative z-10 text-xl sm:text-[22px] font-bold text-[#0F2A35] leading-snug mb-3 tracking-[-0.01em]">
+                    {/* Question / Heading */}
+                    <h3 className="text-xl sm:text-[22px] font-bold text-[#12303D] leading-snug mb-3 tracking-[-0.01em]">
                       {item.question}
                     </h3>
 
                     {/* Description Paragraph */}
-                    <p className="relative z-10 text-[14.5px] sm:text-[15.5px] text-[#5E6F77] leading-[1.65] font-normal">
+                    <p className="text-[14.5px] sm:text-[15.5px] text-[#12303D]/80 leading-[1.65] font-normal">
                       {item.answer}
                     </p>
                   </div>
@@ -146,11 +138,11 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
             </div>
           </div>
 
-          {/* Bottom Banner with pure white background */}
-          <div className="bg-white px-6 py-10 sm:px-12 sm:py-14 text-center border-t border-slate-200">
-            <h3 className="text-2xl sm:text-3xl md:text-[38px] font-extrabold text-[#0F2A35] tracking-tight leading-[1.15] max-w-xl mx-auto mb-6">
+          {/* Bottom Banner */}
+          <div className="mt-14 sm:mt-18 pt-10 sm:pt-14 text-center border-t border-[#12303D]/10">
+            <h3 className="text-2xl sm:text-3xl md:text-[36px] font-extrabold text-[#12303D] tracking-tight leading-[1.15] max-w-xl mx-auto mb-6">
               <span>{banner.headlinePrefix} </span>
-              <span className="bg-gradient-to-r from-[#FF5C38] via-[#F24E27] to-[#CF3517] bg-clip-text text-transparent">
+              <span className="text-[#C8642E]">
                 {banner.headlineAccent}
               </span>
               <span> {banner.headlineSuffix}</span>
@@ -160,7 +152,7 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
               <button
                 type="button"
                 onClick={() => onOpenAudit?.()}
-                className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full bg-[#FF5C38] hover:bg-[#E84824] text-white text-[15px] sm:text-[16px] font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full bg-[#C8642E] hover:bg-[#B55624] text-white text-[15px] sm:text-[16px] font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer active:scale-[0.98]"
               >
                 <span>{banner.buttonText}</span>
                 <ArrowRight className="w-4 h-4 ml-0.5" strokeWidth={2.4} />

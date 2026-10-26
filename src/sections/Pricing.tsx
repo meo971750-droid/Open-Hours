@@ -22,8 +22,10 @@ import {
   Mic,
   Lock,
   LifeBuoy,
+  X,
 } from 'lucide-react';
 import { config, PricingTierConfig, BuilderFeatureConfig, BuilderFeatureGroup } from '../config';
+import { CONTACT, FORM_ENDPOINT } from '../content';
 
 interface PricingProps {
   onOpenAudit?: () => void;
@@ -141,34 +143,73 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
   );
 
   // ----------------------------------------------------
-  // BUILDER LOGIC
+  // BUILDER LOGIC (PASS C)
   // ----------------------------------------------------
+  type StartingPackage = 'starter' | 'standard' | 'growth' | 'scratch';
+
   const starterTierPrice =
     tiers.find((t) => t.id === 'starter')?.price ?? 790;
   const basePrice = builderConfig?.basePrice || starterTierPrice;
+  const includedPages = builderConfig?.includedPages ?? 1;
+  const pricePerExtraPage = builderConfig?.pricePerExtraPage || 0;
 
-  // Filter visible features: price > 0 and flag is not disabled in config.features
+  // Filter visible features: take price from config only.
+  // Hide if no price / price 0 AND not part of a package. Respect feature flags.
   const visibleFeatures = (builderConfig?.features || []).filter((feat) => {
-    if (!feat.price || feat.price <= 0) return false;
     if (feat.flag) {
       const flagValue = (config.features as unknown as Record<string, boolean | undefined>)?.[feat.flag];
       if (flagValue === false) return false;
     }
+    const hasPrice = typeof feat.price === 'number' && feat.price > 0;
+    const isPartOfPackage = Array.isArray(feat.includedInTiers) && feat.includedInTiers.length > 0;
+    if (!hasPrice && !isPartOfPackage) {
+      return false;
+    }
     return true;
   });
 
-  const pricePerExtraPage = builderConfig?.pricePerExtraPage || 0;
-  const hasBuilderContent =
-    visibleFeatures.length > 0 || pricePerExtraPage > 0;
+  const hasBuilderContent = visibleFeatures.length > 0 || pricePerExtraPage > 0;
 
   // Stepper state
   const minPages = builderConfig?.minPages ?? 1;
   const maxPages = builderConfig?.maxPages ?? 15;
-  const [pages, setPages] = useState<number>(builderConfig?.includedPages ?? 1);
+  const [pages, setPages] = useState<number>(includedPages);
 
-  // Selected features state (set of IDs)
-  const [selectedFeatureIds, setSelectedFeatureIds] = useState<Set<string>>(new Set());
+  // Package selector state: 'starter' | 'standard' | 'growth' | 'scratch'
+  const [selectedPackage, setSelectedPackage] = useState<StartingPackage>('standard');
 
+  // Pre-tick features for the starting package
+  const [selectedFeatureIds, setSelectedFeatureIds] = useState<Set<string>>(() => {
+    const initialPkg = 'standard';
+    const initialIds = (builderConfig?.features || [])
+      .filter((f) => {
+        if (f.flag) {
+          const flagValue = (config.features as unknown as Record<string, boolean | undefined>)?.[f.flag];
+          if (flagValue === false) return false;
+        }
+        const hasPrice = typeof f.price === 'number' && f.price > 0;
+        const isPartOfPackage = Array.isArray(f.includedInTiers) && f.includedInTiers.length > 0;
+        if (!hasPrice && !isPartOfPackage) return false;
+        return f.includedInTiers?.includes(initialPkg);
+      })
+      .map((f) => f.id);
+    return new Set(initialIds);
+  });
+
+  // Package tab selector handler
+  const handleSelectStartingPackage = (pkg: StartingPackage) => {
+    setSelectedPackage(pkg);
+    if (pkg === 'scratch') {
+      setSelectedFeatureIds(new Set());
+    } else {
+      const tierFeatIds = visibleFeatures
+        .filter((f) => f.includedInTiers?.includes(pkg))
+        .map((f) => f.id);
+      setSelectedFeatureIds(new Set(tierFeatIds));
+    }
+  };
+
+  // Toggle individual feature freely
   const toggleFeature = (id: string) => {
     setSelectedFeatureIds((prev) => {
       const next = new Set(prev);
@@ -190,7 +231,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
         );
       }
 
-      // (1) Check if selecting all features of a tier gives a custom total that differs from that tier's "from" price by > 15%
+      // Check if selecting all features of a tier gives a custom total that differs from that tier's "from" price by > 15%
       const allConfigFeatures = builderConfig?.features || [];
       tiers.forEach((tier) => {
         const tierFeatures = allConfigFeatures.filter((f) =>
@@ -208,21 +249,22 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
         }
       });
 
-      // (2) List every feature still at price 0
+      // List every feature still at price 0
       const zeroPriceFeatures = allConfigFeatures
         .filter((f) => !f.price || f.price === 0)
         .map((f) => f.name);
       if (zeroPriceFeatures.length > 0) {
         console.warn(
-          `[PricingBuilder] Features currently at price 0 (hidden from builder until owner sets price):`,
+          `[PricingBuilder] Features currently at price 0 (hidden from builder unless included in a package):`,
           zeroPriceFeatures
         );
       }
     }
   }, [basePrice, starterTierPrice, builderConfig, tiers]);
 
-  // Calculations
-  const includedPages = builderConfig?.includedPages ?? 1;
+  // Price calculations:
+  // Total = base website price + extra pages (max(0, pages - includedPages) x pricePerExtraPage) + sum of selected one-time features.
+  // Monthly features are shown as a separate line "+ €X / month".
   const extraPages = Math.max(0, pages - includedPages);
   const pagesCost = extraPages * pricePerExtraPage;
 
@@ -238,31 +280,15 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
     if (selectedFeatureIds.has(feat.id)) {
       selectedFeatureNames.push(feat.name);
       if (feat.billing === 'monthly') {
-        monthlyTotal += feat.price;
+        monthlyTotal += feat.price || 0;
       } else {
-        oneTimeFeaturesCost += feat.price;
+        oneTimeFeaturesCost += feat.price || 0;
       }
     }
   });
 
   const oneTimeTotal = basePrice + pagesCost + oneTimeFeaturesCost;
   const animatedTotal = useAnimatedCount(oneTimeTotal, shouldReduceMotion);
-
-  // Quick-start tiers with visible features
-  const quickStartTiers = tiers.filter((t) =>
-    visibleFeatures.some((f) =>
-      f.includedInTiers?.includes(t.id as 'starter' | 'standard' | 'growth')
-    )
-  );
-
-  // Package comparison hint: if selected features all appear in one of the tiers AND custom total > tier.price
-  const comparisonTier = tiers.find((tier) => {
-    if (selectedVisibleFeatures.length === 0) return false;
-    const allInTier = selectedVisibleFeatures.every((f) =>
-      f.includedInTiers?.includes(tier.id as 'starter' | 'standard' | 'growth')
-    );
-    return allInTier && oneTimeTotal > tier.price;
-  });
 
   // Currency formatter
   const formatEuro = (amount: number) =>
@@ -272,24 +298,210 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
       maximumFractionDigits: 0,
     }).format(amount);
 
-  // Request quote handler
-  const handleRequestQuote = () => {
-    const monthlySummary = monthlyTotal > 0 ? ` (+ €${monthlyTotal}/month)` : '';
-    const featuresSummary =
-      selectedFeatureNames.length > 0
-        ? ` Features: ${selectedFeatureNames.join(', ')}.`
-        : '';
-    const summaryMessage = `Custom build estimate: €${oneTimeTotal} one-time${monthlySummary}. Pages: ${pages}.${featuresSummary}`;
+  // ----------------------------------------------------
+  // "TALK TO SALES" ACCESSIBLE MODAL FORM STATE
+  // ----------------------------------------------------
+  const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
+  const [salesName, setSalesName] = useState('');
+  const [salesEmail, setSalesEmail] = useState('');
+  const [salesPhone, setSalesPhone] = useState('');
+  const [salesMessage, setSalesMessage] = useState('');
+  const [salesConsent, setSalesConsent] = useState(false);
+  const [salesHoneypot, setSalesHoneypot] = useState('');
+  const [salesErrors, setSalesErrors] = useState<Record<string, string>>({});
+  const [salesSubmitting, setSalesSubmitting] = useState(false);
+  const [salesSubmitted, setSalesSubmitted] = useState(false);
+  const [salesStatus, setSalesStatus] = useState<string | null>(null);
 
-    window.dispatchEvent(
-      new CustomEvent('openhours:prefill-contact', {
-        detail: { option: 'Custom build', message: summaryMessage },
-      })
+  const desktopSalesButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileSalesButtonRef = useRef<HTMLButtonElement>(null);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
+
+  // Generate plain-text summary message
+  const generateSummaryText = () => {
+    const pkgName =
+      selectedPackage === 'scratch'
+        ? 'Start from scratch'
+        : selectedPackage.charAt(0).toUpperCase() + selectedPackage.slice(1);
+
+    const featureItems = selectedVisibleFeatures.map(
+      (f) =>
+        `- ${f.name} (${
+          f.price > 0
+            ? f.billing === 'monthly'
+              ? `+€${f.price}/month`
+              : `+€${f.price}`
+            : 'Included in package'
+        })`
     );
 
-    const contactSection = document.getElementById('about');
-    if (contactSection) {
-      contactSection.scrollIntoView({ behavior: 'smooth' });
+    const lines = [
+      `Chosen starting package: ${pkgName}`,
+      `Number of pages: ${pages}`,
+      featureItems.length > 0
+        ? `Selected features:\n${featureItems.join('\n')}`
+        : 'Selected features: None',
+      `One-time total: ${formatEuro(oneTimeTotal)}`,
+      monthlyTotal > 0 ? `Monthly total: ${formatEuro(monthlyTotal)} / month` : 'Monthly total: None',
+    ];
+
+    return lines.join('\n\n');
+  };
+
+  // Open Sales Modal
+  const handleOpenSalesModal = () => {
+    lastFocusedRef.current = document.activeElement as HTMLElement;
+    setSalesMessage(generateSummaryText());
+    setSalesErrors({});
+    setSalesStatus(null);
+    setSalesSubmitted(false);
+    setIsSalesModalOpen(true);
+  };
+
+  // Close Sales Modal
+  const handleCloseSalesModal = () => {
+    setIsSalesModalOpen(false);
+    lastFocusedRef.current?.focus();
+  };
+
+  // Scroll lock and Esc to close
+  useEffect(() => {
+    if (!isSalesModalOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Focus first input on open
+    const timer = setTimeout(() => {
+      firstInputRef.current?.focus();
+    }, 50);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCloseSalesModal();
+        return;
+      }
+
+      // Focus trap
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableEls = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableEls.length === 0) return;
+
+        const firstEl = focusableEls[0];
+        const lastEl = focusableEls[focusableEls.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstEl) {
+            e.preventDefault();
+            lastEl.focus();
+          }
+        } else {
+          if (document.activeElement === lastEl) {
+            e.preventDefault();
+            firstEl.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSalesModalOpen]);
+
+  // Handle Sales Modal Submit
+  const handleSalesSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Honeypot check
+    if (salesHoneypot) return;
+
+    const newErrors: Record<string, string> = {};
+    if (!salesName.trim()) {
+      newErrors.name = 'Please provide your name.';
+    }
+    if (!salesEmail.trim() || !/^\S+@\S+\.\S+$/.test(salesEmail.trim())) {
+      newErrors.email = 'Please provide a valid email address.';
+    }
+    if (!salesConsent) {
+      newErrors.consent = 'Please confirm consent to be contacted.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setSalesErrors(newErrors);
+      return;
+    }
+
+    setSalesSubmitting(true);
+    setSalesStatus(null);
+
+    const payload = {
+      tag: 'Custom build',
+      name: salesName.trim(),
+      email: salesEmail.trim(),
+      phone: salesPhone.trim(),
+      startingPackage: selectedPackage,
+      pages,
+      oneTimeTotal,
+      monthlyTotal,
+      selectedFeatures: selectedVisibleFeatures.map((f) => ({
+        id: f.id,
+        name: f.name,
+        price: f.price,
+        billing: f.billing,
+      })),
+      message: salesMessage.trim(),
+      submittedAt: new Date().toISOString(),
+    };
+
+    // If formEndpoint is empty, use mailto fallback and never show a fake success message
+    const activeEndpoint = FORM_ENDPOINT && !FORM_ENDPOINT.startsWith('[') ? FORM_ENDPOINT : '';
+
+    if (!activeEndpoint || !activeEndpoint.trim()) {
+      setSalesSubmitting(false);
+      const fallbackEmail =
+        CONTACT.email && !CONTACT.email.startsWith('[')
+          ? CONTACT.email
+          : 'hello@openhours.studio';
+      const mailSubject = `Custom build quote request from ${salesName.trim()}`;
+      const mailBody = `Name: ${salesName.trim()}\nEmail: ${salesEmail.trim()}\nPhone: ${salesPhone.trim()}\nTag: Custom build\n\n${salesMessage.trim()}`;
+
+      window.location.href = `mailto:${encodeURIComponent(fallbackEmail)}?subject=${encodeURIComponent(
+        mailSubject
+      )}&body=${encodeURIComponent(mailBody)}`;
+
+      setSalesStatus(
+        `Form endpoint is pending setup. Your enquiry was prepared in your email client. If it did not open automatically, please send your email directly to ${fallbackEmail}.`
+      );
+      return;
+    }
+
+    try {
+      const res = await fetch(activeEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+
+      setSalesSubmitted(true);
+    } catch {
+      setSalesStatus(
+        'Could not deliver your enquiry right now. Please try again or reach out directly.'
+      );
+    } finally {
+      setSalesSubmitting(false);
     }
   };
 
@@ -303,13 +515,6 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
         {/* PART 1: THREE PACKAGE CARDS                          */}
         {/* ==================================================== */}
         <div className="flex flex-col items-center text-center mb-14 sm:mb-20">
-          {pricingConfig?.pill && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[rgba(15,42,53,0.08)] shadow-xs mb-4 text-[13px] font-medium text-[#1E4A5C]">
-              <Tag className="w-3.5 h-3.5" />
-              <span>{pricingConfig.pill}</span>
-            </div>
-          )}
-
           <h2 className="text-[32px] sm:text-[44px] md:text-[54px] font-normal tracking-[-0.03em] leading-[1.08] text-[#0F2A35] max-w-2xl mb-4">
             <span>{pricingConfig?.title || 'Simple pricing,'} </span>
             <span className="font-serif italic text-[#12303D]">
@@ -438,20 +643,59 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
         )}
 
         {/* ==================================================== */}
-        {/* PART 2: BUILDER ("Only pay for what you need")       */}
+        {/* PART 2: BUILDER ("Need something different?")        */}
         {/* ==================================================== */}
         {hasBuilderContent && basePrice > 0 && (
           <div className="mt-16 sm:mt-24 pt-14 border-t border-[#0F2A35]/10">
             {/* Builder Heading */}
-            <div className="text-center mb-12 sm:mb-16">
+            <div className="text-center mb-10 sm:mb-14">
               <h3 className="text-[28px] sm:text-[38px] font-normal tracking-[-0.02em] leading-tight text-[#0F2A35] mb-3">
                 <span>Need something </span>
                 <span className="font-serif italic text-[#12303D]">different?</span>
               </h3>
               <p className="text-[16px] sm:text-[17px] text-[#5E6F77] max-w-xl mx-auto">
                 {builderConfig?.subtext ||
-                  'Choose the pages and features you want. The estimate updates as you go.'}
+                  'Start from a package and customise each feature. The estimate updates as you go.'}
               </p>
+            </div>
+
+            {/* 1. PACKAGE SELECTOR: Segmented tabs for Starter, Standard, Growth, Start from scratch */}
+            <div className="max-w-2xl mx-auto mb-10">
+              <span className="text-[12.5px] font-semibold text-[#5E6F77] uppercase tracking-wider block text-center mb-2.5">
+                Start from a package:
+              </span>
+              <div
+                className="bg-[#EEF3F4] p-1.5 rounded-2xl flex flex-wrap sm:flex-nowrap gap-1.5 border border-[#0F2A35]/[0.08]"
+                role="tablist"
+                aria-label="Starting package selector"
+              >
+                {(
+                  [
+                    { id: 'starter' as const, label: 'Starter' },
+                    { id: 'standard' as const, label: 'Standard' },
+                    { id: 'growth' as const, label: 'Growth' },
+                    { id: 'scratch' as const, label: 'Start from scratch' },
+                  ] as const
+                ).map((tab) => {
+                  const isActive = selectedPackage === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => handleSelectStartingPackage(tab.id)}
+                      className={`flex-1 min-w-[120px] py-2.5 px-3 rounded-xl text-[13.5px] sm:text-[14px] font-semibold transition-all duration-150 cursor-pointer text-center ${
+                        isActive
+                          ? 'bg-white text-[#0F2A35] shadow-xs'
+                          : 'text-[#5E6F77] hover:text-[#0F2A35] hover:bg-white/50'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Two Columns Grid */}
@@ -466,8 +710,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                         How many pages?
                       </span>
                       <span className="text-[13px] text-[#5E6F77]">
-                        {includedPages} page{includedPages > 1 ? 's' : ''} included in the base
-                        price
+                        {includedPages} page{includedPages > 1 ? 's' : ''} included in base build
                         {pricePerExtraPage > 0 ? `, then €${pricePerExtraPage} per extra page.` : '.'}
                       </span>
                     </div>
@@ -513,11 +756,16 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                 {visibleFeatures.length > 0 && (
                   <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[#0F2A35]/[0.08] shadow-xs">
                     {/* Header with Title and Select all / Clear all */}
-                    <div className="flex items-center justify-between gap-4 mb-3">
-                      <h4 className="text-[16px] font-semibold text-[#0F2A35]">
-                        Add features
-                      </h4>
-                      <div className="flex items-center gap-2.5 text-[12.5px]">
+                    <div className="flex items-center justify-between gap-4 mb-5 pb-3 border-b border-[rgba(15,42,53,0.06)]">
+                      <div>
+                        <h4 className="text-[17px] font-semibold text-[#0F2A35]">
+                          Features
+                        </h4>
+                        <span className="text-[12.5px] text-[#5E6F77]">
+                          Include or exclude any feature to match your exact brief.
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2.5 text-[12.5px] shrink-0">
                         <button
                           type="button"
                           onClick={() =>
@@ -540,36 +788,8 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                       </div>
                     </div>
 
-                    {/* Quick-start chips (hidden if tier has no visible features) */}
-                    {quickStartTiers.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-[rgba(15,42,53,0.06)]">
-                        <span className="text-[12px] font-medium text-[#5E6F77]">
-                          Quick start:
-                        </span>
-                        {quickStartTiers.map((t) => (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => {
-                              const tierFeatIds = visibleFeatures
-                                .filter((f) =>
-                                  f.includedInTiers?.includes(
-                                    t.id as 'starter' | 'standard' | 'growth'
-                                  )
-                                )
-                                .map((f) => f.id);
-                              setSelectedFeatureIds(new Set(tierFeatIds));
-                            }}
-                            className="px-2.5 py-1 rounded-full text-[12px] font-medium bg-[#EEF3F4] text-[#0F2A35] hover:bg-[#DCE9EC] border border-[#0F2A35]/[0.06] transition-colors cursor-pointer"
-                          >
-                            Start from {t.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
                     {/* Grouped feature rows */}
-                    <div className="space-y-6">
+                    <div className="space-y-7">
                       {(
                         [
                           'Website',
@@ -585,28 +805,49 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
                         return (
                           <div key={group}>
-                            <h5 className="text-[12px] font-semibold text-[#5E6F77] uppercase tracking-wider mb-2.5">
+                            <h5 className="text-[12px] font-semibold text-[#5E6F77] uppercase tracking-wider mb-3">
                               {group}
                             </h5>
-                            <div className="divide-y divide-[rgba(15,42,53,0.06)]">
+                            <div className="space-y-2.5">
                               {groupFeatures.map((feat) => {
                                 const isSelected = selectedFeatureIds.has(feat.id);
+                                const isInCurrentPackage =
+                                  selectedPackage !== 'scratch' &&
+                                  Boolean(feat.includedInTiers?.includes(selectedPackage));
+
                                 const priceLabel =
-                                  feat.billing === 'monthly'
-                                    ? `+€${feat.price}/month`
-                                    : `+€${feat.price}`;
+                                  (feat.price || 0) > 0
+                                    ? feat.billing === 'monthly'
+                                      ? `+€${feat.price}/month`
+                                      : `+€${feat.price}`
+                                    : 'Included in package';
 
                                 return (
-                                  <div
+                                  <label
                                     key={feat.id}
-                                    className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
+                                    htmlFor={`feat-checkbox-${feat.id}`}
+                                    className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-150 flex items-start justify-between gap-4 cursor-pointer select-none ${
+                                      isSelected
+                                        ? 'bg-white border-[#1E4A5C]/35 shadow-xs ring-1 ring-[#1E4A5C]/20'
+                                        : 'bg-[#F9FBFC] hover:bg-white border-[#0F2A35]/[0.06] hover:border-[#0F2A35]/15'
+                                    }`}
                                   >
-                                    <div className="flex items-center gap-3.5 min-w-0">
-                                      {/* Round Icon */}
+                                    <div className="flex items-start gap-3 min-w-0">
+                                      {/* Accessible Checkbox input */}
+                                      <input
+                                        type="checkbox"
+                                        id={`feat-checkbox-${feat.id}`}
+                                        checked={isSelected}
+                                        onChange={() => toggleFeature(feat.id)}
+                                        aria-label={feat.name}
+                                        className="mt-1 w-4 h-4 rounded border-slate-300 text-[#1E4A5C] focus:ring-[#1E4A5C] focus:ring-offset-0 cursor-pointer"
+                                      />
+
+                                      {/* Icon */}
                                       <div
-                                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors mt-0.5 ${
                                           isSelected
-                                            ? 'bg-[#0F2A35] text-white'
+                                            ? 'bg-[#0F2A35] text-white shadow-xs'
                                             : 'bg-[#EEF3F4] text-[#5E6F77]'
                                         }`}
                                       >
@@ -616,47 +857,36 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                                         />
                                       </div>
 
-                                      {/* Title, description & price */}
+                                      {/* Name, Description, In Package Tag */}
                                       <div className="min-w-0">
-                                        <div className="flex items-baseline gap-2 flex-wrap">
-                                          <span className="font-semibold text-[15px] text-[#0F2A35] leading-snug">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="font-semibold text-[14.5px] sm:text-[15px] text-[#0F2A35] leading-snug">
                                             {feat.name}
                                           </span>
-                                          <span className="text-[12.5px] font-semibold text-[#1E4A5C]">
-                                            {priceLabel}
-                                          </span>
+                                          {isInCurrentPackage && (
+                                            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#DCE9EC] text-[#1E4A5C] whitespace-nowrap">
+                                              In {selectedPackage.charAt(0).toUpperCase() + selectedPackage.slice(1)}
+                                            </span>
+                                          )}
                                         </div>
                                         {feat.description && (
-                                          <p className="text-[12.5px] text-[#5E6F77] truncate block mt-0.5">
+                                          <p className="text-[12.5px] text-[#5E6F77] mt-0.5 leading-relaxed">
                                             {feat.description}
                                           </p>
                                         )}
                                       </div>
                                     </div>
 
-                                    {/* Toggle Switch */}
-                                    <button
-                                      type="button"
-                                      role="switch"
-                                      aria-checked={isSelected}
-                                      aria-label={`Toggle ${feat.name}`}
-                                      onClick={() => toggleFeature(feat.id)}
-                                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C] ${
-                                        isSelected
-                                          ? 'bg-[#1E4A5C]'
-                                          : 'bg-slate-200'
-                                      }`}
-                                    >
-                                      <span
-                                        aria-hidden="true"
-                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                                          isSelected
-                                            ? 'translate-x-5'
-                                            : 'translate-x-0'
-                                        }`}
-                                      />
-                                    </button>
-                                  </div>
+                                    {/* Price & Billing */}
+                                    <div className="text-right shrink-0 pt-0.5 pl-2">
+                                      <span className="font-semibold text-[13px] sm:text-[13.5px] text-[#0F2A35] block">
+                                        {priceLabel}
+                                      </span>
+                                      <span className="text-[11px] text-[#5E6F77]">
+                                        {feat.billing === 'monthly' ? 'monthly' : 'one-time'}
+                                      </span>
+                                    </div>
+                                  </label>
                                 );
                               })}
                             </div>
@@ -668,7 +898,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                 )}
               </div>
 
-              {/* RIGHT COLUMN: Sticky Estimate Card */}
+              {/* RIGHT COLUMN: Sticky Estimate Card on Desktop */}
               <div className="lg:col-span-5 lg:sticky lg:top-28">
                 <div className="bg-[#F8FAFB] rounded-[24px] p-6 sm:p-8 border border-slate-200/90 shadow-sm">
                   <div className="mb-4">
@@ -678,19 +908,19 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                     <span className="text-[13px] text-[#5E6F77]">
                       {pages} page{pages > 1 ? 's' : ''}
                       {selectedFeatureIds.size > 0
-                        ? ` + ${selectedFeatureIds.size} feature${selectedFeatureIds.size > 1 ? 's' : ''} selected`
-                        : ' selected'}
+                        ? ` · ${selectedFeatureIds.size} feature${selectedFeatureIds.size > 1 ? 's' : ''} selected`
+                        : ' · No features selected'}
                     </span>
                   </div>
 
-                  {/* Live region for accessibility */}
+                  {/* Live region for screen readers */}
                   <div id={liveRegionId} aria-live="polite" className="sr-only">
                     Estimated total: {formatEuro(oneTimeTotal)} one-time
                     {monthlyTotal > 0 ? ` plus ${formatEuro(monthlyTotal)} per month` : ''}
                   </div>
 
                   {/* Main One-Time Price Display */}
-                  <div className="mb-2">
+                  <div className="mb-3">
                     <div className="flex items-baseline gap-2">
                       <span className="text-[40px] sm:text-[46px] font-bold tabular-nums text-[#0F2A35] leading-none tracking-tight">
                         €{animatedTotal}
@@ -700,9 +930,9 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                       </span>
                     </div>
 
-                    {/* Breakdown line (hiding 0 parts) */}
-                    <div className="text-[12.5px] text-[#5E6F77] mt-1.5 leading-snug">
-                      <span>Base: €{basePrice}</span>
+                    {/* Cost Breakdown Line */}
+                    <div className="text-[12.5px] text-[#5E6F77] mt-2 leading-relaxed">
+                      <span>Base website: €{basePrice}</span>
                       {pagesCost > 0 && <span> + Extra pages: €{pagesCost}</span>}
                       {oneTimeFeaturesCost > 0 && (
                         <span> + Features: €{oneTimeFeaturesCost}</span>
@@ -712,9 +942,9 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
                   {/* Monthly ongoing total if any monthly feature selected */}
                   {monthlyTotal > 0 && (
-                    <div className="pt-2 pb-1 border-t border-[rgba(15,42,53,0.06)] mt-2.5">
+                    <div className="pt-2.5 pb-2 border-t border-[rgba(15,42,53,0.06)] mt-2">
                       <div className="flex items-baseline gap-2 text-[17px] font-semibold text-[#1E4A5C]">
-                        <span>+ €{monthlyTotal}/month</span>
+                        <span>+ €{monthlyTotal} / month</span>
                         <span className="text-[12.5px] text-[#5E6F77] font-normal">
                           ongoing
                         </span>
@@ -722,18 +952,18 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                     </div>
                   )}
 
-                  {/* Estimate Note */}
+                  {/* Estimate Note from config (plain trade language, no savings claims) */}
                   {builderConfig?.estimateNote && (
                     <p className="text-[12.5px] text-[#5E6F77] leading-relaxed my-4">
                       {builderConfig.estimateNote}
                     </p>
                   )}
 
-                  {/* Compact list of selected features under total (names only, max 6, then +N more) */}
+                  {/* Selected Features Pill Tags */}
                   {selectedFeatureNames.length > 0 && (
-                    <div className="mb-4 pt-3 border-t border-[rgba(15,42,53,0.06)]">
+                    <div className="mb-5 pt-3 border-t border-[rgba(15,42,53,0.06)]">
                       <span className="text-[11.5px] font-semibold text-[#5E6F77] uppercase tracking-wider block mb-2">
-                        Selected features:
+                        Selected features ({selectedFeatureNames.length}):
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {selectedFeatureNames.slice(0, 6).map((name, i) => (
@@ -753,39 +983,31 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                     </div>
                   )}
 
-                  {/* Package comparison hint: if selected features all appear in one of the tiers AND custom total > tier.price */}
-                  {comparisonTier && (
-                    <div className="mb-4 p-3 rounded-xl bg-white/80 border border-[#0F2A35]/[0.08] text-[12.5px] text-[#1E4A5C] leading-snug">
-                      <span>
-                        These features are all included in the {comparisonTier.name} package, from {formatEuro(comparisonTier.price)}.
-                      </span>{' '}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const el = document.getElementById('pricing');
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className="font-semibold underline hover:text-[#0F2A35] cursor-pointer inline-flex items-center gap-0.5"
-                      >
-                        See {comparisonTier.name}
-                      </button>
-                    </div>
-                  )}
+                  {/* "Talk to Sales" Button (disabled if nothing selected) */}
+                  <div>
+                    <button
+                      type="button"
+                      ref={desktopSalesButtonRef}
+                      disabled={selectedFeatureIds.size === 0}
+                      onClick={handleOpenSalesModal}
+                      className="w-full h-[52px] rounded-full text-[16px] font-semibold flex items-center justify-center gap-2 bg-[#0F2A35] hover:bg-[#1A3D4C] text-white shadow-sm transition-all duration-200 cursor-pointer active:scale-[0.99] disabled:opacity-45 disabled:cursor-not-allowed"
+                    >
+                      <span>Talk to Sales</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
 
-                  {/* Request this quote CTA button */}
-                  <button
-                    type="button"
-                    onClick={handleRequestQuote}
-                    className="w-full h-[52px] rounded-full text-[16px] font-semibold flex items-center justify-center gap-2 bg-[#0F2A35] hover:bg-[#1A3D4C] text-white shadow-sm transition-all duration-200 cursor-pointer active:scale-[0.99] mb-4"
-                  >
-                    <span>Request this quote</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                    {/* Helper hint if button is disabled */}
+                    {selectedFeatureIds.size === 0 && (
+                      <p className="text-xs text-[#5E6F77] text-center mt-2">
+                        Select at least one feature or package to talk to sales.
+                      </p>
+                    )}
+                  </div>
 
                   {/* "Always included" items */}
                   {builderConfig?.alwaysIncluded && builderConfig.alwaysIncluded.length > 0 && (
-                    <div className="pt-4 border-t border-[rgba(15,42,53,0.08)]">
-                      <span className="text-[12.5px] font-semibold text-[#0F2A35] uppercase tracking-wider block mb-2.5">
+                    <div className="mt-5 pt-4 border-t border-[rgba(15,42,53,0.08)]">
+                      <span className="text-[12px] font-semibold text-[#0F2A35] uppercase tracking-wider block mb-2.5">
                         Always included:
                       </span>
                       <ul className="space-y-2">
@@ -801,24 +1023,232 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                       </ul>
                     </div>
                   )}
-
-                  {/* Secondary question link */}
-                  <div className="mt-5 pt-3 border-t border-[rgba(15,42,53,0.06)] text-center">
-                    <a
-                      href="#about"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const el = document.getElementById('about');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="text-[13px] text-[#1E4A5C] hover:text-[#0F2A35] hover:underline"
-                    >
-                      Not sure what you need? Talk to us and we&apos;ll tell you honestly.
-                    </a>
-                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Mobile Sticky Bottom Bar (Total & Talk to Sales) */}
+            <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-[#0F2A35]/10 p-3.5 sm:p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-40 lg:hidden flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl sm:text-2xl font-bold tabular-nums text-[#0F2A35] leading-none">
+                    {formatEuro(oneTimeTotal)}
+                  </span>
+                  <span className="text-xs text-[#5E6F77]">one-time</span>
+                </div>
+                {monthlyTotal > 0 && (
+                  <span className="text-xs font-semibold text-[#1E4A5C] block mt-0.5">
+                    + {formatEuro(monthlyTotal)}/mo
+                  </span>
+                )}
+                <span className="text-[11px] text-[#5E6F77] truncate block mt-0.5">
+                  {pages} page{pages > 1 ? 's' : ''} · {selectedFeatureIds.size} feature{selectedFeatureIds.size === 1 ? '' : 's'}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                ref={mobileSalesButtonRef}
+                disabled={selectedFeatureIds.size === 0}
+                onClick={handleOpenSalesModal}
+                className="px-5 h-11 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5 bg-[#0F2A35] hover:bg-[#1A3D4C] text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+              >
+                <span>Talk to Sales</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Accessible "Talk to Sales" Modal Dialog */}
+            {isSalesModalOpen && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs overflow-y-auto"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="sales-modal-title"
+                ref={modalRef}
+              >
+                <div className="relative w-full max-w-lg bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl border border-slate-200 my-8">
+                  {/* Close button */}
+                  <button
+                    type="button"
+                    onClick={handleCloseSalesModal}
+                    aria-label="Close modal"
+                    className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-[#0F2A35] flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+
+                  <h3
+                    id="sales-modal-title"
+                    className="text-2xl font-bold text-[#0F2A35] mb-2 pr-10"
+                  >
+                    Talk to Sales
+                  </h3>
+                  <p className="text-sm text-[#5E6F77] mb-6">
+                    Review your custom estimate and tell us about your project.
+                  </p>
+
+                  {salesSubmitted ? (
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto mb-4">
+                        <Check className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-xl font-bold text-[#0F2A35] mb-2">
+                        Enquiry received
+                      </h4>
+                      <p className="text-sm text-[#5E6F77] mb-6">
+                        Thank you, {salesName}. We'll review your custom build requirements and reply with a fixed quote.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleCloseSalesModal}
+                        className="px-6 h-11 rounded-full bg-[#0F2A35] text-white text-sm font-semibold hover:bg-[#1A3D4C] transition-colors cursor-pointer"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSalesSubmit} noValidate className="space-y-4">
+                      {/* Honeypot field */}
+                      <input
+                        type="text"
+                        name="_builder_hp"
+                        value={salesHoneypot}
+                        onChange={(e) => setSalesHoneypot(e.target.value)}
+                        tabIndex={-1}
+                        autoComplete="off"
+                        className="hidden"
+                        aria-hidden="true"
+                      />
+
+                      {/* Name */}
+                      <div>
+                        <label
+                          htmlFor="sales-name"
+                          className="block text-xs font-semibold text-[#0F2A35] uppercase tracking-wider mb-1.5"
+                        >
+                          Full name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          id="sales-name"
+                          ref={firstInputRef}
+                          type="text"
+                          value={salesName}
+                          onChange={(e) => {
+                            setSalesName(e.target.value);
+                            if (salesErrors.name) setSalesErrors((prev) => ({ ...prev, name: '' }));
+                          }}
+                          placeholder="Your full name"
+                          className="w-full h-11 px-3.5 rounded-xl border border-slate-200 focus:border-[#1E4A5C] focus:ring-1 focus:ring-[#1E4A5C] text-sm text-[#0F2A35] outline-none"
+                        />
+                        {salesErrors.name && (
+                          <p className="text-xs text-red-500 mt-1">{salesErrors.name}</p>
+                        )}
+                      </div>
+
+                      {/* Email */}
+                      <div>
+                        <label
+                          htmlFor="sales-email"
+                          className="block text-xs font-semibold text-[#0F2A35] uppercase tracking-wider mb-1.5"
+                        >
+                          Email address <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          id="sales-email"
+                          type="email"
+                          value={salesEmail}
+                          onChange={(e) => {
+                            setSalesEmail(e.target.value);
+                            if (salesErrors.email) setSalesErrors((prev) => ({ ...prev, email: '' }));
+                          }}
+                          placeholder="you@yourtrade.ie"
+                          className="w-full h-11 px-3.5 rounded-xl border border-slate-200 focus:border-[#1E4A5C] focus:ring-1 focus:ring-[#1E4A5C] text-sm text-[#0F2A35] outline-none"
+                        />
+                        {salesErrors.email && (
+                          <p className="text-xs text-red-500 mt-1">{salesErrors.email}</p>
+                        )}
+                      </div>
+
+                      {/* Phone (optional) */}
+                      <div>
+                        <label
+                          htmlFor="sales-phone"
+                          className="block text-xs font-semibold text-[#0F2A35] uppercase tracking-wider mb-1.5"
+                        >
+                          Phone or WhatsApp <span className="text-slate-400 font-normal lowercase">(optional)</span>
+                        </label>
+                        <input
+                          id="sales-phone"
+                          type="tel"
+                          value={salesPhone}
+                          onChange={(e) => setSalesPhone(e.target.value)}
+                          placeholder="087 123 4567"
+                          className="w-full h-11 px-3.5 rounded-xl border border-slate-200 focus:border-[#1E4A5C] focus:ring-1 focus:ring-[#1E4A5C] text-sm text-[#0F2A35] outline-none"
+                        />
+                      </div>
+
+                      {/* Prefilled editable message */}
+                      <div>
+                        <label
+                          htmlFor="sales-message"
+                          className="block text-xs font-semibold text-[#0F2A35] uppercase tracking-wider mb-1.5"
+                        >
+                          Estimate summary &amp; notes <span className="text-slate-400 font-normal lowercase">(editable)</span>
+                        </label>
+                        <textarea
+                          id="sales-message"
+                          rows={4}
+                          value={salesMessage}
+                          onChange={(e) => setSalesMessage(e.target.value)}
+                          className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1E4A5C] focus:ring-1 focus:ring-[#1E4A5C] text-xs font-mono text-[#0F2A35] leading-relaxed resize-y outline-none"
+                        />
+                      </div>
+
+                      {/* Consent checkbox */}
+                      <div>
+                        <label className="flex items-start gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={salesConsent}
+                            onChange={(e) => {
+                              setSalesConsent(e.target.checked);
+                              if (salesErrors.consent) setSalesErrors((prev) => ({ ...prev, consent: '' }));
+                            }}
+                            className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#1E4A5C] focus:ring-[#1E4A5C] cursor-pointer"
+                          />
+                          <span className="text-xs text-[#5E6F77] leading-relaxed">
+                            I agree to be contacted about this estimate. Details will never be shared or spammed.
+                          </span>
+                        </label>
+                        {salesErrors.consent && (
+                          <p className="text-xs text-red-500 mt-1">{salesErrors.consent}</p>
+                        )}
+                      </div>
+
+                      {/* Status / Fallback Banner */}
+                      {salesStatus && (
+                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+                          {salesStatus}
+                        </div>
+                      )}
+
+                      {/* Submit Button */}
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          disabled={salesSubmitting}
+                          className="w-full h-12 rounded-full bg-[#0F2A35] hover:bg-[#1A3D4C] text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                        >
+                          <span>{salesSubmitting ? 'Sending...' : 'Send enquiry to sales'}</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

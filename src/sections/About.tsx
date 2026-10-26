@@ -8,6 +8,7 @@ import {
   SETUP_FROM,
   devPlaceholder,
   whatsappLink,
+  config,
 } from '../content';
 
 interface AboutProps {
@@ -70,12 +71,13 @@ export default function About({ onOpenPrivacy }: AboutProps) {
     return base.slice(0, 3);
   })();
 
-  // Option chips built from pricing config
+  // Option chips built from normal pricing config tiers (never hard-coded, no free chips)
   const optionChips = [
-    { id: '1-page', label: '1-Page starter', price: 'Free' },
-    { id: 'starter', label: 'Starter', price: `from €${SETUP_FROM.starter}` },
-    { id: 'standard', label: 'Standard', price: `from €${SETUP_FROM.standard}` },
-    { id: 'growth', label: 'Growth', price: `from €${SETUP_FROM.growth}` },
+    ...(config.pricing?.tiers || []).map((t) => ({
+      id: t.id,
+      label: t.name,
+      price: `from €${t.price}`,
+    })),
     { id: 'custom', label: 'Custom build', price: '' },
     { id: 'not-sure', label: 'Not sure yet', price: '' },
   ];
@@ -269,7 +271,20 @@ export default function About({ onOpenPrivacy }: AboutProps) {
 
   // Headline rendering with italic accent phrase
   const renderHeadline = (headline: string) => {
-    const phrase = 'next enquiry';
+    const match = headline.match(/\*(.*?)\*/);
+    if (match) {
+      const parts = headline.split(match[0]);
+      return (
+        <>
+          {parts[0]}
+          <span className="font-serif italic font-normal text-[#E3B896]">
+            {match[1]}
+          </span>
+          {parts[1]}
+        </>
+      );
+    }
+    const phrase = 'new website';
     if (headline.includes(phrase)) {
       const [before, after] = headline.split(phrase);
       return (
@@ -318,26 +333,33 @@ export default function About({ onOpenPrivacy }: AboutProps) {
               Mobile stacking order: 1. badge, 2. headline, 3. checklist, 4. form, 5. founder card */}
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
             
-            {/* ITEM 1 ON MOBILE (Order 1): Badge, Headline, Checklist */}
+            {/* ITEM 1 ON MOBILE (Order 1): Headline, Supporting Content Packages, Checklist */}
             <div className="order-1 lg:order-none lg:col-span-5 flex flex-col">
-              {/* 1. Pill badge (hidden if empty) */}
-              {CTA_CONFIG.cta.badge && CTA_CONFIG.cta.badge.trim() && (
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold tracking-wide uppercase bg-white/10 text-[#E3B896] border border-white/15 w-fit mb-5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#E3B896]" />
-                  <span>{CTA_CONFIG.cta.badge}</span>
-                </div>
-              )}
-
-              {/* 2. Headline with italic accent phrase */}
+              {/* Headline with italic accent phrase */}
               <h2 className="text-[32px] sm:text-[42px] lg:text-[46px] font-normal leading-[1.1] tracking-[-0.03em] text-white mb-6">
                 {renderHeadline(CTA_CONFIG.cta.headline)}
               </h2>
 
-              {/* 3. Checklist of 3 items with circled check icons */}
-              <ul className="space-y-4 mb-2">
+              {/* Supporting Content: Starter, Standard and Growth from config.pricing.tiers */}
+              <div className="space-y-2.5 mb-6">
+                {(config.pricing?.tiers || []).map((tier) => (
+                  <div
+                    key={tier.id}
+                    className="flex items-center justify-between py-2 px-3.5 rounded-xl bg-white/[0.05] border border-white/10 text-white"
+                  >
+                    <span className="font-semibold text-[14px] sm:text-[15px]">{tier.name}</span>
+                    <span className="text-[12px] sm:text-[13px] text-white/70">
+                      from <span className="text-[#E3B896] font-semibold">€{tier.price}</span> · about {tier.days} working days
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Checklist items with circled check icons */}
+              <ul className="space-y-3 mb-2">
                 {checklistPoints.map((point, idx) => (
-                  <li key={idx} className="flex items-start gap-3 text-[15px] sm:text-[16px] text-white/85 leading-snug">
-                    <CheckCircle2 className="w-5 h-5 text-[#E3B896] shrink-0 mt-0.5" />
+                  <li key={idx} className="flex items-start gap-3 text-[14px] sm:text-[15px] text-white/85 leading-snug">
+                    <CheckCircle2 className="w-4 h-4 text-[#E3B896] shrink-0 mt-0.5" />
                     <span>{point}</span>
                   </li>
                 ))}
@@ -347,6 +369,11 @@ export default function About({ onOpenPrivacy }: AboutProps) {
             {/* ITEM 2 ON MOBILE (Order 2): Right Column Contact Form */}
             <div className="order-2 lg:order-none lg:col-span-7 lg:row-span-2">
               <div className="w-full bg-white/[0.03] border border-white/10 rounded-[24px] sm:rounded-[28px] p-6 sm:p-9 md:p-10 backdrop-blur-xs">
+                {/* Free intro call badge */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#E3B896] text-xs font-semibold uppercase tracking-wider mb-6">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#E3B896]" />
+                  <span>Free intro call</span>
+                </div>
                 {isSubmitted ? (
                   /* Success State */
                   <div className="flex flex-col items-center justify-center text-center py-10 px-2 sm:px-6">
@@ -610,7 +637,7 @@ export default function About({ onOpenPrivacy }: AboutProps) {
             </div>
 
             {/* ITEM 3 ON MOBILE (Order 3): Founder Card (Left column desktop) */}
-            <div className="order-3 lg:order-none lg:col-span-5 mt-10 sm:mt-12 lg:mt-14">
+            <div className="order-3 lg:order-none lg:col-span-5 mt-10 sm:mt-12 lg:mt-6">
               <div className="flex flex-col items-start w-full max-w-[300px] sm:max-w-[320px]">
                 {/* Large Portrait Tile */}
                 <div

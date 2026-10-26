@@ -293,6 +293,11 @@ export interface BuilderConfig {
   estimateNote: string;
 }
 
+export interface VideoTestimonialConfig {
+  rating?: number;
+  disclosure?: string;
+}
+
 export interface AppConfig {
   studioName: string;
   legalName: string;
@@ -311,6 +316,7 @@ export interface AppConfig {
   promises: string[];
   coreEssentials: CoreEssentialItem[];
   testimonials: TestimonialItem[];
+  videoTestimonial?: VideoTestimonialConfig;
 }
 
 export const config: AppConfig = {
@@ -319,6 +325,10 @@ export const config: AppConfig = {
   companyAddress: '',
   bookingUrl: '',
   liveDemoUrl: '',
+  videoTestimonial: {
+    rating: 5,
+    disclosure: '',
+  },
   testimonials: [
     {
       id: '73bd21c3-1c2b-41bf-b4b4-33d3104d10d3',
@@ -543,7 +553,7 @@ export const config: AppConfig = {
     items: [
       {
         number: '01',
-        question: 'What Does Maximizing Value Mean for You?',
+        question: 'What Does Maximising Value Mean for You?',
         answer:
           'We focus on real enquiries rather than vanity metrics, agreeing on a clear written fixed price before work starts so there are never surprises.',
       },
@@ -551,7 +561,7 @@ export const config: AppConfig = {
         number: '02',
         question: 'Control Your Future Involvement',
         answer:
-          'You own your domain, code, design, and assets 100% from day one. No locked proprietary builders and complete freedom to take your site anywhere.',
+          'You own your domain, code, design and assets from day one. No locked proprietary builders and complete freedom to take your site anywhere.',
       },
       {
         number: '03',

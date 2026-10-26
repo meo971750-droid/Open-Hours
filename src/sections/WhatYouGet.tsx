@@ -33,11 +33,6 @@ export default function WhatYouGet() {
         <div>
           {/* Section Header */}
           <div className="flex flex-col items-center text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[rgba(15,42,53,0.08)] shadow-xs mb-3 text-[12px] font-semibold text-[#1E4A5C] tracking-wide uppercase">
-              <Sparkles className="w-3.5 h-3.5 text-[#1E4A5C]" />
-              <span>Standard with every site</span>
-            </div>
-
             <h3 className="text-[28px] sm:text-[38px] md:text-[46px] font-normal tracking-[-0.03em] leading-[1.12] text-[#0F2A35] max-w-2xl mb-3">
               Included in every trade build
             </h3>

@@ -179,14 +179,8 @@ export default function WhyOpenHours() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12 sm:mb-16"
         >
-          {/* Left Column: Pill + 3-Line H2 */}
+          {/* Left Column: 3-Line H2 */}
           <div className="max-w-2xl">
-            {/* Small pill label */}
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-5 bg-[#EEF3F4] border border-[#0F2A35]/10 text-[#1E4A5C]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E07A5F]" />
-              <span>{growth.pill || 'Growth package'}</span>
-            </div>
-
             {/* H2 Heading on three lines matching reference styling */}
             <h2 className="text-[clamp(2.4rem,5vw,4.25rem)] font-bold tracking-tight leading-[1.06]">
               <span className="block text-[#0F2A35]">

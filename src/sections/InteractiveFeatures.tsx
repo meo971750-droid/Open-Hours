@@ -1014,12 +1014,6 @@ export default function InteractiveFeatures({
 
           {/* Section Header: Centred, White */}
           <div className="relative z-10 flex flex-col items-center text-center max-w-3xl mx-auto mb-16 sm:mb-24">
-            {/* Pill: Interactive features with Wand2 icon */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/25 bg-white/5 backdrop-blur-xs mb-4 text-[13px] font-medium text-white shadow-xs">
-              <Wand2 className="w-3.5 h-3.5 text-[#E3B896]" />
-              <span>Interactive features</span>
-            </div>
-
             {/* H2: Make your website a monster with interactive features */}
             <h2 className="text-[32px] sm:text-[44px] md:text-[56px] lg:text-[60px] font-semibold tracking-[-0.03em] leading-[1.1] text-white mb-4">
               Make your website a <Accent className="text-[#E3B896]">monster</Accent> with interactive features
@@ -1033,9 +1027,9 @@ export default function InteractiveFeatures({
 
           {/* Timeline Wrapper (Max width 1100px) */}
           <div ref={setTimelineRef} className="max-w-[1100px] mx-auto relative">
-            {/* Vertical timeline track at left = 6px */}
+            {/* Vertical timeline track: left on mobile, central on desktop/tablet */}
             <div
-              className="absolute left-[6px] top-4 bottom-4 w-[1px] bg-white/[0.18]"
+              className="absolute left-[7px] md:left-1/2 md:-translate-x-1/2 top-4 bottom-4 w-[1px] bg-white/[0.18]"
               aria-hidden="true"
             >
               {/* Gold fill line whose scaleY follows scroll progress (never exceeds last node) */}
@@ -1048,144 +1042,153 @@ export default function InteractiveFeatures({
               />
             </div>
 
-            {/* Rows of 5 features */}
-            <div className="space-y-16 lg:space-y-24">
+            {/* Alternating zig-zag timeline on desktop/tablet, stacked on mobile */}
+            <div className="space-y-14 md:space-y-20">
               {INTERACTIVE_FEATURES.map((item, idx) => {
+                // Step 1 right, Step 2 left, Step 3 right, Step 4 left, Step 5 right
+                const isRight = idx % 2 === 0;
+
                 // Node activation progress threshold
                 const nodeThreshold = idx / (INTERACTIVE_FEATURES.length - 1);
                 const isNodeActive = reducedMotion || scrollVal >= nodeThreshold - 0.05;
 
                 return (
-                  <motion.div
-                    key={item.id}
-                    initial={reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: '-8%' }}
-                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="relative pl-8 lg:pl-12"
-                  >
-                    {/* 14px Square Node at left = 0 */}
+                  <div key={item.id} className="relative w-full">
+                    {/* Node on central line (or left line on mobile) */}
                     <div
-                      className={`absolute left-0 top-3 w-3.5 h-3.5 rounded-[3px] transition-all duration-300 z-10 ${
+                      className={`absolute top-4 w-3.5 h-3.5 rounded-full transition-all duration-300 z-20 ${
                         isNodeActive
-                          ? 'bg-[#E3B896] shadow-[0_0_12px_rgba(227,184,150,0.65)]'
-                          : 'bg-white/35 border border-white/20'
+                          ? 'bg-[#E3B896] shadow-[0_0_12px_rgba(227,184,150,0.65)] ring-4 ring-[#0F2A35]'
+                          : 'bg-white/35 border border-white/20 ring-4 ring-[#0F2A35]'
+                      } left-0 md:left-1/2 md:-translate-x-1/2`}
+                      aria-hidden="true"
+                    />
+
+                    {/* Horizontal connector line on desktop/tablet */}
+                    <div
+                      className={`hidden md:block absolute top-[22px] h-[1px] z-10 transition-colors duration-300 ${
+                        isNodeActive ? 'bg-[#E3B896]/50' : 'bg-white/[0.15]'
+                      } ${
+                        isRight
+                          ? 'left-1/2 w-[36px]'
+                          : 'right-1/2 w-[36px]'
                       }`}
                       aria-hidden="true"
                     />
 
-                    {/* Two-column grid (Text 42% | Visual 58% on Desktop) */}
-                    <div className="grid grid-cols-1 lg:grid-cols-[42%_1fr] gap-8 lg:gap-[56px] items-center">
-                      {/* Left: Text column */}
-                      <div>
-                        {/* Title with Monospace superscript number */}
-                        <div className="flex items-start gap-1.5 flex-wrap">
-                          <h3 className="text-[28px] sm:text-[30px] font-semibold text-white leading-tight">
-                            {item.title}
-                            <sup className="font-mono text-[13px] text-[#E3B896] ml-2 font-normal">
-                              {item.number}
-                            </sup>
-                          </h3>
+                    {/* Step Card: Right or Left on desktop/tablet, left-padded on mobile */}
+                    <motion.div
+                      initial={reducedMotion ? false : { opacity: 0, y: 24 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '-8%' }}
+                      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                      className={`relative pl-8 md:pl-0 w-full ${
+                        isRight
+                          ? 'md:w-[calc(50%-36px)] md:ml-auto'
+                          : 'md:w-[calc(50%-36px)] md:mr-auto'
+                      }`}
+                    >
+                      <div className="flex flex-col gap-5 bg-white/[0.03] border border-white/10 rounded-[24px] sm:rounded-[28px] p-5 sm:p-7 backdrop-blur-xs shadow-lg">
+                        {/* Header: Title with Monospace superscript number */}
+                        <div>
+                          <div className="flex items-start gap-1.5 flex-wrap">
+                            <h3 className="text-[24px] sm:text-[28px] font-semibold text-white leading-tight">
+                              {item.title}
+                              <sup className="font-mono text-[13px] text-[#E3B896] ml-2 font-normal">
+                                {item.number}
+                              </sup>
+                            </h3>
+                          </div>
+
+                          {/* Add-on Chip */}
+                          <div className="mt-2">
+                            <span className="inline-block px-3 py-0.5 rounded-full text-[13px] font-bold text-[#E3B896] bg-[#E3B896]/16">
+                              Add-on
+                            </span>
+                          </div>
+
+                          {/* Description */}
+                          <p className="text-[15px] sm:text-[16px] leading-[1.6] text-white/75 mt-3">
+                            {item.description}
+                          </p>
                         </div>
 
-                        {/* Add-on Chip */}
-                        <div className="mt-2.5">
-                          <span className="inline-block px-3 py-0.5 rounded-full text-[13px] font-bold text-[#E3B896] bg-[#E3B896]/16">
-                            Add-on
-                          </span>
-                        </div>
+                        {/* Visual demo card */}
+                        <div className="w-full">
+                          {item.id === 'photo-estimate' && (
+                            <DemoCardWrapper
+                              isDecorative
+                              srOnlyText="Demonstration of photo estimate where a drawn roof illustration is scanned and shows an indicative estimate range of 2,400 to 3,200 euro."
+                            >
+                              {({ isPaused: p, reducedMotion: rm }) => (
+                                <PhotoEstimateScene isPaused={p} reducedMotion={rm} />
+                              )}
+                            </DemoCardWrapper>
+                          )}
 
-                        {/* Description */}
-                        <p className="text-[17px] leading-[1.6] text-white/72 max-w-[440px] mt-4">
-                          {item.description}
-                        </p>
+                          {item.id === 'before-after' && (
+                            <DemoCardWrapper>
+                              {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
+                                <BeforeAfterScene
+                                  isPaused={p}
+                                  onUserInteraction={ui}
+                                  reducedMotion={rm}
+                                />
+                              )}
+                            </DemoCardWrapper>
+                          )}
+
+                          {item.id === 'voice-agent' && (
+                            <DemoCardWrapper
+                              isDecorative
+                              srOnlyText="Demonstration of automated voice agent answering an after-hours call for Atlantic Slate Roofing and recording details."
+                            >
+                              {({ isPaused: p, reducedMotion: rm }) => (
+                                <VoiceAgentScene isPaused={p} reducedMotion={rm} />
+                              )}
+                            </DemoCardWrapper>
+                          )}
+
+                          {item.id === 'area-checker' && (
+                            <DemoCardWrapper>
+                              {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
+                                <AreaCheckerScene
+                                  isPaused={p}
+                                  onUserInteraction={ui}
+                                  reducedMotion={rm}
+                                />
+                              )}
+                            </DemoCardWrapper>
+                          )}
+
+                          {item.id === 'visit-booking' && (
+                            <DemoCardWrapper>
+                              {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
+                                <VisitBookingScene
+                                  isPaused={p}
+                                  onUserInteraction={ui}
+                                  reducedMotion={rm}
+                                />
+                              )}
+                            </DemoCardWrapper>
+                          )}
+                        </div>
                       </div>
-
-                      {/* Right: Visual card with delayed entrance */}
-                      <motion.div
-                        initial={reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: '-8%' }}
-                        transition={{
-                          duration: 0.5,
-                          delay: reducedMotion ? 0 : 0.12,
-                          ease: [0.16, 1, 0.3, 1],
-                        }}
-                        className="w-full"
-                      >
-                        {item.id === 'photo-estimate' && (
-                          <DemoCardWrapper
-                            isDecorative
-                            srOnlyText="Demonstration of photo estimate where a drawn roof illustration is scanned and shows an indicative estimate range of 2,400 to 3,200 euro."
-                          >
-                            {({ isPaused: p, reducedMotion: rm }) => (
-                              <PhotoEstimateScene isPaused={p} reducedMotion={rm} />
-                            )}
-                          </DemoCardWrapper>
-                        )}
-
-                        {item.id === 'before-after' && (
-                          <DemoCardWrapper>
-                            {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
-                              <BeforeAfterScene
-                                isPaused={p}
-                                onUserInteraction={ui}
-                                reducedMotion={rm}
-                              />
-                            )}
-                          </DemoCardWrapper>
-                        )}
-
-                        {item.id === 'voice-agent' && (
-                          <DemoCardWrapper
-                            isDecorative
-                            srOnlyText="Demonstration of automated voice agent answering an after-hours call for Atlantic Slate Roofing and recording details."
-                          >
-                            {({ isPaused: p, reducedMotion: rm }) => (
-                              <VoiceAgentScene isPaused={p} reducedMotion={rm} />
-                            )}
-                          </DemoCardWrapper>
-                        )}
-
-                        {item.id === 'area-checker' && (
-                          <DemoCardWrapper>
-                            {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
-                              <AreaCheckerScene
-                                isPaused={p}
-                                onUserInteraction={ui}
-                                reducedMotion={rm}
-                              />
-                            )}
-                          </DemoCardWrapper>
-                        )}
-
-                        {item.id === 'visit-booking' && (
-                          <DemoCardWrapper>
-                            {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
-                              <VisitBookingScene
-                                isPaused={p}
-                                onUserInteraction={ui}
-                                reducedMotion={rm}
-                              />
-                            )}
-                          </DemoCardWrapper>
-                        )}
-                      </motion.div>
-                    </div>
-                  </motion.div>
+                    </motion.div>
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Section Foot: New Glass Card CTA Block (Centred, max-width 760px, mt-[72px]) */}
+          {/* Section Foot: Gold Card CTA Block (Centred, max-width 760px, mt-[72px]) */}
           <div className="relative z-10 mt-[72px] max-w-[760px] mx-auto">
-            {/* Faint peach radial glow behind the card at 16% opacity */}
+            {/* Soft gold radial glow behind the card */}
             <div
               className="pointer-events-none absolute -inset-4 sm:-inset-6 rounded-[36px] blur-2xl"
               style={{
                 background:
-                  'radial-gradient(circle, rgba(227, 184, 150, 0.16) 0%, transparent 70%)',
+                  'radial-gradient(circle, rgba(242, 181, 68, 0.16) 0%, transparent 70%)',
               }}
               aria-hidden="true"
             />
@@ -1193,47 +1196,47 @@ export default function InteractiveFeatures({
             <motion.div
               role="group"
               aria-labelledby="feature-idea-title"
-              initial={reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+              initial={reducedMotion ? false : { opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-8%' }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="relative rounded-[28px] px-5 py-7 sm:px-8 sm:py-10 text-center shadow-[0_24px_50px_rgba(0,0,0,0.65)] overflow-hidden bg-black"
+              className="relative rounded-[28px] px-5 py-7 sm:px-8 sm:py-10 text-center shadow-[0_24px_50px_rgba(0,0,0,0.65)] overflow-hidden"
               style={{
                 background:
-                  '#000000 padding-box, linear-gradient(135deg, rgba(243, 221, 184, 0.8), rgba(227, 184, 150, 0.8), rgba(201, 154, 102, 0.8)) border-box',
+                  '#0A1218 padding-box, linear-gradient(135deg, rgba(242, 181, 68, 0.7), rgba(242, 181, 68, 0.25), rgba(242, 181, 68, 0.7)) border-box',
                 border: '1px solid transparent',
               }}
             >
-              {/* Small icon tile: 48px, radius 14px, background rgba(227,184,150,.18), Lightbulb in gold #E3B896 */}
-              <div className="w-12 h-12 rounded-[14px] bg-[#E3B896]/20 border border-[#E3B896]/30 flex items-center justify-center mx-auto mb-4">
+              {/* Gold icon tile: 48px, radius 14px, Lightbulb in gold #F2B544 */}
+              <div className="w-12 h-12 rounded-[14px] bg-[#F2B544]/15 border border-[#F2B544]/30 flex items-center justify-center mx-auto mb-4">
                 <motion.div
                   animate={
                     reducedMotion
                       ? {}
                       : {
                           filter: [
-                            'drop-shadow(0 0 0px rgba(227, 184, 150, 0))',
-                            'drop-shadow(0 0 10px rgba(227, 184, 150, 0.75))',
-                            'drop-shadow(0 0 0px rgba(227, 184, 150, 0))',
+                            'drop-shadow(0 0 0px rgba(242, 181, 68, 0))',
+                            'drop-shadow(0 0 10px rgba(242, 181, 68, 0.75))',
+                            'drop-shadow(0 0 0px rgba(242, 181, 68, 0))',
                           ],
                         }
                   }
                   transition={{ duration: 2.4, times: [0, 0.5, 1], repeat: 0 }}
                 >
-                  <Lightbulb className="w-6 h-6 text-[#E3B896]" />
+                  <Lightbulb className="w-6 h-6 text-[#F2B544]" />
                 </motion.div>
               </div>
 
-              {/* Title (H3, clamp(26px, 3vw, 38px), weight 600, tracking -0.02em, golden text, centred) */}
+              {/* Title (H3, golden text #F2B544, centred) */}
               <h3
                 id="feature-idea-title"
-                className="text-[26px] sm:text-[32px] md:text-[38px] font-semibold tracking-[-0.02em] text-[#E3B896] text-center mb-3 leading-tight"
+                className="text-[26px] sm:text-[32px] md:text-[38px] font-semibold tracking-[-0.02em] text-[#F2B544] text-center mb-3 leading-tight"
               >
-                Have a feature <Accent className="text-[#E3B896]">idea</Accent>?
+                Have a feature <span className="font-serif italic font-normal text-[#F2B544]">idea</span>?
               </h3>
 
-              {/* Line (clamp(17px, 1.5vw, 20px), golden text, max-width 520px, centred) */}
-              <p className="text-[17px] sm:text-[18.5px] md:text-[20px] text-[#E3B896]/90 text-center max-w-[520px] mx-auto mb-8 leading-relaxed font-normal">
+              {/* Line (golden text, max-width 520px, centred) */}
+              <p className="text-[17px] sm:text-[18.5px] md:text-[20px] text-[#F2B544] text-center max-w-[520px] mx-auto mb-8 leading-relaxed font-normal">
                 Tell us what you&apos;d like your website to do, and we&apos;ll quote it in writing.
               </p>
 
@@ -1242,10 +1245,10 @@ export default function InteractiveFeatures({
                 <button
                   type="button"
                   onClick={() => onOpenAudit('feature')}
-                  className="group relative h-[56px] px-7 rounded-full bg-[#E3B896] text-[#0F2A35] hover:bg-[#ebd0b9] text-[17px] font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B896] focus-visible:ring-offset-3 focus-visible:ring-offset-black cursor-pointer shadow-lg"
+                  className="group relative h-[56px] px-7 rounded-full bg-[#F2B544] text-[#0B1B22] hover:bg-[#E0A433] text-[17px] font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F2B544] focus-visible:ring-offset-3 focus-visible:ring-offset-black cursor-pointer shadow-lg"
                 >
                   <span>Get it done on your website</span>
-                  <ArrowRight className="w-4 h-4 text-[#0F2A35] transition-transform duration-200 group-hover:translate-x-1" />
+                  <ArrowRight className="w-4 h-4 text-[#0B1B22] transition-transform duration-200 group-hover:translate-x-1" />
                 </button>
 
                 {/* WhatsApp text link if configured (golden) */}
@@ -1262,7 +1265,7 @@ export default function InteractiveFeatures({
                       href={waUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-4 text-[15px] text-[#E3B896]/90 hover:text-[#E3B896] hover:underline transition-colors block text-center"
+                      className="mt-4 text-[15px] text-[#F2B544] hover:underline transition-colors block text-center"
                     >
                       Prefer WhatsApp? Message us
                     </a>
@@ -1271,9 +1274,9 @@ export default function InteractiveFeatures({
               </div>
             </motion.div>
 
-            {/* Muted line directly UNDER the block (golden) */}
-            <p className="mt-6 text-[14px] text-[#E3B896]/80 text-center leading-relaxed">
-              Interactive features are optional extras, quoted in writing. They are not part of the 1-page website.
+            {/* Muted line directly UNDER the block (golden, AA contrast) */}
+            <p className="mt-6 text-[14px] text-[#F2B544]/90 text-center leading-relaxed">
+              Interactive features are optional extras, quoted in writing.
             </p>
           </div>
         </div>

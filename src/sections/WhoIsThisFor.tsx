@@ -115,11 +115,6 @@ export default function WhoIsThisFor({ onOpenAudit }: WhoIsThisForProps) {
             Pill + H2 with Italic Accent word ("for")
            ========================================================================= */}
         <div className="flex flex-col items-center text-center mb-14 sm:mb-20">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[rgba(15,42,53,0.08)] shadow-xs mb-4 text-[13px] font-medium text-[#1E4A5C]">
-            <Compass className="w-3.5 h-3.5 text-[#1E4A5C]" />
-            <span>{whoFor.pill}</span>
-          </div>
-
           <h2 className="text-[32px] sm:text-[44px] md:text-[54px] font-normal tracking-[-0.03em] leading-[1.08] text-[#0F2A35] max-w-2xl">
             Who is this <Accent>for</Accent>?
           </h2>

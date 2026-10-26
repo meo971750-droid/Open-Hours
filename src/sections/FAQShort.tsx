@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { HelpCircle, ChevronDown, ArrowRight } from 'lucide-react';
+import { ChevronDown, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Container from '../components/Container';
 import { FAQ_CONTENT } from '../content';
@@ -36,13 +36,8 @@ export default function FAQShort() {
   return (
     <section id="faq-short" className="w-full bg-white py-20 sm:py-28 md:py-32 overflow-hidden scroll-mt-24">
       <Container>
-        {/* Label Pill & Heading */}
+        {/* Heading */}
         <div className="flex flex-col items-center text-center mb-12 sm:mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF3F4] border border-[rgba(15,42,53,0.08)] shadow-xs mb-4 text-[13px] font-medium text-[#1E4A5C]">
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>FAQ</span>
-          </div>
-
           <h2 className="text-[32px] sm:text-[44px] md:text-[54px] font-normal tracking-[-0.03em] leading-[1.08] text-[#0F2A35] max-w-2xl mb-4">
             Frequently asked questions
           </h2>
