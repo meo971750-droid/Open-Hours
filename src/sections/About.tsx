@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle2, ArrowRight, ArrowUpRight, MessageCircle, Clock } from 'lucide-react';
+import { CheckCircle2, ArrowRight, ArrowUpRight, MessageCircle } from 'lucide-react';
 import Container from '../components/Container';
 import {
   CTA_CONFIG,
@@ -705,14 +705,6 @@ export default function About({ onOpenPrivacy }: AboutProps) {
                         <ArrowUpRight className="w-3.5 h-3.5" />
                       </a>
                     )}
-                  </div>
-                )}
-
-                {/* Working model line */}
-                {CTA_CONFIG.workingModelLine && (
-                  <div className="text-xs text-white/50 flex items-center gap-1.5 pt-1">
-                    <Clock className="w-3.5 h-3.5 text-[#E3B896]/70 shrink-0" />
-                    <span>{CTA_CONFIG.workingModelLine}</span>
                   </div>
                 )}
               </div>

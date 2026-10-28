@@ -40,11 +40,6 @@ export default function WhatYouGet() {
             <p className="text-[15px] sm:text-[16px] text-[#5E6F77] max-w-xl mx-auto leading-relaxed">
               Every Starter, Standard and Growth build comes with these six essentials ready on day one. Extras are quoted in writing before we start.
             </p>
-
-            {/* Note under section subtext (Section C) */}
-            <p className="text-[13px] text-[#5E6F77] text-center mt-2.5">
-              Examples on these cards use a fictional business.
-            </p>
           </div>
 
           {/* 6-Part Grid: Restyled with dark gradient, golden border */}
@@ -125,6 +120,11 @@ export default function WhatYouGet() {
                     <div className="pt-3.5 px-3.5 pb-0">
                       <div className="h-[195px] sm:h-[210px] rounded-[18px] border border-[rgba(227,184,150,0.35)] overflow-hidden bg-gradient-to-b from-[#F9FBFC] to-[#EEF3F4] relative flex items-center justify-center">
                         {renderAnimatedImage(i)}
+                      </div>
+                      <div className="flex justify-end pt-1.5 px-1">
+                        <span className="text-[10.5px] font-medium text-[#E3B896]/65 tracking-wide">
+                          Illustrative example
+                        </span>
                       </div>
                     </div>
 

@@ -909,47 +909,53 @@ function DemoCardWrapper({
     !isVisible || isTabHidden || Date.now() < userPauseUntil;
 
   return (
-    <div
-      ref={containerRef}
-      aria-hidden={isDecorative ? 'true' : undefined}
-      className="relative w-full aspect-[16/10] rounded-[24px] overflow-hidden border border-white/[0.08] shadow-[0_16px_40px_rgba(0,0,0,0.3)] select-none"
-      style={{
-        background: 'linear-gradient(180deg, #0B1F28 0%, #14363F 100%)',
-      }}
-    >
-      {isDecorative && srOnlyText && (
-        <span className="sr-only">{srOnlyText}</span>
-      )}
-
-      {/* Soft bottom glow (radial gradient peach 22% to teal 18% to transparent) */}
-      <div
-        className="pointer-events-none absolute -bottom-16 left-1/2 -translate-x-1/2 w-[80%] h-[120px] rounded-full blur-[40px]"
-        style={{
-          background:
-            'radial-gradient(circle, rgba(227, 184, 150, 0.22) 0%, rgba(30, 74, 92, 0.18) 60%, transparent 100%)',
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Top-left chip "Sample demo" (12px weight 600, white at 80% on rgba(255,255,255,.10)) */}
-      <div className="absolute top-4 left-4 z-20 px-2.5 py-1 rounded-md text-[12px] font-semibold text-white/80 bg-white/10 backdrop-blur-xs select-none pointer-events-none">
-        Sample demo
+    <div className="w-full flex flex-col gap-2">
+      {/* Top label "Sample demo" situated outside the demo content so it never covers demo text */}
+      <div className="flex items-center px-1">
+        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11.5px] font-semibold text-white/80 bg-white/10 backdrop-blur-xs select-none">
+          Sample demo
+        </span>
       </div>
 
-      {/* Logical 560 x 350 canvas with CSS transform scale */}
       <div
-        className="absolute top-0 left-0 origin-top-left flex items-center justify-center"
+        ref={containerRef}
+        aria-hidden={isDecorative ? 'true' : undefined}
+        className="relative w-full aspect-[16/10] rounded-[24px] overflow-hidden border border-white/[0.08] shadow-[0_16px_40px_rgba(0,0,0,0.3)] select-none"
         style={{
-          width: 560,
-          height: 350,
-          transform: `scale(${scale})`,
+          background: 'linear-gradient(180deg, #0B1F28 0%, #14363F 100%)',
         }}
       >
-        {children({
-          isPaused,
-          onUserInteraction: triggerInteractionPause,
-          reducedMotion,
-        })}
+        {isDecorative && srOnlyText && (
+          <span className="sr-only">{srOnlyText}</span>
+        )}
+
+        {/* Soft bottom glow (radial gradient peach 22% to teal 18% to transparent) */}
+        <div
+          className="pointer-events-none absolute -bottom-16 left-1/2 -translate-x-1/2 w-[80%] h-[120px] rounded-full blur-[40px]"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(227, 184, 150, 0.22) 0%, rgba(30, 74, 92, 0.18) 60%, transparent 100%)',
+          }}
+          aria-hidden="true"
+        />
+
+        {/* Logical 560 x 350 canvas with CSS transform scale, centred */}
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+          <div
+            className="shrink-0 flex items-center justify-center origin-center"
+            style={{
+              width: 560,
+              height: 350,
+              transform: `scale(${scale})`,
+            }}
+          >
+            {children({
+              isPaused,
+              onUserInteraction: triggerInteractionPause,
+              reducedMotion,
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1043,10 +1049,14 @@ export default function InteractiveFeatures({
             </div>
 
             {/* Alternating zig-zag timeline on desktop/tablet, stacked on mobile */}
-            <div className="space-y-14 md:space-y-20">
+            <div className="space-y-16 md:space-y-24">
               {INTERACTIVE_FEATURES.map((item, idx) => {
-                // Step 1 right, Step 2 left, Step 3 right, Step 4 left, Step 5 right
-                const isRight = idx % 2 === 0;
+                // Step 1: text left, demo right (isTextOnLeft = true)
+                // Step 2: demo left, text right (isTextOnLeft = false)
+                // Step 3: text left, demo right (isTextOnLeft = true)
+                // Step 4: demo left, text right (isTextOnLeft = false)
+                // Step 5: text left, demo right (isTextOnLeft = true)
+                const isTextOnLeft = idx % 2 === 0;
 
                 // Node activation progress threshold
                 const nodeThreshold = idx / (INTERACTIVE_FEATURES.length - 1);
@@ -1054,9 +1064,9 @@ export default function InteractiveFeatures({
 
                 return (
                   <div key={item.id} className="relative w-full">
-                    {/* Node on central line (or left line on mobile) */}
+                    {/* Node on central line (or left line on mobile), aligned with title */}
                     <div
-                      className={`absolute top-4 w-3.5 h-3.5 rounded-full transition-all duration-300 z-20 ${
+                      className={`absolute top-2.5 w-3.5 h-3.5 rounded-full transition-all duration-300 z-20 ${
                         isNodeActive
                           ? 'bg-[#E3B896] shadow-[0_0_12px_rgba(227,184,150,0.65)] ring-4 ring-[#0F2A35]'
                           : 'bg-white/35 border border-white/20 ring-4 ring-[#0F2A35]'
@@ -1064,117 +1074,128 @@ export default function InteractiveFeatures({
                       aria-hidden="true"
                     />
 
-                    {/* Horizontal connector line on desktop/tablet */}
+                    {/* Horizontal connector line on desktop/tablet spanning across the gap */}
                     <div
-                      className={`hidden md:block absolute top-[22px] h-[1px] z-10 transition-colors duration-300 ${
+                      className={`hidden md:block absolute top-[19px] h-[1px] z-10 transition-colors duration-300 left-[calc(50%-36px)] right-[calc(50%-36px)] ${
                         isNodeActive ? 'bg-[#E3B896]/50' : 'bg-white/[0.15]'
-                      } ${
-                        isRight
-                          ? 'left-1/2 w-[36px]'
-                          : 'right-1/2 w-[36px]'
                       }`}
                       aria-hidden="true"
                     />
 
-                    {/* Step Card: Right or Left on desktop/tablet, left-padded on mobile */}
-                    <motion.div
-                      initial={reducedMotion ? false : { opacity: 0, y: 24 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: '-8%' }}
-                      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                      className={`relative pl-8 md:pl-0 w-full ${
-                        isRight
-                          ? 'md:w-[calc(50%-36px)] md:ml-auto'
-                          : 'md:w-[calc(50%-36px)] md:mr-auto'
-                      }`}
+                    {/* Step Row: Split into TWO halves on desktop/tablet, stacked on mobile */}
+                    {/* Flex direction: md:flex-row when text is left; md:flex-row-reverse when text is right.
+                        Maintains logical DOM focus order (Text first, Demo second) for keyboard accessibility. */}
+                    <div
+                      className={`relative pl-8 md:pl-0 flex flex-col gap-6 md:gap-0 ${
+                        isTextOnLeft ? 'md:flex-row' : 'md:flex-row-reverse'
+                      } md:items-start md:justify-between w-full`}
                     >
-                      <div className="flex flex-col gap-5 bg-white/[0.03] border border-white/10 rounded-[24px] sm:rounded-[28px] p-5 sm:p-7 backdrop-blur-xs shadow-lg">
-                        {/* Header: Title with Monospace superscript number */}
-                        <div>
-                          <div className="flex items-start gap-1.5 flex-wrap">
-                            <h3 className="text-[24px] sm:text-[28px] font-semibold text-white leading-tight">
-                              {item.title}
-                              <sup className="font-mono text-[13px] text-[#E3B896] ml-2 font-normal">
-                                {item.number}
-                              </sup>
-                            </h3>
-                          </div>
-
-                          {/* Add-on Chip */}
-                          <div className="mt-2">
-                            <span className="inline-block px-3 py-0.5 rounded-full text-[13px] font-bold text-[#E3B896] bg-[#E3B896]/16">
-                              Add-on
-                            </span>
-                          </div>
-
-                          {/* Description */}
-                          <p className="text-[15px] sm:text-[16px] leading-[1.6] text-white/75 mt-3">
-                            {item.description}
-                          </p>
+                      {/* TEXT HALF: step number, title, Add-on tag, description */}
+                      {/* Sits directly on section background without a big outer card */}
+                      <motion.div
+                        initial={
+                          reducedMotion
+                            ? false
+                            : { opacity: 0, x: isTextOnLeft ? -20 : 20 }
+                        }
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, margin: '-6%' }}
+                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                        className="w-full md:w-[calc(50%-36px)] flex flex-col text-left"
+                      >
+                        <div className="flex items-start gap-1.5 flex-wrap">
+                          <h3 className="text-[24px] sm:text-[28px] md:text-[32px] font-semibold text-white leading-tight">
+                            {item.title}
+                            <sup className="font-mono text-[13px] sm:text-[14px] text-[#E3B896] ml-2 font-normal">
+                              {item.number}
+                            </sup>
+                          </h3>
                         </div>
 
-                        {/* Visual demo card */}
-                        <div className="w-full">
-                          {item.id === 'photo-estimate' && (
-                            <DemoCardWrapper
-                              isDecorative
-                              srOnlyText="Demonstration of photo estimate where a drawn roof illustration is scanned and shows an indicative estimate range of 2,400 to 3,200 euro."
-                            >
-                              {({ isPaused: p, reducedMotion: rm }) => (
-                                <PhotoEstimateScene isPaused={p} reducedMotion={rm} />
-                              )}
-                            </DemoCardWrapper>
-                          )}
-
-                          {item.id === 'before-after' && (
-                            <DemoCardWrapper>
-                              {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
-                                <BeforeAfterScene
-                                  isPaused={p}
-                                  onUserInteraction={ui}
-                                  reducedMotion={rm}
-                                />
-                              )}
-                            </DemoCardWrapper>
-                          )}
-
-                          {item.id === 'voice-agent' && (
-                            <DemoCardWrapper
-                              isDecorative
-                              srOnlyText="Demonstration of automated voice agent answering an after-hours call for Atlantic Slate Roofing and recording details."
-                            >
-                              {({ isPaused: p, reducedMotion: rm }) => (
-                                <VoiceAgentScene isPaused={p} reducedMotion={rm} />
-                              )}
-                            </DemoCardWrapper>
-                          )}
-
-                          {item.id === 'area-checker' && (
-                            <DemoCardWrapper>
-                              {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
-                                <AreaCheckerScene
-                                  isPaused={p}
-                                  onUserInteraction={ui}
-                                  reducedMotion={rm}
-                                />
-                              )}
-                            </DemoCardWrapper>
-                          )}
-
-                          {item.id === 'visit-booking' && (
-                            <DemoCardWrapper>
-                              {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
-                                <VisitBookingScene
-                                  isPaused={p}
-                                  onUserInteraction={ui}
-                                  reducedMotion={rm}
-                                />
-                              )}
-                            </DemoCardWrapper>
-                          )}
+                        {/* Add-on Chip */}
+                        <div className="mt-2.5">
+                          <span className="inline-block px-3 py-0.5 rounded-full text-[12.5px] font-bold text-[#E3B896] bg-[#E3B896]/16">
+                            Add-on
+                          </span>
                         </div>
-                      </div>
-                    </motion.div>
+
+                        {/* Description */}
+                        <p className="text-[15px] sm:text-[16px] leading-[1.65] text-white/75 mt-3.5 max-w-lg">
+                          {item.description}
+                        </p>
+                      </motion.div>
+
+                      {/* DEMO HALF: only the demo animation in its own rounded frame */}
+                      <motion.div
+                        initial={
+                          reducedMotion
+                            ? false
+                            : { opacity: 0, x: isTextOnLeft ? 20 : -20 }
+                        }
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, margin: '-6%' }}
+                        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                        className="w-full md:w-[calc(50%-36px)]"
+                      >
+                        {item.id === 'photo-estimate' && (
+                          <DemoCardWrapper
+                            isDecorative
+                            srOnlyText="Demonstration of photo estimate where a drawn roof illustration is scanned and shows an indicative estimate range of 2,400 to 3,200 euro."
+                          >
+                            {({ isPaused: p, reducedMotion: rm }) => (
+                              <PhotoEstimateScene isPaused={p} reducedMotion={rm} />
+                            )}
+                          </DemoCardWrapper>
+                        )}
+
+                        {item.id === 'before-after' && (
+                          <DemoCardWrapper>
+                            {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
+                              <BeforeAfterScene
+                                isPaused={p}
+                                onUserInteraction={ui}
+                                reducedMotion={rm}
+                              />
+                            )}
+                          </DemoCardWrapper>
+                        )}
+
+                        {item.id === 'voice-agent' && (
+                          <DemoCardWrapper
+                            isDecorative
+                            srOnlyText="Demonstration of automated voice agent answering an after-hours call for Atlantic Slate Roofing and recording details."
+                          >
+                            {({ isPaused: p, reducedMotion: rm }) => (
+                              <VoiceAgentScene isPaused={p} reducedMotion={rm} />
+                            )}
+                          </DemoCardWrapper>
+                        )}
+
+                        {item.id === 'area-checker' && (
+                          <DemoCardWrapper>
+                            {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
+                              <AreaCheckerScene
+                                isPaused={p}
+                                onUserInteraction={ui}
+                                reducedMotion={rm}
+                              />
+                            )}
+                          </DemoCardWrapper>
+                        )}
+
+                        {item.id === 'visit-booking' && (
+                          <DemoCardWrapper>
+                            {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
+                              <VisitBookingScene
+                                isPaused={p}
+                                onUserInteraction={ui}
+                                reducedMotion={rm}
+                              />
+                            )}
+                          </DemoCardWrapper>
+                        )}
+                      </motion.div>
+                    </div>
                   </div>
                 );
               })}
@@ -1200,12 +1221,7 @@ export default function InteractiveFeatures({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-8%' }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="relative rounded-[28px] px-5 py-7 sm:px-8 sm:py-10 text-center shadow-[0_24px_50px_rgba(0,0,0,0.65)] overflow-hidden"
-              style={{
-                background:
-                  '#0A1218 padding-box, linear-gradient(135deg, rgba(242, 181, 68, 0.7), rgba(242, 181, 68, 0.25), rgba(242, 181, 68, 0.7)) border-box',
-                border: '1px solid transparent',
-              }}
+              className="relative rounded-[28px] px-5 py-7 sm:px-8 sm:py-10 text-center shadow-[0_24px_50px_rgba(0,0,0,0.65)] overflow-hidden bg-[#0A0A0B] border border-white/[0.08]"
             >
               {/* Gold icon tile: 48px, radius 14px, Lightbulb in gold #F2B544 */}
               <div className="w-12 h-12 rounded-[14px] bg-[#F2B544]/15 border border-[#F2B544]/30 flex items-center justify-center mx-auto mb-4">

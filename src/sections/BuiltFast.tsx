@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import Container from '../components/Container';
 import { CTA } from '../content';
+import { config } from '../config';
 
 // =============================================================================
 // DATA: Background Marquee Tools
@@ -149,6 +150,17 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const [inView, setInView] = useState(false);
 
+  const tierDays = (config.pricing?.tiers || [])
+    .map((t) => t.days)
+    .filter((d): d is number => typeof d === 'number' && d > 0);
+  const minDays = tierDays.length > 0 ? Math.min(...tierDays) : null;
+  const maxDays = tierDays.length > 0 ? Math.max(...tierDays) : null;
+
+  const deliverySubtext =
+    minDays !== null && maxDays !== null
+      ? `Live in ${minDays} to ${maxDays} working days, depending on your package, with the groundwork in place to keep enquiries coming after launch.`
+      : 'A fixed price in writing, a live site in a matter of working days, and the groundwork to keep enquiries coming after launch.';
+
   // Trigger entrance animations when section scrolls into viewport (once)
   useEffect(() => {
     if (shouldReduceMotion) {
@@ -257,8 +269,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
           </h2>
 
           <p className="text-[17px] sm:text-[19px] text-white/65 max-w-[620px] mx-auto font-normal leading-relaxed">
-            From your 1-page website to a live site in about 10 working days, and the
-            groundwork to keep enquiries coming after launch.
+            {deliverySubtext}
           </p>
         </div>
 

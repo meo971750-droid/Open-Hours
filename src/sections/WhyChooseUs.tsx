@@ -83,7 +83,7 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
             <div className="max-w-xl mx-auto mb-14 sm:mb-18 md:mb-20">
               <h2 className="text-[clamp(2.5rem,5.5vw,4.25rem)] font-extrabold tracking-tight text-[#12303D] leading-[1.08] mb-4 sm:mb-5">
                 <span>{data.titlePrefix} </span>
-                <span className="text-[#C8642E]">
+                <span className="text-[#12303D]">
                   {data.titleAccent}
                 </span>
               </h2>
@@ -104,8 +104,9 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
                 `;
 
                 const paddingClasses = `
-                  ${isTopRow ? 'pb-10 sm:pb-14' : 'pt-10 sm:pt-14 pb-8 md:pb-0'}
-                  ${isLeftCol ? 'md:pr-10 lg:pr-14 pr-0' : 'md:pl-10 lg:pl-14 pl-0 pt-8 md:pt-0'}
+                  ${isTopRow ? 'pb-8 sm:pb-10 md:pb-12 md:pt-0' : 'pt-8 sm:pt-10 md:pt-10 pb-8 md:pb-0'}
+                  ${index === 1 ? 'pt-8 sm:pt-10 md:pt-0' : ''}
+                  ${isLeftCol ? 'md:pr-10 lg:pr-14' : 'md:pl-10 lg:pl-14'}
                 `;
 
                 return (
@@ -113,12 +114,12 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
                     key={item.number || index}
                     className={`relative flex flex-col ${borderClasses} ${paddingClasses}`}
                   >
-                    {/* Numeral on its own line with terracotta accent and clean spacing below */}
+                    {/* Numeral on its own line with dark teal accent and clean spacing below */}
                     <div
                       aria-hidden="true"
                       className="mb-2 sm:mb-3 select-none pointer-events-none"
                     >
-                      <span className="font-extrabold text-5xl sm:text-6xl tracking-tight leading-none inline-block text-[#C8642E]">
+                      <span className="font-extrabold text-5xl sm:text-6xl tracking-tight leading-none inline-block text-[#12303D]">
                         {item.number}
                       </span>
                     </div>

@@ -655,7 +655,7 @@ export const config: AppConfig = {
         id: 'projectGallery',
         name: 'Project gallery',
         description: 'Showcase photos of recent work to build confidence',
-        price: 0, // OWNER: set real price
+        price: 85, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'images',
         group: 'Website',
@@ -665,7 +665,7 @@ export const config: AppConfig = {
         id: 'serviceCopyFaqs',
         name: 'Copy written for each service, with FAQs',
         description: 'Clear, plain-language text and common questions for each service',
-        price: 0, // OWNER: set real price
+        price: 120, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'file-text',
         group: 'Website',
@@ -675,7 +675,7 @@ export const config: AppConfig = {
         id: 'securitySpam',
         name: 'HTTPS and spam-protected forms',
         description: 'SSL encryption and spam-protected enquiry forms',
-        price: 0, // OWNER: set real price
+        price: 15, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'lock',
         group: 'Website',
@@ -687,7 +687,7 @@ export const config: AppConfig = {
         id: 'gbp',
         name: 'Google Business Profile set-up',
         description: 'Profile set-up, verification guidance and tidy-up',
-        price: 0, // OWNER: set real price
+        price: 35, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'map-pin',
         group: 'Get found on Google',
@@ -698,7 +698,7 @@ export const config: AppConfig = {
         id: 'advancedGbp',
         name: 'Advanced Google Business Profile optimisation',
         description: 'Full profile optimisation to help you stand out in local map searches',
-        price: 0, // OWNER: set real price
+        price: 280, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'map-pin',
         group: 'Get found on Google',
@@ -709,7 +709,7 @@ export const config: AppConfig = {
         id: 'serviceAreaPages',
         name: 'Service-area pages',
         description: 'Dedicated pages for towns and localities you cover',
-        price: 0, // OWNER: set real price
+        price: 95, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'layers',
         group: 'Get found on Google',
@@ -720,7 +720,7 @@ export const config: AppConfig = {
         id: 'localSearchFoundations',
         name: 'Local search foundations',
         description: 'Clean geographic structure so Google understands your location',
-        price: 0, // OWNER: set real price
+        price: 70, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'globe',
         group: 'Get found on Google',
@@ -730,7 +730,7 @@ export const config: AppConfig = {
         id: 'reviewRequests',
         name: 'Review requests',
         description: 'Link setup and automated flow to collect client reviews',
-        price: 0, // OWNER: set real price
+        price: 75, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'star',
         group: 'Get found on Google',
@@ -741,7 +741,7 @@ export const config: AppConfig = {
         id: 'googleAds',
         name: 'Google Ads campaign set-up',
         description: 'Targeted local search campaign (ad spend paid directly to Google)',
-        price: 0, // OWNER: set real price
+        price: 500, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'target',
         group: 'Get found on Google',
@@ -753,7 +753,7 @@ export const config: AppConfig = {
         id: 'quoteForm',
         name: 'Quote request form',
         description: 'Quote and site-visit request form with call buttons',
-        price: 0, // OWNER: set real price
+        price: 25, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'form',
         group: 'Handle enquiries',
@@ -763,7 +763,7 @@ export const config: AppConfig = {
         id: 'photoQuote',
         name: 'Photo quote requests',
         description: 'Customers can attach photos of the job directly to quote requests',
-        price: 0, // OWNER: set real price
+        price: 45, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'camera',
         group: 'Handle enquiries',
@@ -783,7 +783,7 @@ export const config: AppConfig = {
         id: 'afterHoursAutoReply',
         name: 'After-hours auto-reply',
         description: 'Automatic response and details capture when calls or forms arrive after hours',
-        price: 0, // OWNER: set real price
+        price: 55, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'clock',
         group: 'Handle enquiries',
@@ -805,7 +805,7 @@ export const config: AppConfig = {
         id: 'enquiryTracking',
         name: 'Enquiry tracking',
         description: 'Track phone calls, WhatsApp messages and quote forms with a monthly report',
-        price: 0, // OWNER: set real price
+        price: 220, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'bar-chart',
         group: 'Handle enquiries',
@@ -839,7 +839,7 @@ export const config: AppConfig = {
         id: 'supportAfterLive',
         name: 'Support after you go live',
         description: 'Ongoing support and fixes to what we build',
-        price: 0, // OWNER: set real price
+        price: 10, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'life-buoy',
         group: 'Ongoing',
