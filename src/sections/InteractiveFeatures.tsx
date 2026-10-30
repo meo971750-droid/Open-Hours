@@ -909,10 +909,10 @@ function DemoCardWrapper({
     !isVisible || isTabHidden || Date.now() < userPauseUntil;
 
   return (
-    <div className="w-full flex flex-col gap-2">
-      {/* Top label "Sample demo" situated outside the demo content so it never covers demo text */}
-      <div className="flex items-center px-1">
-        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11.5px] font-semibold text-white/80 bg-white/10 backdrop-blur-xs select-none">
+    <div className="relative w-full">
+      {/* Top-left "Sample demo" badge attached outside the demo content, positioned absolutely so it does NOT affect the demo frame's vertical centre */}
+      <div className="absolute -top-7 left-1 z-20 pointer-events-none select-none">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11.5px] font-semibold text-white/80 bg-white/10 backdrop-blur-xs select-none">
           Sample demo
         </span>
       </div>
@@ -1001,24 +1001,41 @@ export default function InteractiveFeatures({
   return (
     <section
       id="interactive-features"
-      className="w-full bg-white py-12 sm:py-20 md:py-24 scroll-mt-24"
+      className="w-full relative overflow-hidden scroll-mt-24 text-white"
+      style={{
+        width: '100%',
+        minHeight: '100svh',
+        background: 'linear-gradient(145deg, #0F2A35 0%, #1E4A5C 100%)',
+      }}
     >
-      <div className="max-w-[1320px] mx-auto px-4 sm:px-6">
-        {/* Full-bleed dark panel (matching Compare section family) */}
-        <div
-          className="relative rounded-[32px] sm:rounded-[40px] overflow-hidden px-5 py-14 sm:px-10 sm:py-20 text-white shadow-2xl"
-          style={{
-            background: 'linear-gradient(145deg, #0F2A35 0%, #1E4A5C 100%)',
-          }}
-        >
-          {/* Soft peach glow top-right at 14% */}
-          <div
-            className="pointer-events-none absolute -top-24 -right-24 w-80 sm:w-96 h-80 sm:h-96 rounded-full blur-[100px]"
-            style={{ background: 'rgba(227, 184, 150, 0.14)' }}
-            aria-hidden="true"
-          />
+      {/* Scoped style for prefers-reduced-motion: disable movement */}
+      <style>{`
+        @media (prefers-reduced-motion: reduce) {
+          #interactive-features * {
+            animation: none !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
+      `}</style>
 
-          {/* Section Header: Centred, White */}
+      {/* Soft peach glow top-right at 14% */}
+      <div
+        className="pointer-events-none absolute -top-24 -right-24 w-80 sm:w-96 h-80 sm:h-96 rounded-full blur-[100px]"
+        style={{ background: 'rgba(227, 184, 150, 0.14)' }}
+        aria-hidden="true"
+      />
+
+      {/* Inner Container: Centred, max-w about 1320px, side padding clamp(20px, 5vw, 80px), vertical padding clamp(64px, 10vh, 120px) */}
+      <div
+        className="w-full max-w-[1320px] mx-auto relative z-10"
+        style={{
+          paddingTop: 'clamp(64px, 10vh, 120px)',
+          paddingBottom: 'clamp(64px, 10vh, 120px)',
+          paddingLeft: 'clamp(20px, 5vw, 80px)',
+          paddingRight: 'clamp(20px, 5vw, 80px)',
+        }}
+      >
+        {/* Section Header: Centred, White */}
           <div className="relative z-10 flex flex-col items-center text-center max-w-3xl mx-auto mb-16 sm:mb-24">
             {/* H2: Make your website a monster with interactive features */}
             <h2 className="text-[32px] sm:text-[44px] md:text-[56px] lg:text-[60px] font-semibold tracking-[-0.03em] leading-[1.1] text-white mb-4">
@@ -1064,34 +1081,31 @@ export default function InteractiveFeatures({
 
                 return (
                   <div key={item.id} className="relative w-full">
-                    {/* Node on central line (or left line on mobile), aligned with title */}
+                    {/* Node on central line (or left line on mobile), vertically centred against row on desktop/tablet */}
                     <div
-                      className={`absolute top-2.5 w-3.5 h-3.5 rounded-full transition-all duration-300 z-20 ${
+                      className={`absolute w-3.5 h-3.5 rounded-full transition-all duration-300 z-20 ${
                         isNodeActive
                           ? 'bg-[#E3B896] shadow-[0_0_12px_rgba(227,184,150,0.65)] ring-4 ring-[#0F2A35]'
                           : 'bg-white/35 border border-white/20 ring-4 ring-[#0F2A35]'
-                      } left-0 md:left-1/2 md:-translate-x-1/2`}
+                      } left-0 top-3 md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2`}
                       aria-hidden="true"
                     />
 
-                    {/* Horizontal connector line on desktop/tablet spanning across the gap */}
+                    {/* Horizontal connector line on desktop/tablet spanning across the central 72px gap, vertically centred */}
                     <div
-                      className={`hidden md:block absolute top-[19px] h-[1px] z-10 transition-colors duration-300 left-[calc(50%-36px)] right-[calc(50%-36px)] ${
+                      className={`hidden md:block absolute md:top-1/2 md:-translate-y-1/2 h-[1px] z-10 transition-colors duration-300 left-1/2 -translate-x-1/2 w-[72px] ${
                         isNodeActive ? 'bg-[#E3B896]/50' : 'bg-white/[0.15]'
                       }`}
                       aria-hidden="true"
                     />
 
-                    {/* Step Row: Split into TWO halves on desktop/tablet, stacked on mobile */}
-                    {/* Flex direction: md:flex-row when text is left; md:flex-row-reverse when text is right.
-                        Maintains logical DOM focus order (Text first, Demo second) for keyboard accessibility. */}
+                    {/* Step Row: Split into TWO equal halves on desktop/tablet via CSS Grid with align-items: center; stacked on mobile */}
+                    {/* Maintains logical DOM focus order (Text first, Demo second) for keyboard accessibility */}
                     <div
-                      className={`relative pl-8 md:pl-0 flex flex-col gap-6 md:gap-0 ${
-                        isTextOnLeft ? 'md:flex-row' : 'md:flex-row-reverse'
-                      } md:items-start md:justify-between w-full`}
+                      className="relative grid grid-cols-1 md:grid-cols-2 md:items-center gap-11 md:gap-x-[72px] w-full pl-8 md:pl-0"
                     >
                       {/* TEXT HALF: step number, title, Add-on tag, description */}
-                      {/* Sits directly on section background without a big outer card */}
+                      {/* Vertically centred against the demo frame via md:items-center */}
                       <motion.div
                         initial={
                           reducedMotion
@@ -1101,7 +1115,11 @@ export default function InteractiveFeatures({
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true, margin: '-6%' }}
                         transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                        className="w-full md:w-[calc(50%-36px)] flex flex-col text-left"
+                        className={`w-full flex flex-col text-left ${
+                          isTextOnLeft
+                            ? 'md:col-start-1 md:row-start-1'
+                            : 'md:col-start-2 md:row-start-1'
+                        }`}
                       >
                         <div className="flex items-start gap-1.5 flex-wrap">
                           <h3 className="text-[24px] sm:text-[28px] md:text-[32px] font-semibold text-white leading-tight">
@@ -1126,6 +1144,7 @@ export default function InteractiveFeatures({
                       </motion.div>
 
                       {/* DEMO HALF: only the demo animation in its own rounded frame */}
+                      {/* Vertically centred against the text half via md:items-center */}
                       <motion.div
                         initial={
                           reducedMotion
@@ -1135,7 +1154,11 @@ export default function InteractiveFeatures({
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true, margin: '-6%' }}
                         transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                        className="w-full md:w-[calc(50%-36px)]"
+                        className={`w-full ${
+                          isTextOnLeft
+                            ? 'md:col-start-2 md:row-start-1'
+                            : 'md:col-start-1 md:row-start-1'
+                        }`}
                       >
                         {item.id === 'photo-estimate' && (
                           <DemoCardWrapper
@@ -1296,7 +1319,6 @@ export default function InteractiveFeatures({
             </p>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
   );
 }

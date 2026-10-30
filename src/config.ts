@@ -317,6 +317,9 @@ export interface AppConfig {
   coreEssentials: CoreEssentialItem[];
   testimonials: TestimonialItem[];
   videoTestimonial?: VideoTestimonialConfig;
+  cta?: {
+    signature?: string;
+  };
 }
 
 export const config: AppConfig = {
@@ -325,6 +328,9 @@ export const config: AppConfig = {
   companyAddress: '',
   bookingUrl: '',
   liveDemoUrl: '',
+  cta: {
+    signature: 'Open Hours Studio',
+  },
   videoTestimonial: {
     rating: 5,
     disclosure: '',

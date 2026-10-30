@@ -104,8 +104,7 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
                 `;
 
                 const paddingClasses = `
-                  ${isTopRow ? 'pb-8 sm:pb-10 md:pb-12 md:pt-0' : 'pt-8 sm:pt-10 md:pt-10 pb-8 md:pb-0'}
-                  ${index === 1 ? 'pt-8 sm:pt-10 md:pt-0' : ''}
+                  ${isTopRow ? 'pb-8 sm:pb-10 md:pb-12 pt-0' : 'pt-8 sm:pt-10 md:pt-12 pb-8 md:pb-0'}
                   ${isLeftCol ? 'md:pr-10 lg:pr-14' : 'md:pl-10 lg:pl-14'}
                 `;
 
@@ -114,25 +113,37 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
                     key={item.number || index}
                     className={`relative flex flex-col ${borderClasses} ${paddingClasses}`}
                   >
-                    {/* Numeral on its own line with dark teal accent and clean spacing below */}
+                    {/* Big decorative numeral 01-04 with vertical fade in brand dark teal #12303D */}
                     <div
                       aria-hidden="true"
-                      className="mb-2 sm:mb-3 select-none pointer-events-none"
+                      className="relative z-0 select-none pointer-events-none"
                     >
-                      <span className="font-extrabold text-5xl sm:text-6xl tracking-tight leading-none inline-block text-[#12303D]">
+                      <span
+                        className="font-extrabold tracking-tight leading-[0.8] inline-block text-[clamp(76px,16vw,96px)] md:text-[clamp(96px,11vw,150px)]"
+                        style={{
+                          background:
+                            'linear-gradient(180deg, rgba(18, 48, 61, 1) 0%, rgba(18, 48, 61, 1) 35%, rgba(18, 48, 61, 0.15) 50%, rgba(18, 48, 61, 0.05) 100%)',
+                          WebkitBackgroundClip: 'text',
+                          backgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          color: 'rgba(18, 48, 61, 0.2)',
+                        }}
+                      >
                         {item.number}
                       </span>
                     </div>
 
-                    {/* Question / Heading */}
-                    <h3 className="text-xl sm:text-[22px] font-bold text-[#12303D] leading-snug mb-3 tracking-[-0.01em]">
-                      {item.question}
-                    </h3>
+                    {/* Question / Heading placed over lower half of numeral (negative margin-top) */}
+                    <div className="relative z-10 -mt-[clamp(32px,5.5vw,56px)]">
+                      <h3 className="text-xl sm:text-[22px] font-bold text-[#12303D] leading-snug mb-3 tracking-[-0.01em]">
+                        {item.question}
+                      </h3>
 
-                    {/* Description Paragraph */}
-                    <p className="text-[14.5px] sm:text-[15.5px] text-[#12303D]/80 leading-[1.65] font-normal">
-                      {item.answer}
-                    </p>
+                      {/* Description Paragraph */}
+                      <p className="text-[14.5px] sm:text-[15.5px] text-[#12303D]/80 leading-[1.65] font-normal">
+                        {item.answer}
+                      </p>
+                    </div>
                   </div>
                 );
               })}
@@ -143,7 +154,7 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
           <div className="mt-14 sm:mt-18 pt-10 sm:pt-14 text-center border-t border-[#12303D]/10">
             <h3 className="text-2xl sm:text-3xl md:text-[36px] font-extrabold text-[#12303D] tracking-tight leading-[1.15] max-w-xl mx-auto mb-6">
               <span>{banner.headlinePrefix} </span>
-              <span className="text-[#C8642E]">
+              <span className="font-serif italic font-normal text-[#C8642E]">
                 {banner.headlineAccent}
               </span>
               <span> {banner.headlineSuffix}</span>
@@ -153,10 +164,10 @@ export default function WhyChooseUs({ onOpenAudit }: WhyChooseUsProps) {
               <button
                 type="button"
                 onClick={() => onOpenAudit?.()}
-                className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full bg-[#C8642E] hover:bg-[#B55624] text-white text-[15px] sm:text-[16px] font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full bg-[#12303D] hover:bg-[#0B1B22] text-[#F7F9FA] text-[15px] sm:text-[16px] font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#12303D] focus-visible:ring-offset-2"
               >
                 <span>{banner.buttonText}</span>
-                <ArrowRight className="w-4 h-4 ml-0.5" strokeWidth={2.4} />
+                <ArrowRight className="w-4 h-4 ml-0.5 text-[#F7F9FA]" strokeWidth={2.4} />
               </button>
             </div>
           </div>

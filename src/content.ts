@@ -86,6 +86,7 @@ export const CTA_CONFIG = {
       "Fixed price agreed before you start",
       "No pushy sales pitch",
     ],
+    signature: "Open Hours Studio",
   },
 };
 

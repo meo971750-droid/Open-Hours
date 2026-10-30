@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle2, ArrowRight, ArrowUpRight, MessageCircle } from 'lucide-react';
 import Container from '../components/Container';
+import Logo, { LogoMark } from '../components/Logo';
 import {
   CTA_CONFIG,
-  FOUNDER,
   CONTACT,
   SETUP_FROM,
   devPlaceholder,
@@ -32,10 +32,30 @@ export default function About({ onOpenPrivacy }: AboutProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
-  const [imageError, setImageError] = useState(false);
 
   const sectionRef = useRef<HTMLElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Electric visual animation: pauses when tab is hidden (document.visibilitychange) to save CPU/battery
+  const [isTabVisible, setIsTabVisible] = useState(
+    typeof document !== 'undefined' ? !document.hidden : true
+  );
+
+  useEffect(() => {
+    const handleVisChange = () => {
+      setIsTabVisible(!document.hidden);
+    };
+    document.addEventListener('visibilitychange', handleVisChange);
+    return () => document.removeEventListener('visibilitychange', handleVisChange);
+  }, []);
+
+  // Signature caption from config.cta.signature (default: 'Open Hours Studio')
+  const ctaSignature =
+    config?.cta?.signature !== undefined
+      ? config.cta.signature
+      : (CTA_CONFIG?.cta as any)?.signature !== undefined
+      ? (CTA_CONFIG.cta as any).signature
+      : 'Open Hours Studio';
 
   // Fallback email address
   const fallbackEmail = devPlaceholder(
@@ -636,53 +656,432 @@ export default function About({ onOpenPrivacy }: AboutProps) {
               </div>
             </div>
 
-            {/* ITEM 3 ON MOBILE (Order 3): Founder Card (Left column desktop) */}
-            <div className="order-3 lg:order-none lg:col-span-5 mt-10 sm:mt-12 lg:mt-6">
-              <div className="flex flex-col items-start w-full max-w-[300px] sm:max-w-[320px]">
-                {/* Large Portrait Tile */}
+            {/* ITEM 3 ON MOBILE (Order 3): Open Hours Logo Stage & Caption (Left column desktop) */}
+            <div className="order-3 lg:order-none lg:col-span-5 mt-8 sm:mt-10 lg:mt-5">
+              <div className="flex flex-col items-center sm:items-start w-full max-w-[285px] mx-auto lg:mx-0">
+                {/* Embedded CSS for electric glow ring, orbiting arcs, sparks and fallbacks */}
+                <style>{`
+                  /* Continuous linear rotation keyframes */
+                  @keyframes electric-orbit-cw {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                  }
+
+                  @keyframes electric-orbit-ccw {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(-360deg); }
+                  }
+
+                  @keyframes electric-ring-rotate {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                  }
+
+                  @keyframes electric-glow-pulse {
+                    0%, 100% {
+                      transform: scale(0.96);
+                      opacity: 0.52;
+                    }
+                    50% {
+                      transform: scale(1.04);
+                      opacity: 0.74;
+                    }
+                  }
+
+                  /* Soft opacity fading between ~0.35 and 1 over 1.5 to 2.5s with subtle variation */
+                  @keyframes electric-arc-fade-1 {
+                    0%, 100% { opacity: 0.38; }
+                    25% { opacity: 0.72; }
+                    50% { opacity: 0.96; }
+                    68% { opacity: 0.82; }
+                    85% { opacity: 0.98; }
+                  }
+
+                  @keyframes electric-arc-fade-2 {
+                    0%, 100% { opacity: 0.92; }
+                    30% { opacity: 0.42; }
+                    55% { opacity: 0.76; }
+                    78% { opacity: 0.36; }
+                    90% { opacity: 0.65; }
+                  }
+
+                  @keyframes electric-arc-fade-3 {
+                    0%, 100% { opacity: 0.45; }
+                    28% { opacity: 0.88; }
+                    45% { opacity: 0.72; }
+                    70% { opacity: 1.0; }
+                    88% { opacity: 0.52; }
+                  }
+
+                  @keyframes electric-arc-fade-4 {
+                    0%, 100% { opacity: 0.86; }
+                    22% { opacity: 0.40; }
+                    50% { opacity: 0.74; }
+                    75% { opacity: 0.95; }
+                    88% { opacity: 0.80; }
+                  }
+
+                  @keyframes electric-arc-fade-5 {
+                    0%, 100% { opacity: 0.36; }
+                    35% { opacity: 0.90; }
+                    55% { opacity: 0.78; }
+                    75% { opacity: 0.98; }
+                    90% { opacity: 0.58; }
+                  }
+
+                  /* Orbit groups: center origin in viewBox */
+                  .electric-orbit-group {
+                    transform-box: view-box;
+                    transform-origin: center;
+                    will-change: transform;
+                  }
+                  @supports not (transform-box: view-box) {
+                    .electric-orbit-group {
+                      transform-origin: 0 0;
+                    }
+                  }
+
+                  /* Pause animations when tab is hidden to save CPU/battery */
+                  .electric-tab-paused * {
+                    animation-play-state: paused !important;
+                  }
+
+                  /* Prefers-reduced-motion: 2 to 3 static arcs at low opacity with soft glow, no rotation and no flicker */
+                  @media (prefers-reduced-motion: reduce) {
+                    .electric-orbit-group,
+                    .electric-arc-path,
+                    .electric-spark-dot,
+                    .electric-ring-anim,
+                    .electric-glow-anim {
+                      animation: none !important;
+                    }
+                    .electric-glow-anim {
+                      opacity: 0.55 !important;
+                      transform: scale(1) !important;
+                    }
+                    .electric-reduced-hide {
+                      display: none !important;
+                    }
+                    .electric-reduced-keep {
+                      opacity: 0.45 !important;
+                      transform: none !important;
+                    }
+                  }
+
+                  @supports not ((mask: radial-gradient(#000, #000)) or (-webkit-mask: radial-gradient(#000, #000))) {
+                    .electric-ring-fallback {
+                      border: 3px solid #E8B08F !important;
+                      box-shadow: 0 0 16px rgba(232, 176, 143, 0.45) !important;
+                      background: none !important;
+                      mask: none !important;
+                      -webkit-mask: none !important;
+                    }
+                  }
+                `}</style>
+
+                {/* Circular Stage for Open Hours Logo with Electric Glow Ring (~25% smaller: clamp(165px, 21vw, 285px)) */}
                 <div
-                  className="relative w-full aspect-[4/5] rounded-[24px] sm:rounded-3xl overflow-hidden border border-white/15 shadow-xl bg-[#1E4A5C]/30 transition-transform duration-300 hover:scale-[1.01] motion-reduce:transform-none"
+                  className={`relative flex items-center justify-center select-none overflow-visible mx-auto ${
+                    isTabVisible ? '' : 'electric-tab-paused'
+                  }`}
                   style={{
-                    background: 'radial-gradient(circle at 50% 35%, rgba(227, 184, 150, 0.22) 0%, rgba(15, 42, 53, 0.8) 100%)',
+                    width: 'clamp(165px, 21vw, 285px)',
+                    height: 'clamp(165px, 21vw, 285px)',
                   }}
                 >
-                  {FOUNDER.photo && !imageError ? (
-                    <img
-                      src={FOUNDER.photo}
-                      alt="Zuhayer, founder of Open Hours"
-                      width="1122"
-                      height="1402"
-                      loading="lazy"
-                      decoding="async"
-                      referrerPolicy="no-referrer"
-                      onError={() => setImageError(true)}
-                      className="w-full h-full object-cover"
-                      style={{ objectPosition: 'top center' }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-[#183946] text-[#E3B896]">
-                      <span className="text-4xl font-semibold">ZH</span>
-                      <span className="text-xs text-white/60 mt-2 font-medium">Founder Lead</span>
+                  {/* Layer b: Soft Pulsing Glow behind the ring */}
+                  <div
+                    className="electric-glow-anim absolute inset-0 m-auto rounded-full pointer-events-none"
+                    style={{
+                      width: 'calc(82% + 18px)',
+                      height: 'calc(82% + 18px)',
+                      background:
+                        'conic-gradient(from 0deg, #E8B08F 0deg, #C8642E 110deg, #2DD4BF 220deg, #E8B08F 360deg)',
+                      filter: 'blur(12px)',
+                      opacity: 0.62,
+                      willChange: 'transform, opacity',
+                      animation: 'electric-glow-pulse 3s ease-in-out infinite',
+                    }}
+                    aria-hidden="true"
+                  />
+
+                  {/* Layer a: Rotating 6px Lightning Conic Ring with CSS mask cut-out */}
+                  <div
+                    className="electric-ring-anim electric-ring-fallback absolute inset-0 m-auto rounded-full pointer-events-none"
+                    style={{
+                      width: 'calc(82% + 12px)',
+                      height: 'calc(82% + 12px)',
+                      background:
+                        'conic-gradient(from 0deg, #E8B08F 0deg, #C8642E 110deg, #2DD4BF 220deg, #E8B08F 360deg)',
+                      WebkitMask:
+                        'radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5.5px))',
+                      mask:
+                        'radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5.5px))',
+                      willChange: 'transform',
+                      animation: 'electric-ring-rotate 9s linear infinite',
+                    }}
+                    aria-hidden="true"
+                  />
+
+                  {/* Circular Dark Teal Disc (#0B1B22 to #12303D radial gradient) */}
+                  <div
+                    className="absolute inset-0 m-auto rounded-full flex flex-col items-center justify-center border border-white/15"
+                    style={{
+                      width: '82%',
+                      height: '82%',
+                      background:
+                        'radial-gradient(circle at 40% 35%, #183E4E 0%, #12303D 55%, #0B1B22 100%)',
+                      boxShadow:
+                        'inset 0 2px 8px rgba(255, 255, 255, 0.08), 0 16px 40px rgba(0, 0, 0, 0.5)',
+                    }}
+                  >
+                    {/* Logo centered at 55 to 60% of disc width with readable light contrast */}
+                    <div
+                      role="img"
+                      aria-label="Open Hours"
+                      className="flex flex-col items-center justify-center gap-1.5 select-none"
+                      style={{ width: '58%' }}
+                    >
+                      <LogoMark size={26} variant="light" className="drop-shadow-sm" />
+                      <Logo size="md" variant="light" />
                     </div>
-                  )}
+                  </div>
+
+                  {/* Layers c & d: Continuously Orbiting Jagged SVG Lightning Arcs & Traveling Sparks */}
+                  <svg
+                    viewBox="-120 -120 240 240"
+                    className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
+                    aria-hidden="true"
+                  >
+                    <defs>
+                      <filter id="electric-spark-glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="0" stdDeviation="1.5" floodColor="#FFE9D6" floodOpacity="0.85" />
+                        <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#E8B08F" floodOpacity="0.5" />
+                      </filter>
+                    </defs>
+
+                    {/* Arc 1: Rotating CW at 6.0s (starts at ~0° to 18°) */}
+                    <g
+                      className="electric-orbit-group electric-reduced-keep"
+                      style={{
+                        animation: 'electric-orbit-cw 6.0s linear infinite',
+                        animationDelay: '-2.1s',
+                      }}
+                    >
+                      <path
+                        d="M 100.5 0.0 L 97.8 6.2 L 102.2 12.9 L 96.3 18.4 L 99.8 25.6 L 95.6 31.1"
+                        stroke="#FFE9D6"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                        filter="url(#electric-spark-glow)"
+                        className="electric-arc-path"
+                        style={{
+                          animation: 'electric-arc-fade-1 1.8s ease-in-out infinite',
+                          animationDelay: '-0.6s',
+                        }}
+                      />
+                      {/* Spark 1 traveling with Arc 1 */}
+                      <circle
+                        cx="95.6"
+                        cy="34.0"
+                        r="1.6"
+                        fill="#FFE9D6"
+                        filter="url(#electric-spark-glow)"
+                        className="electric-spark-dot"
+                        style={{
+                          animation: 'electric-arc-fade-1 1.8s ease-in-out infinite',
+                          animationDelay: '-0.6s',
+                        }}
+                      />
+                    </g>
+
+                    {/* Arc 2: Rotating CCW at 5.5s (starts at ~72° to 89°) */}
+                    <g
+                      className="electric-orbit-group electric-reduced-hide"
+                      style={{
+                        animation: 'electric-orbit-ccw 5.5s linear infinite',
+                        animationDelay: '-0.8s',
+                      }}
+                    >
+                      <path
+                        d="M 31.2 96.1 L 24.9 95.5 L 20.1 101.3 L 13.4 97.8 L 7.9 103.0 L 1.8 101.0"
+                        stroke="#FFE9D6"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                        filter="url(#electric-spark-glow)"
+                        className="electric-arc-path"
+                        style={{
+                          animation: 'electric-arc-fade-2 2.3s ease-in-out infinite',
+                          animationDelay: '-1.4s',
+                        }}
+                      />
+                    </g>
+
+                    {/* Arc 3: Rotating CW at 8.5s (starts at ~144° to 163°) */}
+                    <g
+                      className="electric-orbit-group electric-reduced-keep"
+                      style={{
+                        animation: 'electric-orbit-cw 8.5s linear infinite',
+                        animationDelay: '-4.3s',
+                      }}
+                    >
+                      <path
+                        d="M -80.9 58.8 L -82.4 51.9 L -90.3 48.8 L -88.6 40.5 L -95.9 36.4 L -95.6 29.2"
+                        stroke="#FFE9D6"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                        filter="url(#electric-spark-glow)"
+                        className="electric-arc-path"
+                        style={{
+                          animation: 'electric-arc-fade-3 1.6s ease-in-out infinite',
+                          animationDelay: '-0.4s',
+                        }}
+                      />
+                      {/* Spark 2 traveling with Arc 3 */}
+                      <circle
+                        cx="-97.0"
+                        cy="27.0"
+                        r="1.5"
+                        fill="#FFE9D6"
+                        filter="url(#electric-spark-glow)"
+                        className="electric-spark-dot"
+                        style={{
+                          animation: 'electric-arc-fade-3 1.6s ease-in-out infinite',
+                          animationDelay: '-0.4s',
+                        }}
+                      />
+                    </g>
+
+                    {/* Arc 4: Rotating CCW at 7.5s (starts at ~216° to 234°) */}
+                    <g
+                      className="electric-orbit-group electric-reduced-hide"
+                      style={{
+                        animation: 'electric-orbit-ccw 7.5s linear infinite',
+                        animationDelay: '-3.2s',
+                      }}
+                    >
+                      <path
+                        d="M -81.9 -59.5 L -76.1 -63.0 L -75.5 -70.9 L -67.6 -72.0 L -66.0 -79.8 L -59.5 -81.9"
+                        stroke="#FFE9D6"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                        filter="url(#electric-spark-glow)"
+                        className="electric-arc-path"
+                        style={{
+                          animation: 'electric-arc-fade-4 2.5s ease-in-out infinite',
+                          animationDelay: '-1.7s',
+                        }}
+                      />
+                      {/* Spark 3 traveling with Arc 4 */}
+                      <circle
+                        cx="-58.0"
+                        cy="-84.0"
+                        r="1.6"
+                        fill="#FFE9D6"
+                        filter="url(#electric-spark-glow)"
+                        className="electric-spark-dot"
+                        style={{
+                          animation: 'electric-arc-fade-4 2.5s ease-in-out infinite',
+                          animationDelay: '-1.7s',
+                        }}
+                      />
+                    </g>
+
+                    {/* Arc 5: Rotating CW at 9.5s (starts at ~288° to 306°) */}
+                    <g
+                      className="electric-orbit-group electric-reduced-hide"
+                      style={{
+                        animation: 'electric-orbit-cw 9.5s linear infinite',
+                        animationDelay: '-6.0s',
+                      }}
+                    >
+                      <path
+                        d="M 31.1 -95.9 L 36.2 -91.4 L 44.0 -93.5 L 47.4 -86.1 L 55.4 -87.2 L 59.2 -81.5"
+                        stroke="#FFE9D6"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                        filter="url(#electric-spark-glow)"
+                        className="electric-arc-path"
+                        style={{
+                          animation: 'electric-arc-fade-5 2.0s ease-in-out infinite',
+                          animationDelay: '-1.0s',
+                        }}
+                      />
+                    </g>
+
+                    {/* Spark 4: Independent CW track at 11.0s */}
+                    <g
+                      className="electric-orbit-group electric-reduced-hide"
+                      style={{
+                        animation: 'electric-orbit-cw 11.0s linear infinite',
+                        animationDelay: '-5.2s',
+                      }}
+                    >
+                      <circle
+                        cx="101.5"
+                        cy="0"
+                        r="1.5"
+                        fill="#FFE9D6"
+                        filter="url(#electric-spark-glow)"
+                        className="electric-spark-dot"
+                        style={{
+                          animation: 'electric-arc-fade-2 2.3s ease-in-out infinite',
+                          animationDelay: '-0.7s',
+                        }}
+                      />
+                    </g>
+
+                    {/* Spark 5: Independent CCW track at 7.0s */}
+                    <g
+                      className="electric-orbit-group electric-reduced-hide"
+                      style={{
+                        animation: 'electric-orbit-ccw 7.0s linear infinite',
+                        animationDelay: '-2.5s',
+                      }}
+                    >
+                      <circle
+                        cx="0"
+                        cy="-101.5"
+                        r="1.4"
+                        fill="#FFE9D6"
+                        filter="url(#electric-spark-glow)"
+                        className="electric-spark-dot"
+                        style={{
+                          animation: 'electric-arc-fade-5 2.0s ease-in-out infinite',
+                          animationDelay: '-1.3s',
+                        }}
+                      />
+                    </g>
+                  </svg>
                 </div>
 
-                {/* Name & Role directly below tile */}
-                <div className="mt-4 sm:mt-5 text-left">
-                  <h3 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight leading-tight">
-                    {FOUNDER.name}
-                  </h3>
-                  <p className="text-[15px] sm:text-[16px] text-white/70 mt-1 font-normal">
-                    Founder, Open Hours
-                  </p>
-                </div>
+                {/* Signature caption directly below visual (hidden if empty) */}
+                {ctaSignature && ctaSignature.trim() ? (
+                  <div className="mt-4 sm:mt-5 text-center sm:text-left w-full">
+                    <p className="text-[14px] sm:text-[15px] text-white/70 font-normal">
+                      {ctaSignature.trim()}
+                    </p>
+                  </div>
+                ) : null}
 
                 {/* Thin divider */}
-                <div className="w-full h-px bg-white/10 my-4" />
+                {(cleanWhatsapp || cleanBookingUrl) && (
+                  <div className="w-full h-px bg-white/10 my-3.5" />
+                )}
 
                 {/* Contact row: WhatsApp / Phone and Book a call directly (hidden if empty) */}
                 {(cleanWhatsapp || cleanBookingUrl) && (
-                  <div className="flex flex-wrap items-center gap-4 text-xs sm:text-[13px] mb-3">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs sm:text-[13px] mb-3">
                     {cleanWhatsapp && (
                       <a
                         href={whatsappLink() || `tel:${cleanWhatsapp}`}

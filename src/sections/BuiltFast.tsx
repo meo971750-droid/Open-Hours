@@ -147,8 +147,15 @@ interface BuiltFastProps {
 
 export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
   const shouldReduceMotion = useReducedMotion();
-  const sectionRef = useRef<HTMLElement>(null);
-  const [inView, setInView] = useState(false);
+  const [isTabHidden, setIsTabHidden] = useState(false);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsTabHidden(document.hidden);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const tierDays = (config.pricing?.tiers || [])
     .map((t) => t.days)
@@ -161,36 +168,12 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
       ? `Live in ${minDays} to ${maxDays} working days, depending on your package, with the groundwork in place to keep enquiries coming after launch.`
       : 'A fixed price in writing, a live site in a matter of working days, and the groundwork to keep enquiries coming after launch.';
 
-  // Trigger entrance animations when section scrolls into viewport (once)
-  useEffect(() => {
-    if (shouldReduceMotion) {
-      setInView(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 }
-    );
-
-    const el = sectionRef.current;
-    if (el) observer.observe(el);
-
-    return () => observer.disconnect();
-  }, [shouldReduceMotion]);
-
   // Triple array for smooth continuous marquee loop
   const marqueeRowA = [...tools, ...tools, ...tools];
   const marqueeRowB = [...tools.slice().reverse(), ...tools.slice().reverse(), ...tools.slice().reverse()];
 
   return (
     <section
-      ref={sectionRef}
       id="built-fast"
       aria-labelledby="built-fast-heading"
       className="relative w-full bg-[#07080b] py-20 sm:py-24 overflow-hidden scroll-mt-24 selection:bg-sky-500/30 selection:text-white"
@@ -206,7 +189,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
         Skip this section &rarr;
       </a>
 
-      {/* Scoped CSS Keyframes for Marquee and Pulse Animations */}
+      {/* Scoped CSS Keyframes for Marquee and Light Pulse Animations */}
       <style>{`
         @keyframes marquee-scroll-left {
           0% { transform: translate3d(0, 0, 0); }
@@ -216,11 +199,9 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
           0% { transform: translate3d(-33.333%, 0, 0); }
           100% { transform: translate3d(0, 0, 0); }
         }
-        @keyframes line-pulse {
-          0% { stroke-dashoffset: 600; opacity: 0; }
-          15% { opacity: 1; }
-          85% { opacity: 1; }
-          100% { stroke-dashoffset: -200; opacity: 0; }
+        @keyframes light-travel {
+          0% { stroke-dashoffset: 0.18; }
+          100% { stroke-dashoffset: -1; }
         }
         .marquee-left {
           animation: marquee-scroll-left 52s linear infinite;
@@ -280,9 +261,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
           {/* Radial soft cyan/blue glow behind the hub */}
           <div
             aria-hidden="true"
-            className={`pointer-events-none absolute top-12 sm:top-14 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] sm:w-[440px] sm:h-[440px] rounded-full bg-radial from-[#38bdf8]/18 via-[#3b82f6]/08 to-transparent blur-3xl transition-opacity duration-1000 ${
-              inView || shouldReduceMotion ? 'opacity-100' : 'opacity-0'
-            }`}
+            className="pointer-events-none absolute top-12 sm:top-14 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] sm:w-[440px] sm:h-[440px] rounded-full bg-radial from-[#38bdf8]/18 via-[#3b82f6]/08 to-transparent blur-3xl opacity-100"
           />
 
           {/* ---------------------------------------------------------------
@@ -299,7 +278,10 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
             }}
           >
             {/* Row 1 (desktop & tablet, moves left) */}
-            <div className="flex gap-4 w-max marquee-left mb-3">
+            <div
+              className="flex gap-4 w-max marquee-left mb-3"
+              style={{ animationPlayState: isTabHidden ? 'paused' : 'running' }}
+            >
               {marqueeRowA.map((t, idx) => {
                 const Icon = t.icon;
                 return (
@@ -319,7 +301,10 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
             </div>
 
             {/* Row 2 (moves right, hidden on mobile for clean single-row look) */}
-            <div className="hidden sm:flex gap-4 w-max marquee-right">
+            <div
+              className="hidden sm:flex gap-4 w-max marquee-right"
+              style={{ animationPlayState: isTabHidden ? 'paused' : 'running' }}
+            >
               {marqueeRowB.map((t, idx) => {
                 const Icon = t.icon;
                 return (
@@ -344,11 +329,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
              --------------------------------------------------------------- */}
           <div className="relative -mt-16 sm:-mt-20 z-20 flex flex-col items-center">
             <div
-              className={`w-[110px] h-[110px] rounded-full bg-gradient-to-b from-[#0F2A35] to-[#08151B] border border-[#38bdf8]/40 flex flex-col items-center justify-center relative shadow-[0_0_36px_rgba(56,189,248,0.28),inset_0_0_24px_rgba(56,189,248,0.14)] transition-all duration-700 ${
-                inView || shouldReduceMotion
-                  ? 'scale-100 opacity-100'
-                  : 'scale-90 opacity-0'
-              }`}
+              className="w-[110px] h-[110px] rounded-full bg-gradient-to-b from-[#0F2A35] to-[#08151B] border border-[#38bdf8]/40 flex flex-col items-center justify-center relative shadow-[0_0_36px_rgba(56,189,248,0.28),inset_0_0_24px_rgba(56,189,248,0.14)] scale-100 opacity-100"
             >
               {/* Soft pulsing glow ring */}
               <div
@@ -414,16 +395,11 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
                 <path d="M 500 0 V 16 Q 500 24 508 24 H 892 Q 900 24 900 32 V 64" />
               </g>
 
-              {/* Animated glowing connector stroke */}
+              {/* Glowing blue connector stroke - visible immediately */}
               <g
                 stroke="url(#connectorGrad)"
                 strokeWidth="1.5"
                 filter="url(#cyanGlow)"
-                style={{
-                  strokeDasharray: 600,
-                  strokeDashoffset: inView || shouldReduceMotion ? 0 : 600,
-                  transition: 'stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s',
-                }}
               >
                 {/* Branch 1 to Card 01 */}
                 <path d="M 500 0 V 16 Q 500 24 492 24 H 108 Q 100 24 100 32 V 64" />
@@ -437,21 +413,80 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
                 <path d="M 500 0 V 16 Q 500 24 508 24 H 892 Q 900 24 900 32 V 64" />
               </g>
 
-              {/* Light pulses travelling down the lines (CSS keyframe) */}
-              {!shouldReduceMotion && inView && (
+              {/* Light pulses travelling down the lines (pure SVG with pathLength="1" and negative delays) */}
+              {shouldReduceMotion ? (
+                <g
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                  strokeDasharray="0.2 0.8"
+                  strokeDashoffset="-0.4"
+                  opacity="0.6"
+                  filter="url(#cyanGlow)"
+                >
+                  <path pathLength="1" d="M 500 0 V 16 Q 500 24 492 24 H 108 Q 100 24 100 32 V 64" />
+                  <path pathLength="1" d="M 500 0 V 16 Q 500 24 492 24 H 308 Q 300 24 300 32 V 64" />
+                  <path pathLength="1" d="M 500 0 V 64" />
+                  <path pathLength="1" d="M 500 0 V 16 Q 500 24 508 24 H 692 Q 700 24 700 32 V 64" />
+                  <path pathLength="1" d="M 500 0 V 16 Q 500 24 508 24 H 892 Q 900 24 900 32 V 64" />
+                </g>
+              ) : (
                 <g
                   stroke="#ffffff"
                   strokeWidth="2.5"
-                  strokeDasharray="40 560"
-                  style={{
-                    animation: 'line-pulse 4s ease-in-out infinite 1.2s',
-                  }}
+                  strokeDasharray="0.18 1"
+                  strokeLinecap="round"
+                  filter="url(#cyanGlow)"
                 >
-                  <path d="M 500 0 V 16 Q 500 24 492 24 H 108 Q 100 24 100 32 V 64" />
-                  <path d="M 500 0 V 16 Q 500 24 492 24 H 308 Q 300 24 300 32 V 64" />
-                  <path d="M 500 0 V 64" />
-                  <path d="M 500 0 V 16 Q 500 24 508 24 H 692 Q 700 24 700 32 V 64" />
-                  <path d="M 500 0 V 16 Q 500 24 508 24 H 892 Q 900 24 900 32 V 64" />
+                  {/* Branch 1 to Card 01 - negative delay ensures pulse is moving on first paint */}
+                  <path
+                    pathLength="1"
+                    d="M 500 0 V 16 Q 500 24 492 24 H 108 Q 100 24 100 32 V 64"
+                    style={{
+                      animation: 'light-travel 2.8s linear infinite',
+                      animationDelay: '-0.56s',
+                      animationPlayState: isTabHidden ? 'paused' : 'running',
+                    }}
+                  />
+                  {/* Branch 2 to Card 02 */}
+                  <path
+                    pathLength="1"
+                    d="M 500 0 V 16 Q 500 24 492 24 H 308 Q 300 24 300 32 V 64"
+                    style={{
+                      animation: 'light-travel 2.8s linear infinite',
+                      animationDelay: '-1.68s',
+                      animationPlayState: isTabHidden ? 'paused' : 'running',
+                    }}
+                  />
+                  {/* Branch 3 to Card 03 (Center) */}
+                  <path
+                    pathLength="1"
+                    d="M 500 0 V 64"
+                    style={{
+                      animation: 'light-travel 2.8s linear infinite',
+                      animationDelay: '-1.12s',
+                      animationPlayState: isTabHidden ? 'paused' : 'running',
+                    }}
+                  />
+                  {/* Branch 4 to Card 04 */}
+                  <path
+                    pathLength="1"
+                    d="M 500 0 V 16 Q 500 24 508 24 H 692 Q 700 24 700 32 V 64"
+                    style={{
+                      animation: 'light-travel 2.8s linear infinite',
+                      animationDelay: '-2.24s',
+                      animationPlayState: isTabHidden ? 'paused' : 'running',
+                    }}
+                  />
+                  {/* Branch 5 to Card 05 */}
+                  <path
+                    pathLength="1"
+                    d="M 500 0 V 16 Q 500 24 508 24 H 892 Q 900 24 900 32 V 64"
+                    style={{
+                      animation: 'light-travel 2.8s linear infinite',
+                      animationDelay: '-0.28s',
+                      animationPlayState: isTabHidden ? 'paused' : 'running',
+                    }}
+                  />
                 </g>
               )}
             </svg>
@@ -467,16 +502,9 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
               return (
                 <li
                   key={c.stepNumber}
-                  style={{
-                    transitionDelay: shouldReduceMotion ? '0ms' : `${i * 120}ms`,
-                  }}
                   className={`group relative rounded-[20px] p-5 border border-white/[0.08] backdrop-blur-md transition-all duration-300 ease-out flex flex-col justify-between ${
                     isFifthCard ? 'sm:col-span-2 sm:max-w-md sm:mx-auto lg:col-span-1 lg:max-w-none' : ''
-                  } ${
-                    inView || shouldReduceMotion
-                      ? 'translate-y-0 opacity-100'
-                      : 'translate-y-8 opacity-0'
-                  } hover:-translate-y-1 hover:border-sky-400/40 hover:shadow-[0_12px_32px_rgba(56,189,248,0.14)]`}
+                  } translate-y-0 opacity-100 hover:-translate-y-1 hover:border-sky-400/40 hover:shadow-[0_12px_32px_rgba(56,189,248,0.14)]`}
                 >
                   {/* Glass background & subtle top gradient */}
                   <div

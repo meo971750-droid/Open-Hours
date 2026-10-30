@@ -179,17 +179,28 @@ export default function WhyOpenHours() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12 sm:mb-16"
         >
-          {/* Left Column: 3-Line H2 */}
-          <div className="max-w-2xl">
-            {/* H2 Heading on three lines matching reference styling */}
-            <h2 className="text-[clamp(2.4rem,5vw,4.25rem)] font-bold tracking-tight leading-[1.06]">
-              <span className="block text-[#0F2A35]">
-                {titleLine1}
+          {/* Left Column: 2-Line H2 */}
+          <div className="max-w-2xl overflow-visible">
+            {/* H2 Heading with overflow-visible, line-height 1.18 and unclipped italic serif accent */}
+            <h2 className="text-[clamp(2.4rem,5vw,4.25rem)] font-bold tracking-tight leading-[1.18] overflow-visible">
+              <span className="block text-[#0F2A35] overflow-visible pb-1">
+                {titleLine1}{' '}
               </span>
-              <span className="block text-[#0F2A35]">
-                with <span className="italic font-normal">Our </span>
-                <span className="italic font-normal bg-gradient-to-r from-[#D97724] via-[#E07A5F] to-[#C8642E] bg-clip-text text-transparent">
-                  {titleAccent.replace(/^Our\s+/i, '')}
+              <span className="block text-[#0F2A35] overflow-visible">
+                with{' '}
+                <span
+                  className="font-serif italic font-normal bg-gradient-to-r from-[#D97724] via-[#E07A5F] to-[#C8642E] bg-clip-text text-transparent"
+                  style={{
+                    display: 'inline-block',
+                    paddingInline: '0.04em 0.14em',
+                    paddingBlock: '0.12em',
+                    lineHeight: 1.18,
+                    overflow: 'visible',
+                    boxDecorationBreak: 'clone',
+                    WebkitBoxDecorationBreak: 'clone',
+                  }}
+                >
+                  Our {titleAccent.replace(/^Our\s+/i, '')}
                 </span>
               </span>
             </h2>
