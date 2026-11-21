@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Clock } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import Container from '../components/Container';
-import { PAGES, PACKAGES, SETUP_FROM, CARE_FROM } from '../content';
+import { config } from '../config';
+import { PAGES, PACKAGES } from '../content';
 
 interface PackageDetailPageProps {
   packageId: 'first' | 'starter' | 'standard' | 'growth';
@@ -64,12 +65,20 @@ export default function PackageDetailPage({ packageId, onOpenAudit }: PackageDet
                   </li>
                 ))}
               </ul>
+              {(packageId === 'standard' && config.features.aiLeadCapture) ||
+              (packageId === 'growth' && config.features.voiceAgent) ? (
+                <p className="mt-4 text-xs text-[#5E6F77]">
+                  The assistant always says it is an AI.
+                </p>
+              ) : null}
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-[#5E6F77] mb-8 pb-6 border-b border-[rgba(15,42,53,0.08)]">
-              <Clock className="w-4 h-4 text-[#1E4A5C]" />
-              <span>{pkg.timeline}</span>
-            </div>
+            {pkg.timeline && (
+              <div className="flex items-center gap-2 text-sm text-[#5E6F77] mb-8 pb-6 border-b border-[rgba(15,42,53,0.08)]">
+                <Clock className="w-4 h-4 text-[#1E4A5C]" />
+                <span>{pkg.timeline}</span>
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <Link

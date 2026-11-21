@@ -6,6 +6,8 @@
  * have given explicit, signed written permission. No fabricated reviews or fake ratings.
  */
 
+import { config } from './config';
+
 export const SHOW_PRICING = true;
 
 export const CTA = {
@@ -17,7 +19,7 @@ export const CTA = {
 
 export const DELIVERY = {
   conceptWorkingDays: 3,   // homepage concept, counted from when we speak
-  liveWorkingDays: 10,     // typical live date once we have photos and details (Standard)
+  liveWorkingDays: 10,     // typical live date once we have photos and details
   tiers: { starter: 7, standard: 10, growth: 14 },
   auditWorkingDays: 2,
   firstPageWorkingDays: 5,
@@ -129,11 +131,11 @@ export const HERO_CONTENT = {
   badge: "Your Go-To Growth Partner",
   headline: "The website that answers while you're on the job",
   subtext:
-    "Your website replies to quote requests, texts back missed calls and tracks every enquiry, so nothing slips while you're on the job.",
+    "Your website replies to quote requests, texts back missed calls and tracks incoming enquiries, so nothing slips while you're on the job.",
   emailPlaceholder: "Your email",
   ctaText: CTA.short,
   consentText:
-    "We'll use your email only to reply about your 1-page website. No spam. Privacy policy.",
+    "We'll use your email only to reply to your enquiry. No spam. Privacy policy.",
   trades: [
     { name: "Roofers", icon: "Hammer" },
     { name: "Kitchen fitters", icon: "ChefHat" },
@@ -200,14 +202,14 @@ export const WHAT_IT_DOES_CONTENT = {
       icon: "ClipboardList",
       title: "Catches",
       description:
-        "A clear quote form asks for the project details you need, with call and message buttons one tap away. On Standard and Growth, customers can also send a photo of the job.",
+        `A clear quote form asks for the project details you need, with call and message buttons one tap away. On ${config.pricing.tiers.find((t) => t.id === "standard")?.name ?? "Fast Replies"} and ${config.pricing.tiers.find((t) => t.id === "growth")?.name ?? "Full Growth Engine"}, customers can also send a photo of the job.`,
     },
     {
       id: "records",
       icon: "ClipboardList",
       title: "Records",
       description:
-        "Every enquiry, quote request and missed call is logged in one clean list, so nothing slips while you work.",
+        "Incoming quote requests, messages and missed calls are logged in one clean list, so nothing slips while you work.",
     },
     {
       id: "hands-over",
@@ -255,7 +257,7 @@ export const HOW_IT_WORKS_CONTENT = {
     {
       dayLabel: `Day ${DELIVERY.liveWorkingDays}`,
       title: "Your site goes live",
-      description: "Typical for the Standard build, once we have your photos and details.",
+      description: "Typical once we have your photos and details.",
       chip: "Our turn",
       chipType: "our" as const,
     },
@@ -269,7 +271,7 @@ export const WHAT_YOU_GET_CONTENT = {
     {
       id: "enquiries",
       icon: "PhoneCall",
-      title: "Never miss an enquiry",
+      title: "Catch incoming enquiries",
       text: "Click-to-call, a quote form, a WhatsApp button and an automatic reply when you can't pick up.",
       sampleKicker: "Live capture suite",
     },
@@ -294,13 +296,25 @@ export const WHAT_YOU_GET_CONTENT = {
     { title: "Speed and mobile checks", desc: "Fast, mobile-first pages, with speed checked before launch." },
     { title: "Enquiry tracking", desc: "Know exactly which phone calls, WhatsApp messages, and forms arrived." },
     { title: "Privacy and cookie basics", desc: "GDPR-compliant cookie banner, clear consent, and legal drafts." },
-    { title: "Lifetime support after you go live", desc: "Every minor tweak or photo swap handled promptly at no extra charge." },
+    { title: "Lifetime support after you go live", desc: "Minor tweaks or photo swaps handled promptly at no extra charge." },
   ],
 };
 
-// Prices are hypotheses to test; confirm before launch
-export const SETUP_FROM = { starter: 790, standard: 1290, growth: 2200 };
-export const CARE_FROM = { starter: 39, standard: 69, growth: 129 };
+const tierById = (id: "starter" | "standard" | "growth") =>
+  config.pricing.tiers.find((t) => t.id === id);
+
+export const SETUP_FROM = {
+  starter: tierById("starter")?.price ?? 990,
+  standard: tierById("standard")?.price ?? 1790,
+  growth: tierById("growth")?.price ?? 2900,
+};
+
+export const CARE_FROM = {
+  starter: tierById("starter")?.monthlyPrice ?? 79,
+  standard: tierById("standard")?.monthlyPrice ?? 149,
+  growth: tierById("growth")?.monthlyPrice ?? 299,
+};
+
 export const ADS_MANAGEMENT_FROM = 350;
 
 export interface PackageTier {
@@ -311,13 +325,26 @@ export interface PackageTier {
   description: string;
   price: string;
   setupAmount?: number;
+  monthlyAmount?: number;
+  priceNote?: string;
   mutedLine?: string;
   careLine: string;
   featuresHeading?: string;
   features: string[];
-  timeline: string;
+  timeline?: string;
   button: string;
 }
+
+const formatTierItems = (id: "starter" | "standard" | "growth"): string[] => {
+  const tier = tierById(id);
+  if (!tier) return [];
+  const featuresMap = config.features as unknown as Record<string, boolean | number | undefined>;
+  const filterItem = (item: { flag?: string }) => !item.flag || Boolean(featuresMap[item.flag]);
+  return [
+    ...tier.setupItems.filter(filterItem).map((item) => item.label),
+    ...tier.monthlyItems.filter(filterItem).map((item) => `${item.label} (monthly)`),
+  ];
+};
 
 export const PACKAGES: PackageTier[] = [
   {
@@ -328,7 +355,7 @@ export const PACKAGES: PackageTier[] = [
     description: "One clear page with your services, area and contact details.",
     price: "At no cost",
     mutedLine: `Hosting included for ${FIRST_PAGE.hostingMonths} months. ${FIRST_PAGE.domainNote}`,
-    careLine: `After the first 12 months: a care plan from €${CARE_FROM.starter}/month, or take your files with you.`,
+    careLine: `After the first 12 months: a monthly plan from €${CARE_FROM.starter}/month, or take your files with you.`,
     features: [
       "1 mobile-first page: your services, area and contact details",
       "Call button and quote request form",
@@ -339,72 +366,33 @@ export const PACKAGES: PackageTier[] = [
     timeline: `Live in about ${DELIVERY.firstPageWorkingDays} working days`,
     button: CTA.offer,
   },
-  {
-    id: "starter",
-    name: "Starter",
-    highlighted: false,
-    description: "A small, complete website for your trade.",
-    price: `from €${SETUP_FROM.starter} setup`,
-    setupAmount: SETUP_FROM.starter,
-    careLine: `Care plan from €${CARE_FROM.starter}/month: hosting, updates and backups.`,
-    features: [
-      "3 to 5 pages, mobile-first",
-      "Quote and site-visit request form, with call buttons",
-      "Google Business Profile set-up and tidy-up",
-      "HTTPS and spam-protected forms",
-      "Lifetime support after you go live",
-    ],
-    timeline: `Live in about ${DELIVERY.tiers.starter} working days`,
-    button: "Start with a 1-page website",
-  },
-  {
-    id: "standard",
-    name: "Standard",
-    tag: "Recommended",
-    highlighted: true,
-    description: "A fuller site that handles enquiries, even after hours.",
-    price: `from €${SETUP_FROM.standard} setup`,
-    setupAmount: SETUP_FROM.standard,
-    careLine: `Care plan from €${CARE_FROM.standard}/month: everything in the Starter plan, plus a monthly Google profile update and a simple enquiry summary.`,
-    featuresHeading: "Everything in Starter, plus:",
-    features: [
-      "5 to 8 pages, with a project gallery and service-area pages",
-      "Copy written for each service, with FAQs",
-      "Photo quote requests: customers can send a picture of the job",
-      "After-hours auto-reply and missed-call text-back",
-      "Local search foundations",
-      "Review-request link set-up",
-    ],
-    timeline: `Live in about ${DELIVERY.tiers.standard} working days`,
-    button: "Start with a 1-page website",
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    highlighted: false,
-    description: "For more services, more areas and bigger projects.",
-    price: `from €${SETUP_FROM.growth} setup`,
-    setupAmount: SETUP_FROM.growth,
-    careLine: `Care plan from €${CARE_FROM.growth}/month: everything in the Standard plan, plus monthly reporting and priority support.`,
-    featuresHeading: "Everything in Standard, plus:",
-    features: [
-      "As many pages as your business needs, agreed in your written quote",
-      "A page for each service and area",
-      "Advanced Google Business Profile optimisation",
-      "Google Ads campaign set-up (ad spend paid by you directly to Google)",
-      "Enquiry tracking and a monthly report",
-      "Review-request flow",
-    ],
-    timeline: `Live in about ${DELIVERY.tiers.growth} working days`,
-    button: "Start with a 1-page website",
-  },
+  ...config.pricing.tiers.map((tier): PackageTier => {
+    const id = tier.id as "starter" | "standard" | "growth";
+    return {
+      id,
+      name: tier.name,
+      tag: tier.tag,
+      highlighted: tier.highlighted,
+      description: tier.outcome,
+      price: `from €${tier.price.toLocaleString("en-IE")} set-up`,
+      setupAmount: tier.price,
+      monthlyAmount: tier.monthlyPrice,
+      priceNote: tier.priceNote,
+      careLine: `+ €${tier.monthlyPrice} / month${tier.priceNote ? ` · ${tier.priceNote}` : ""}`,
+      featuresHeading: tier.everythingInLabel,
+      features: formatTierItems(id),
+      timeline: typeof tier.deliveryDays === "number" && tier.deliveryDays > 0 ? `About ${tier.deliveryDays} working days` : undefined,
+      button: `Choose ${tier.name}`,
+    };
+  }),
 ];
 
 export const PRICING_CONTENT = {
-  pill: "Pricing",
-  headline: "Fixed prices. No surprises.",
+  pill: config.pricing.pill,
+  headline: "Simple pricing, fixed in writing",
   subtext:
-    "Start with a 1-page website at no cost, then grow only if it makes sense. Every paid build starts with a fixed written quote.",
+    config.pricing.subtext ||
+    "Every build starts with a clear scope agreed in writing before work starts.",
   tiers: PACKAGES,
 };
 
@@ -458,7 +446,7 @@ export const FAQ_CONTENT = {
     {
       question: "Do I own the website?",
       answer:
-        "Yes: domain, site, and content are 100% yours. We never hold client assets hostage. If you ever decide to host elsewhere, you take everything with you.",
+        "Yes: domain, site, and content are owned outright by you. We never hold client assets hostage. If you ever decide to host elsewhere, you take everything with you.",
     },
     {
       question: "What if I already have a website?",
@@ -697,7 +685,7 @@ export interface ConceptStudy {
   title: string;
   description: string;
   scope: string;
-  tier: "Starter" | "Standard" | "Growth";
+  tier: string;
 }
 
 export const CONCEPT_STUDIES: ConceptStudy[] = [
@@ -710,7 +698,7 @@ export const CONCEPT_STUDIES: ConceptStudy[] = [
     description:
       "A clear quote form, a call button on every page and an automatic reply when the phone goes unanswered.",
     scope: "5 pages, quote form, Google profile tidy-up",
-    tier: "Standard",
+    tier: tierById("standard")?.name ?? "Fast Replies",
   },
   {
     id: "study-kitchen-fitters",
@@ -721,7 +709,7 @@ export const CONCEPT_STUDIES: ConceptStudy[] = [
     description:
       "A project gallery that does the talking, with a simple way to ask for a design visit.",
     scope: "5 pages, project gallery, quote form",
-    tier: "Starter",
+    tier: tierById("starter")?.name ?? "Get Found & Get Called",
   },
   {
     id: "study-extension-builders",
@@ -732,7 +720,7 @@ export const CONCEPT_STUDIES: ConceptStudy[] = [
     description:
       "A page for each type of build, and a form that collects the project details you need.",
     scope: "8 pages, service pages, quote form",
-    tier: "Growth",
+    tier: tierById("growth")?.name ?? "Full Growth Engine",
   },
   {
     id: "study-heating-installers",
@@ -743,7 +731,7 @@ export const CONCEPT_STUDIES: ConceptStudy[] = [
     description:
       "A call button at the top of every page, service-area pages and an automatic reply after hours.",
     scope: "6 pages, service-area pages, call button",
-    tier: "Standard",
+    tier: tierById("standard")?.name ?? "Fast Replies",
   },
 ];
 
@@ -793,7 +781,7 @@ export const INTERACTIVE_FEATURES: InteractiveFeatureItem[] = [
     number: "03",
     title: "Voice agent",
     description:
-      "An automated voice assistant answers calls you can't take, says that it is automated, collects the job details and passes them to you. Provided under a separate agreement.",
+      "An automated voice assistant answers calls you can't take, collects the job details and passes them to you. The assistant always says it is an AI. Voice call costs are charged separately.",
     scene: "voice-agent",
   },
   {
@@ -831,12 +819,28 @@ export const COMMON_NEEDS: string[] = [
 
 export const PAGES = [
   { id: "first", pill: "1-Page", h1: "1-Page Website", sub: "Everything on one page to get enquiries moving." },
-  { id: "starter", pill: "Starter", h1: "Starter Website", sub: "Clean 3-page site for focused trades." },
-  { id: "standard", pill: "Standard", h1: "Standard Website", sub: "Complete trade site with service areas." },
-  { id: "growth", pill: "Growth", h1: "Growth Website", sub: "Full site for high-volume trade contractors." },
+  {
+    id: "starter",
+    pill: tierById("starter")?.name ?? "Get Found & Get Called",
+    h1: tierById("starter")?.name ?? "Get Found & Get Called",
+    sub: tierById("starter")?.outcome ?? "People who search can find you, and ask for a call or a quote in one tap.",
+  },
+  {
+    id: "standard",
+    pill: tierById("standard")?.name ?? "Fast Replies",
+    h1: tierById("standard")?.name ?? "Fast Replies",
+    sub:
+      tierById("standard")?.outcome ??
+      "Enquiries get an automatic reply within about a minute, day or night, on supported channels, and qualified leads can book straight into your calendar.",
+  },
+  {
+    id: "growth",
+    pill: tierById("growth")?.name ?? "Full Growth Engine",
+    h1: tierById("growth")?.name ?? "Full Growth Engine",
+    sub: tierById("growth")?.outcome ?? "An ongoing system for enquiries, reviews and repeat work.",
+  },
 ];
 
-import { config } from './config';
 export { config, CONFIG, type HeroProofAvatar, type HeroProofConfig, type WayOfWorkingConfig, type WayOfWorkingScene } from './config';
 export const heroProof = config.heroProof;
 export const wayOfWorking = config.wayOfWorking;

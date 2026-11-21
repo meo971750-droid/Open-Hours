@@ -1,218 +1,425 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { ArrowRight, Bell, PhoneCall, Star, MessageCircle } from 'lucide-react';
-import Container from '../components/Container';
-import Accent from '../components/Accent';
+import React, { useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
+import { ArrowRight, CheckCircle2, Loader2, Mail } from 'lucide-react';
 import { LogoMark } from '../components/Logo';
-import { FINAL_CTA_CONTENT, DELIVERY, whatsappLink } from '../content';
+import { config } from '../config';
+import { CTA_CONFIG, CONTACT, devPlaceholder } from '../content';
+import { OH_DUR, OH_EASE } from '../lib/motion';
 
 interface FinalCTAProps {
-  onOpenAudit: () => void;
+  onOpenAudit?: () => void;
+  onOpenPrivacy?: () => void;
 }
 
-export default function FinalCTA({ onOpenAudit }: FinalCTAProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [isTouch, setIsTouch] = useState(false);
+export default function FinalCTA({ onOpenAudit, onOpenPrivacy }: FinalCTAProps) {
+  const shouldReduceMotion = useReducedMotion() ?? false;
+  const [quickEmail, setQuickEmail] = useState('');
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [fallbackNotice, setFallbackNotice] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
 
-  useEffect(() => {
-    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-      setIsTouch(true);
+  const tiers = config.pricing?.tiers || [];
+  const ctaSubline =
+    config.cta?.text || "Let's see what customers find when they look for your trade.";
+  const responseTime = (config.responseTime || CTA_CONFIG.responseTime || '').trim();
+  const endpoint = (config.formEndpoint || CTA_CONFIG.formEndpoint || '').trim();
+
+  const cleanEmail = (() => {
+    const candidate = config.email || CTA_CONFIG.email || CONTACT.email || '';
+    if (!candidate || candidate.includes('[')) return '';
+    return candidate.trim();
+  })();
+  const fallbackEmail = cleanEmail || devPlaceholder('hello@openhours.studio');
+
+  const handleOpenContact = (tier?: (typeof tiers)[number]) => {
+    const contactEl = document.getElementById('contact');
+    if (contactEl) {
+      if (tier) {
+        const monthlyPart =
+          typeof tier.monthlyPrice === 'number' && tier.monthlyPrice > 0
+            ? ` + €${tier.monthlyPrice}/month`
+            : '';
+        window.dispatchEvent(
+          new CustomEvent('openhours:prefill-contact', {
+            detail: {
+              option: tier.name,
+              message: `I'm interested in the ${tier.name} package (from €${tier.price.toLocaleString('en-IE')}${monthlyPart}).`,
+            },
+          })
+        );
+      } else {
+        window.dispatchEvent(
+          new CustomEvent('openhours:prefill-contact', {
+            detail: { focusField: 'name' },
+          })
+        );
+      }
+      return;
     }
-  }, []);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isTouch || !panelRef.current) return;
-    const rect = panelRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setMousePos({ x, y });
+    // Fallback when rendered on a subpage without #contact
+    onOpenAudit?.();
   };
 
-  const handleMouseLeave = () => {
-    setMousePos({ x: 0, y: 0 });
+  const handleQuickEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setFallbackNotice('');
+
+    if (honeypot) return;
+
+    const trimmed = quickEmail.trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setErrorMessage('Please enter a valid email address.');
+      setStatusMessage('Please enter a valid email address.');
+      return;
+    }
+
+    if (!consentAccepted) {
+      setErrorMessage('Please tick the box to confirm we can reply to your email.');
+      setStatusMessage('Consent required before sending.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatusMessage('Sending your email...');
+
+    // Never simulate success if endpoint is empty: use mailto fallback
+    if (!endpoint) {
+      console.warn(
+        'config.formEndpoint is not configured. Falling back to prefilled email client link.'
+      );
+      setIsSubmitting(false);
+
+      const subject = 'Website enquiry — Open Hours';
+      const body = `Hi Open Hours,\n\nPlease reply to ${trimmed} about a new website for my business.`;
+      window.location.href = `mailto:${encodeURIComponent(
+        fallbackEmail
+      )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+      setFallbackNotice(
+        `Your reply request was prepared in your email app. If it did not open automatically, please email ${fallbackEmail}.`
+      );
+      setStatusMessage('Enquiry opened in email client.');
+      return;
+    }
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: trimmed,
+          source: 'final-cta-quick-email',
+          submittedAt: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+
+      setIsSubmitted(true);
+      setStatusMessage('Email received. We will reply shortly.');
+    } catch (err) {
+      console.error('Failed to submit final CTA email:', err);
+      setFallbackNotice(
+        `Could not send right now. Please email us directly at ${fallbackEmail}.`
+      );
+      setStatusMessage('Submission error. Please email us directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <section
       id="final-cta"
-      ref={panelRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="relative w-full overflow-hidden py-24 sm:py-32 md:py-40 text-center flex flex-col items-center justify-center rounded-t-[32px] scroll-mt-24"
-      style={{
-        background: 'linear-gradient(180deg, #CFE0E4 0%, #FBF8F3 100%)',
-      }}
+      aria-labelledby="final-cta-heading"
+      className="oh-cv-auto oh-grain-dark relative w-full bg-[#050E0D] text-white py-20 sm:py-28 px-4 sm:px-6 overflow-x-clip"
     >
-      {/* Faint peach radial glow */}
+      {/* Top Light-to-Dark Soft Gradient Boundary Bleed */}
       <div
-        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] sm:w-[640px] h-[380px] sm:h-[640px] rounded-full blur-[90px] -z-10"
-        style={{ background: 'rgba(227, 184, 150, 0.28)' }}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-[#F3F5F3]/12 to-transparent z-[1]"
       />
+      <style>{`
+        @keyframes finalCtaLogoPulse {
+          0%, 100% {
+            opacity: 0.7;
+            transform: scale(0.98);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.04);
+          }
+        }
+        .final-cta-logo-pulse {
+          animation: finalCtaLogoPulse 4s ease-in-out infinite;
+          will-change: transform, opacity;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .final-cta-logo-pulse {
+            animation: none !important;
+            transform: none !important;
+            opacity: 0.85 !important;
+          }
+        }
+      `}</style>
 
-      <Container className="relative z-10 flex flex-col items-center">
-        {/* Centre "o + dot" Logo Mark */}
-        <div className="mb-6 flex justify-center">
-          <LogoMark size={48} className="shadow-sm" />
+      {/* Main Luminous Panel Wrapper (filter-free radial mint side edge glows) */}
+      <div className="relative z-10 max-w-[1000px] mx-auto">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-[12%] -left-16 sm:-left-28 w-72 sm:w-96 h-80 sm:h-96 rounded-full z-0"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(63, 209, 165, 0.28) 0%, rgba(20, 98, 79, 0.14) 45%, transparent 72%)',
+          }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-[12%] -right-16 sm:-right-28 w-72 sm:w-96 h-80 sm:h-96 rounded-full z-0"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(63, 209, 165, 0.28) 0%, rgba(20, 98, 79, 0.14) 45%, transparent 72%)',
+          }}
+        />
+
+        {/* Wide Glass Panel (radius 28px, dark green AA contrast behind white text) */}
+        <div
+          data-spotlight=""
+          className="oh-dark-card relative z-10 rounded-[28px] overflow-hidden px-6 sm:px-12 py-14 sm:py-20 text-center shadow-[0_30px_90px_rgba(0,0,0,0.65)]"
+          style={{
+            background:
+              'radial-gradient(ellipse 76% 36% at 50% 0%, rgba(63, 209, 165, 0.28) 0%, transparent 72%), linear-gradient(180deg, #0F4A3E 0%, #0A3A30 46%, #050E0D 100%)',
+          }}
+        >
+          {/* Subtle Dot-Grid Pattern Fading Downwards */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage: 'radial-gradient(rgba(255,255,255,0.2) 1px, transparent 1px)',
+              backgroundSize: '18px 18px',
+              WebkitMaskImage:
+                'linear-gradient(180deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.18) 52%, transparent 82%)',
+              maskImage:
+                'linear-gradient(180deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.18) 52%, transparent 82%)',
+            }}
+          />
+
+          <div className="relative z-[3] flex flex-col items-center">
+            {/* Rounded-Square Glass Logo Tile (~88px) with Slow 4s Pre-Softened Pulse */}
+            <div className="relative mb-8 flex items-center justify-center">
+              <div
+                aria-hidden="true"
+                className="final-cta-logo-pulse pointer-events-none absolute -inset-6 rounded-full"
+                style={{
+                  background:
+                    'radial-gradient(circle, rgba(168, 235, 211, 0.36) 0%, rgba(63, 209, 165, 0.14) 46%, transparent 72%)',
+                }}
+              />
+              <div className="relative w-[88px] h-[88px] rounded-[20px] bg-[#0A3A30]/85 border border-white/28 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.36),0_16px_40px_rgba(5,14,13,0.45)] flex items-center justify-center">
+                <LogoMark size={44} variant="light" />
+              </div>
+            </div>
+
+            {/* Heading (~44px) */}
+            <h2
+              id="final-cta-heading"
+              className="font-heading text-[30px] sm:text-[44px] font-medium tracking-[-0.025em] leading-[1.1] text-white max-w-[18ch] mb-4 drop-shadow-[0_2px_10px_rgba(5,14,13,0.35)]"
+            >
+              <span className="oh-line-mask">
+                <span className="oh-line-reveal">Ready to talk about your new website?</span>
+              </span>
+            </h2>
+
+            {/* Supporting Line */}
+            {ctaSubline && (
+              <p className="text-[15px] sm:text-[17px] leading-[1.55] text-white/88 max-w-[46ch] mb-8">
+                {ctaSubline}
+              </p>
+            )}
+
+            {/* Pill Button with Single Green Accent & Arrow Circle */}
+            <button
+              type="button"
+              onClick={() => handleOpenContact()}
+              className="oh-btn-pill oh-magnetic oh-btn-primary group pl-7 pr-4 text-[15px] font-semibold border border-[#6FD6B0]/40 cursor-pointer"
+            >
+              <span>Talk to Us</span>
+              <span className="oh-btn-arrow-circle bg-white/15 text-white">
+                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+              </span>
+            </button>
+
+            {/* Small Package "from" Price Chips Read Dynamically from config.pricing.tiers */}
+            {tiers.length > 0 && (
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
+                {tiers.map((tier) => (
+                  <button
+                    key={tier.id}
+                    type="button"
+                    onClick={() => handleOpenContact(tier)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] active:scale-[0.98] border border-white/18 text-[12.5px] font-medium text-white/92 transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer"
+                  >
+                    <span>{tier.name}</span>
+                    {typeof tier.price === 'number' && tier.price > 0 && (
+                      <span className="text-[#A8EBD3] tabular-nums">
+                        from &euro;{tier.price.toLocaleString('en-IE')}
+                        {typeof tier.monthlyPrice === 'number' && tier.monthlyPrice > 0
+                          ? ` + €${tier.monthlyPrice}/mo`
+                          : ''}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+      </div>
 
-        {/* H2 Headline */}
-        <h2 className="text-[32px] sm:text-[46px] md:text-[56px] font-normal tracking-[-0.03em] leading-[1.06] text-[#0F2A35] max-w-2xl mb-4">
-          Your phone rings. Your website{' '}
-          <Accent className="text-[#1E4A5C]">answers</Accent>.
-        </h2>
-
-        <p className="text-[16px] sm:text-[18px] text-[#5E6F77] max-w-lg mb-8">
-          {FINAL_CTA_CONTENT.subtext}
-        </p>
-
-        {/* Button: Talk to Us */}
-        <button
-          type="button"
-          onClick={onOpenAudit}
-          className="group inline-flex items-center gap-2 bg-[#0F2A35] text-white text-[15px] font-medium h-[52px] px-7 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C] cursor-pointer"
-        >
-          <span>{FINAL_CTA_CONTENT.buttonText}</span>
-          <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-        </button>
-
-        {/* Secondary outline button: Message us on WhatsApp (only if configured) */}
-        {whatsappLink() && (
-          <a
-            href={whatsappLink()!}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3.5 inline-flex items-center gap-2 px-6 h-11 rounded-full border border-[#0F2A35] text-[#0F2A35] hover:bg-[#0F2A35]/5 text-[14px] font-semibold transition-colors"
-          >
-            <MessageCircle className="w-4 h-4 text-[#1E4A5C]" />
-            <span>Message us on WhatsApp</span>
-          </a>
-        )}
-
-        {/* Delivery timeline note: 15px white at 80% */}
-        <p className="mt-4 text-[15px] text-white/80 drop-shadow-[0_1px_2px_rgba(15,42,53,0.85)]">
-          Your 1-page website in about {DELIVERY.firstPageWorkingDays} working days. Full builds in about {DELIVERY.liveWorkingDays}.
-        </p>
-
-        {/* 4 Floating Tilted Cards Around the Panel */}
-
-        {/* Card 1: Enquiry notification (top left, -6deg) */}
-        <motion.div
-          animate={{
-            y: [-8, 8, -8],
-            x: isTouch ? 0 : mousePos.x * -12,
-          }}
-          whileHover={{ rotate: 0, y: -6, zIndex: 30 }}
-          transition={{
-            y: { duration: 6.5, repeat: Infinity, ease: 'easeInOut' },
-            x: { duration: 0.2 },
-          }}
-          style={{ rotate: -6 }}
-          className="absolute left-2 sm:left-6 lg:left-12 top-4 sm:top-10 w-[190px] sm:w-[230px] bg-white rounded-[20px] p-3.5 sm:p-4 text-left shadow-[0_12px_32px_rgba(15,42,53,0.08)] border border-[rgba(15,42,53,0.06)] cursor-default transition-shadow hover:shadow-xl hidden md:block"
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-[rgba(15,42,53,0.06)] mb-2">
-            <div className="flex items-center gap-1.5 text-xs text-[#0F2A35] font-semibold">
-              <Bell className="w-3.5 h-3.5 text-[#1E4A5C]" />
-              <span>Enquiry Alert</span>
-            </div>
-            <span className="text-[10px] bg-[#EEF3F4] text-[#5E6F77] px-1.5 py-0.5 rounded-full font-medium">
-              Sample
+      {/* Lower Two-Column Row Below Panel (PREFER EMAIL?) */}
+      <div className="relative z-10 max-w-[1000px] mx-auto mt-14 sm:mt-16 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 items-start">
+          {/* Left Info Block */}
+          <div className="md:col-span-6">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-white/75 mb-2">
+              PREFER EMAIL?
             </span>
+            <h3 className="font-heading text-[24px] sm:text-[28px] font-medium tracking-[-0.02em] leading-[1.18] text-white mb-2">
+              Leave your email and we will reply
+            </h3>
+            {responseTime && (
+              <p className="text-[14px] sm:text-[15px] leading-[1.55] text-white/75 max-w-[40ch]">
+                We reply within {responseTime} on business days with clear next steps.
+              </p>
+            )}
           </div>
-          <p className="text-xs font-medium text-[#0F2A35]">New quote request</p>
-          <p className="text-[11px] text-[#5E6F77] mt-0.5">2 min ago · Roof repair</p>
-        </motion.div>
 
-        {/* Card 2: Small ring chart (top right, +5deg) */}
-        <motion.div
-          animate={{
-            y: [8, -8, 8],
-            x: isTouch ? 0 : mousePos.x * 10,
-          }}
-          whileHover={{ rotate: 0, y: -6, zIndex: 30 }}
-          transition={{
-            y: { duration: 7, delay: 0.8, repeat: Infinity, ease: 'easeInOut' },
-            x: { duration: 0.2 },
-          }}
-          style={{ rotate: 5 }}
-          className="absolute right-2 sm:right-6 lg:right-12 top-6 sm:top-12 w-[180px] sm:w-[220px] bg-white rounded-[20px] p-3.5 sm:p-4 text-left shadow-[0_12px_32px_rgba(15,42,53,0.08)] border border-[rgba(15,42,53,0.06)] cursor-default transition-shadow hover:shadow-xl hidden md:block"
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-[rgba(15,42,53,0.06)] mb-2">
-            <span className="text-xs font-semibold text-[#0F2A35]">Lead Origin</span>
-            <span className="text-[10px] bg-[#EEF3F4] text-[#5E6F77] px-1.5 py-0.5 rounded-full font-medium">
-              Sample
-            </span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <svg className="w-10 h-10 -rotate-90 shrink-0" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="14" fill="none" stroke="#EEF3F4" strokeWidth="4.5" />
-              <circle cx="18" cy="18" r="14" fill="none" stroke="#1E4A5C" strokeWidth="4.5" strokeDasharray="51 88" />
-              <circle cx="18" cy="18" r="14" fill="none" stroke="#E3B896" strokeWidth="4.5" strokeDasharray="24 88" strokeDashoffset="-51" />
-            </svg>
-            <div className="text-[11px] text-[#0F2A35]">
-              <div className="font-semibold text-xs">Google 58%</div>
-              <div className="text-[#5E6F77] text-[10px]">Maps &amp; Local</div>
-            </div>
-          </div>
-        </motion.div>
+          {/* Right Quick Email Form */}
+          <div className="md:col-span-6">
+            {isSubmitted ? (
+              <motion.div
+                initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: OH_DUR.base, ease: OH_EASE }}
+                role="status"
+                aria-live="polite"
+                className="rounded-[20px] bg-white/[0.05] border border-[#6FD6B0]/45 p-4 sm:p-5 flex items-center gap-3 text-white"
+              >
+                <CheckCircle2 className="w-5 h-5 text-[#A8EBD3] shrink-0" strokeWidth={1.5} />
+                <span className="text-[14px] text-white/90">
+                  Thanks &mdash; we&apos;ve logged {quickEmail.trim()} and will reply in writing.
+                </span>
+              </motion.div>
+            ) : (
+              <form onSubmit={handleQuickEmailSubmit} noValidate className="space-y-3">
+                <div aria-live="polite" className="sr-only">
+                  {statusMessage}
+                </div>
 
-        {/* Card 3: Missed-call text-back bubble (bottom left, +3deg) */}
-        <motion.div
-          animate={{
-            y: [-7, 7, -7],
-            x: isTouch ? 0 : mousePos.x * -10,
-          }}
-          whileHover={{ rotate: 0, y: -6, zIndex: 30 }}
-          transition={{
-            y: { duration: 6.8, delay: 1.2, repeat: Infinity, ease: 'easeInOut' },
-            x: { duration: 0.2 },
-          }}
-          style={{ rotate: 3 }}
-          className="absolute left-2 sm:left-8 lg:right-auto lg:left-14 bottom-4 sm:bottom-8 w-[210px] sm:w-[250px] bg-[#0F2A35] text-white rounded-[20px] p-3.5 sm:p-4 text-left shadow-[0_12px_32px_rgba(15,42,53,0.15)] border border-white/10 cursor-default transition-shadow hover:shadow-xl hidden lg:block"
-        >
-          <div className="flex items-center justify-between pb-1.5 border-b border-white/10 mb-2">
-            <div className="flex items-center gap-1.5 text-xs text-[#E3B896]">
-              <PhoneCall className="w-3.5 h-3.5" />
-              <span>Auto Text-Back</span>
-            </div>
-            <span className="text-[10px] bg-white/15 px-1.5 py-0.5 rounded-full">
-              Sample
-            </span>
-          </div>
-          <p className="text-[11px] text-white/90 leading-relaxed">
-            "Sorry we missed your call. We're on a job. Ringing you back shortly."
-          </p>
-        </motion.div>
+                {/* Honeypot */}
+                <input
+                  type="text"
+                  name="_openhours_quick_hp"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  className="hidden"
+                  aria-hidden="true"
+                />
 
-        {/* Card 4: Reviews card showing "4.8 on Google (sample)" (bottom right, -4deg) */}
-        <motion.div
-          animate={{
-            y: [7, -7, 7],
-            x: isTouch ? 0 : mousePos.x * 12,
-          }}
-          whileHover={{ rotate: 0, y: -6, zIndex: 30 }}
-          transition={{
-            y: { duration: 7.2, delay: 0.5, repeat: Infinity, ease: 'easeInOut' },
-            x: { duration: 0.2 },
-          }}
-          style={{ rotate: -4 }}
-          className="absolute right-2 sm:right-8 lg:left-auto lg:right-14 bottom-4 sm:bottom-8 w-[180px] sm:w-[220px] bg-white rounded-[20px] p-3.5 sm:p-4 text-left shadow-[0_12px_32px_rgba(15,42,53,0.08)] border border-[rgba(15,42,53,0.06)] cursor-default transition-shadow hover:shadow-xl hidden lg:block"
-        >
-          <div className="flex items-center justify-between pb-1.5 border-b border-[rgba(15,42,53,0.06)] mb-2">
-            <span className="text-xs font-semibold text-[#0F2A35]">Reviews Profile</span>
-            <span className="text-[10px] bg-[#EEF3F4] text-[#5E6F77] px-1.5 py-0.5 rounded-full font-medium">
-              Sample
-            </span>
+                <label
+                  htmlFor="final-cta-email"
+                  className="block text-[13px] font-medium text-white/88"
+                >
+                  Email
+                </label>
+
+                <div className="flex items-center gap-2 rounded-[12px] bg-white/[0.05] border border-white/[0.16] p-1.5 focus-within:border-[#6FD6B0] transition-colors">
+                  <Mail className="w-4 h-4 text-white/75 ml-2.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+                  <input
+                    id="final-cta-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    value={quickEmail}
+                    onChange={(e) => {
+                      setQuickEmail(e.target.value);
+                      if (errorMessage) setErrorMessage('');
+                    }}
+                    onBlur={() => {
+                      const trimmed = quickEmail.trim();
+                      if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+                        setErrorMessage('Please enter a valid email address.');
+                      }
+                    }}
+                    placeholder="Enter your email"
+                    className="w-full min-w-0 h-9 px-2 bg-transparent text-[14.5px] text-white placeholder:text-white/75 rounded-md"
+                    aria-invalid={Boolean(errorMessage)}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-9 px-4 rounded-[10px] bg-[#14624F] hover:bg-[#14735A] active:scale-[0.98] text-white text-[13px] font-semibold border border-[#6FD6B0]/35 transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shrink-0"
+                  >
+                    {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />}
+                    <span>{isSubmitting ? 'Sending...' : 'Send'}</span>
+                  </button>
+                </div>
+
+                {/* Same Consent Checkbox & Text */}
+                <label className="flex items-start gap-2 cursor-pointer select-none text-[12.5px] text-white/85">
+                  <input
+                    type="checkbox"
+                    checked={consentAccepted}
+                    onChange={(e) => {
+                      setConsentAccepted(e.target.checked);
+                      if (errorMessage) setErrorMessage('');
+                    }}
+                    className="mt-0.5 w-4 h-4 rounded border-white/30 bg-[#050E0D] accent-[#1E9E6A] cursor-pointer shrink-0"
+                  />
+                  <span>
+                    We&apos;ll use your email only to reply to your enquiry. No spam.{' '}
+                    <button
+                      type="button"
+                      onClick={onOpenPrivacy}
+                      className="underline text-[#A8EBD3] hover:text-white transition-colors cursor-pointer rounded-xs"
+                    >
+                      Privacy policy
+                    </button>
+                    .
+                  </span>
+                </label>
+
+                {errorMessage && (
+                  <p role="alert" className="text-xs text-[#FCA5A5] font-medium">
+                    {errorMessage}
+                  </p>
+                )}
+
+                {fallbackNotice && (
+                  <div
+                    role="status"
+                    className="p-3 rounded-[12px] bg-[#14624F]/30 border border-[#6FD6B0]/45 text-[12.5px] text-[#A8EBD3] leading-relaxed"
+                  >
+                    {fallbackNotice}
+                  </div>
+                )}
+              </form>
+            )}
           </div>
-          <div className="flex items-center gap-1 text-[#E8943A] mb-1">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-3.5 h-3.5 fill-current" />
-            ))}
-          </div>
-          <p className="text-xs font-medium text-[#0F2A35]">4.8 on Google (sample)</p>
-          <p className="text-[10px] text-[#5E6F77] mt-0.5">Verified trade profile sync</p>
-        </motion.div>
-      </Container>
+        </div>
+      </div>
     </section>
   );
 }

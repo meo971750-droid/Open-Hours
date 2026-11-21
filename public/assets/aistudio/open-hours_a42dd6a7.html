@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Hours | Websites that win inquiries for local trades</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0e2a35;--teal:#12414f;--deep:#0a1f28;--cream:#f7f4ee;--paper:#fff;--amber:#f4a73b;--mint:#bfe3d6;--lilac:#d9d0f5;--rose:#fbd3cc;--mut:#5c6f77;--line:#e3ddd0}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{font-family:'Bricolage Grotesque',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.55;overflow-x:hidden}
+h1,h2,h3{font-family:'Instrument Serif',Georgia,serif;font-weight:400;line-height:1.02;letter-spacing:-.01em}
+h2{font-size:clamp(2.2rem,5vw,3.8rem);text-align:center}
+.sub{max-width:560px;margin:14px auto 0;text-align:center;color:var(--mut)}
+section{padding:96px 24px}
+.wrap{max-width:1180px;margin:auto}
+.btn{display:inline-block;background:var(--ink);color:#fff;padding:14px 26px;border-radius:999px;text-decoration:none;font-weight:600;border:0;cursor:pointer;font:inherit;font-weight:600}
+.btn.amber{background:var(--amber);color:var(--deep)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+.ph{background:linear-gradient(135deg,#cfe1e0,#e8e0f7);display:grid;place-items:center;color:var(--mut);font-size:.8rem;text-align:center;padding:8px}
+nav{position:absolute;inset:0 0 auto 0;display:flex;justify-content:space-between;align-items:center;padding:22px 40px;z-index:5}
+nav b{font-size:1.3rem}nav .links{display:flex;gap:28px;font-size:.95rem}nav a{color:inherit;text-decoration:none}
+/* HERO */
+#hero{position:relative;padding:150px 24px 0;text-align:center;overflow:hidden;min-height:900px}
+#hero h1{font-size:clamp(3rem,8vw,6.4rem);max-width:900px;margin:0 auto}
+#hero h1 em{display:inline-block;background:var(--mint);border-radius:18px;padding:0 .18em;font-style:normal}
+#hero p.lead{max-width:520px;margin:22px auto;color:var(--mut);font-size:1.1rem}
+.trust{display:flex;gap:14px;justify-content:center;align-items:center;margin-top:26px;flex-wrap:wrap}
+.faces{display:flex}.faces span{width:44px;height:44px;border-radius:50%;border:3px solid var(--cream);margin-left:-10px;background:linear-gradient(135deg,var(--amber),var(--rose));display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.faces span:first-child{margin:0}
+.trust small{text-align:left;font-size:.9rem}
+.tile{position:absolute;width:64px;height:64px;border-radius:16px;background:#fff;box-shadow:0 10px 30px rgba(14,42,53,.12);display:grid;place-items:center;font-weight:700;font-size:1.5rem;animation:fl 7s ease-in-out infinite}
+@keyframes fl{50%{transform:translateY(-16px) rotate(3deg)}}
+.phone{position:relative;width:300px;height:520px;margin:60px auto 0;background:var(--deep);border-radius:44px 44px 0 0;padding:26px 20px;color:#fff;text-align:left;box-shadow:0 -10px 60px rgba(18,65,79,.25)}
+.phone .notch{width:70px;height:8px;border-radius:9px;background:#223a45;margin:0 auto 20px}
+.phone h3{font-size:2rem}.phone .big{font-family:'Instrument Serif';font-size:4.4rem;line-height:1;margin:34px 0 14px}
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mini div{border-radius:16px;padding:14px;color:var(--deep);font-size:.8rem}.mini b{display:block;font-size:1.5rem}
+.float{position:absolute;background:#fff;border-radius:18px;padding:14px 18px;box-shadow:0 14px 40px rgba(14,42,53,.12);text-align:left;font-size:.85rem;animation:fl 8s ease-in-out infinite}
+.float b{display:block;font-size:1.5rem}
+/* CARDS */
+.cards{display:flex;gap:16px;height:460px;margin-top:56px}
+.card{flex:1;background:#fff;border-radius:28px;padding:28px;overflow:hidden;position:relative;transition:flex .5s cubic-bezier(.2,.8,.2,1);cursor:pointer;min-width:0}
+.card:hover,.card:focus-within,.card.on{flex:3}
+.card h3{font-size:2rem}.card p{color:var(--mut);margin-top:8px;max-width:300px;font-size:.95rem}
+.demo{position:absolute;left:28px;right:28px;bottom:28px;height:190px;border-radius:20px;opacity:.55;transition:opacity .4s;padding:16px;font-size:.85rem;overflow:hidden}
+.card:hover .demo,.card.on .demo{opacity:1}
+.d1{background:linear-gradient(135deg,var(--mint),#f3fbf7)}.d2{background:linear-gradient(135deg,var(--lilac),#f6f3ff)}.d3{background:linear-gradient(135deg,#ffd9a8,#fff3e2)}.d4{background:linear-gradient(135deg,#cde4ff,#f0f7ff)}
+.bar{height:12px;border-radius:9px;background:rgba(14,42,53,.18);margin:8px 0;width:0;transition:width 1s}
+.card:hover .bar,.card.on .bar{width:var(--w)}
+.chat{background:#fff;border-radius:12px;padding:8px 12px;margin:6px 0;width:fit-content;max-width:90%;box-shadow:0 4px 12px rgba(0,0,0,.06);transform:translateY(10px);opacity:0;transition:.5s}
+.card:hover .chat,.card.on .chat{transform:none;opacity:1}.card:hover .chat:nth-child(2){transition-delay:.4s}.card:hover .chat:nth-child(3){transition-delay:.8s}
+/* PROOF */
+#proof{background:#fff}
+.masonry{columns:3;column-gap:18px;margin-top:52px}
+.pc{break-inside:avoid;background:var(--cream);border-radius:24px;padding:18px;margin-bottom:18px}
+.pc .ph{height:200px;border-radius:16px;margin-bottom:14px}.pc.t .ph{height:260px}
+.pc .who{display:flex;align-items:center;gap:10px;font-size:.9rem;margin-bottom:8px}.pc .who i{width:34px;height:34px;border-radius:50%;background:var(--amber);display:block}
+.pc .stat{font-family:'Instrument Serif';font-size:2.6rem;line-height:1}
+.pc.dk{background:var(--teal);color:#fff}
+/* DELIVER */
+#deliver .grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;margin-top:20px}
+#deliver h2{text-align:left}
+.step{border-top:1px solid var(--line);padding:22px 0;cursor:pointer;opacity:.45;transition:.3s;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;font:inherit;color:inherit}
+.step.on{opacity:1}.step b{font-size:1.2rem;display:block}.step span{display:none;color:var(--mut);margin-top:6px}.step.on span{display:block}
+.stage{border-radius:44px;min-height:480px;background:linear-gradient(160deg,#7ab8ff,#bfe3d6 55%,#1f5a8c);display:grid;place-items:center;padding:30px}
+.panel{background:#fff;border-radius:26px;padding:26px;width:100%;max-width:380px;box-shadow:0 0 0 8px rgba(255,255,255,.4)}
+.panel h3{font-size:2rem;margin-bottom:14px}.row{display:flex;align-items:center;gap:12px;margin:10px 0;font-weight:500}
+.row i{width:34px;height:34px;border-radius:50%;background:#6db0ff;color:#fff;display:grid;place-items:center;font-style:normal;font-size:.85rem}
+.row s{margin-left:auto;text-decoration:none;color:var(--mut);font-size:.85rem}
+.tog{width:44px;height:24px;border-radius:99px;background:var(--amber);position:relative;margin-left:auto}.tog:after{content:"";position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff}
+/* BENTO */
+.bento{display:grid;grid-template-columns:1.1fr 1fr 1fr;grid-template-rows:260px 300px;gap:16px;margin-top:52px}
+.b{background:#fff;border-radius:28px;padding:26px;position:relative;overflow:hidden}
+.b h3{font-size:1.7rem}.b p{color:var(--mut);font-size:.9rem;margin-top:6px;max-width:300px}
+.b.tall{grid-row:span 2;background:linear-gradient(180deg,#fff 40%,#6a4fe0)}.b.wide{grid-column:span 2}
+.chip{display:inline-block;background:rgba(255,255,255,.75);border-radius:99px;padding:6px 14px;font-size:.8rem;margin:4px 4px 0 0}
+.orb{position:absolute;right:-30px;bottom:-30px;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffd18a,var(--amber) 55%,#ff8a3d)}
+/* REVIEWS */
+#reviews{background:linear-gradient(160deg,#4a86d6,#a99be8 55%,#f5d9ee);color:#fff;overflow:hidden}
+.car{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:48px}
+.slide{display:none;background:#fff;color:var(--ink);border-radius:32px;padding:34px;width:min(780px,92%);grid-template-columns:1fr 1fr;gap:28px;min-height:420px}
+.slide.on{display:grid}.slide .ph{border-radius:20px;min-height:300px}
+.slide .stat{font-family:'Instrument Serif';font-size:2.6rem;line-height:1}
+.slide q{display:block;font-family:'Instrument Serif';font-size:1.7rem;line-height:1.15;margin-top:70px;quotes:"“" "”"}
+.peek{width:70px;height:240px;border-radius:20px;background:rgba(255,255,255,.55);border:0;cursor:pointer;font-size:1.4rem;color:var(--ink)}
+.dots{display:flex;gap:8px;justify-content:center;margin-top:24px}.dots i{width:10px;height:10px;border-radius:9px;background:rgba(255,255,255,.5);transition:.3s}.dots i.on{width:44px;background:#fff}
+/* WORK */
+.work{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:48px}
+.w{aspect-ratio:3/4;border-radius:24px;overflow:hidden;position:relative;color:#fff;display:flex;align-items:flex-end;padding:18px}
+.w:nth-child(1){background:linear-gradient(160deg,#355c6b,#0e2a35)}.w:nth-child(2){background:linear-gradient(160deg,#a56b34,#3a2410)}.w:nth-child(3){background:linear-gradient(160deg,#4d7a62,#14301f)}.w:nth-child(4){background:linear-gradient(160deg,#5d5aa8,#1d1b4a)}
+.w small{display:block;opacity:.8}.w b{font-family:'Instrument Serif';font-size:1.5rem;font-weight:400}
+/* FRAMEWORK */
+#fw{background:var(--deep);color:#fff}#fw .sub{color:#a9bfc7}
+.fw{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:52px}
+.f{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:26px;padding:26px;min-height:260px}
+.f h3{font-size:1.7rem;margin:50px 0 8px}.f p{color:#a9bfc7;font-size:.92rem}.f .n{color:var(--amber);font-size:.9rem}
+/* FAQ */
+.faq{max-width:760px;margin:48px auto 0}
+details{border-bottom:1px solid var(--line);padding:20px 0}summary{cursor:pointer;font-weight:600;font-size:1.1rem;list-style:none;display:flex;justify-content:space-between}
+summary:after{content:"+";font-size:1.4rem;line-height:1}details[open] summary:after{content:"–"}details p{color:var(--mut);margin-top:10px}
+/* CTA/FOOT */
+#cta{background:var(--teal);color:#fff;text-align:center}
+footer{background:var(--deep);color:#a9bfc7;padding:56px 40px 28px}
+footer .r{display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px;max-width:1180px;margin:auto}
+footer .mega{font-family:'Instrument Serif';font-size:clamp(5rem,22vw,18rem);line-height:.8;color:#fff;opacity:.06;text-align:center;margin-top:40px;overflow:hidden}
+
+/* scroll deliver */
+#deliver{padding:0;height:420vh}#deliver .sticky{position:sticky;top:0;height:100vh;display:flex;align-items:center;padding:0 24px}
+#deliver .wrap{width:100%}#deliver .grid{margin-top:0}
+.step{cursor:default}.prog{height:3px;background:var(--line);margin-top:24px;border-radius:9px}.prog i{display:block;height:100%;width:0;background:var(--amber);border-radius:9px}
+.panel>*{animation:pin .6s both}.panel>*:nth-child(2){animation-delay:.1s}.panel>*:nth-child(3){animation-delay:.2s}.panel>*:nth-child(4){animation-delay:.3s}
+@keyframes pin{from{opacity:0;transform:translateY(14px)}}
+/* marquee */
+#work{padding-left:0;padding-right:0;overflow:hidden}.rh{font-size:clamp(1.8rem,3.4vw,2.6rem);text-align:center;margin:54px 0 22px}
+.mq{overflow:hidden}.track{display:flex;gap:16px;width:max-content;padding:0 8px}
+.track.l{animation:ml 42s linear infinite}.track.r{animation:mr 42s linear infinite}.mq:hover .track{animation-play-state:paused}
+@keyframes ml{to{transform:translateX(-50%)}}@keyframes mr{from{transform:translateX(-50%)}to{transform:none}}
+.mc{width:420px;aspect-ratio:16/10;border-radius:24px;padding:10px;background:#fff;box-shadow:0 0 0 1px var(--line)}
+.mc div{height:100%;border-radius:16px;display:flex;align-items:flex-end;padding:16px;color:#fff;font-family:'Instrument Serif';font-size:1.5rem}
+/* timeline */
+#fw{background:var(--cream);color:var(--ink)}#fw .sub{color:var(--mut)}
+.tl{position:relative;max-width:980px;margin:60px auto 0}.tl:before{content:"";position:absolute;left:50%;top:0;bottom:0;width:6px;margin-left:-3px;background:var(--line);border-radius:9px}
+.ts{position:relative;display:flex;justify-content:flex-end;padding:0 0 70px 0}.ts:before{content:"";position:absolute;left:50%;top:6px;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:var(--amber)}
+.ts .tx{width:46%}.ts:nth-child(even){justify-content:flex-start}.ts:nth-child(even) .tx{text-align:right}
+.tx small{color:#c77d0c;font-weight:700;font-size:.8rem}.tx h3{font-size:2.3rem;margin:4px 0 8px}.tx p{color:var(--mut);font-size:.95rem}
+.vis{margin-top:18px;height:200px;border-radius:24px;background:linear-gradient(135deg,#0a1f28,#12414f 60%,#f4a73b);display:flex;gap:12px;align-items:center;justify-content:center}
+.vis span{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:99px;padding:12px 20px;backdrop-filter:blur(6px)}
+/* faq + cal + footer */
+.fq{display:grid;grid-template-columns:1fr 1.3fr;gap:60px}
+.cal{display:grid;grid-template-columns:1fr 1.4fr .6fr;gap:24px;max-width:860px;margin:44px auto 0;background:#fff;color:var(--ink);border-radius:28px;padding:30px;text-align:left}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.cg b{display:grid;place-items:center;aspect-ratio:1;border-radius:50%;font-weight:500;font-size:.85rem}.cg b.a{background:#e3f1ec;cursor:pointer}.cg b.s{background:var(--amber)}
+.slots{display:grid;gap:8px;align-content:start}.slots button{padding:10px;border-radius:12px;border:1px solid var(--line);background:#fff;font:inherit;cursor:pointer}
+footer .r>div:first-child{max-width:460px}
+@media(max-width:900px){.fq,.cal{grid-template-columns:1fr}.mc{width:300px}#deliver{height:auto}#deliver .sticky{position:static;height:auto;padding:80px 24px}.ts,.ts:nth-child(even){justify-content:flex-start;padding-left:34px}.tl:before{left:8px}.ts:before{left:8px}.ts .tx,.ts:nth-child(even) .tx{width:100%;text-align:left}}
+@media(max-width:900px){nav .links{display:none}.cards{flex-direction:column;height:auto}.card,.card:hover{flex:none;min-height:340px}.masonry{columns:1}#deliver .grid,.slide.on{grid-template-columns:1fr}.bento,.work,.fw{grid-template-columns:1fr 1fr}.bento{grid-template-rows:auto}.b.tall,.b.wide{grid-row:auto;grid-column:auto;min-height:240px}.peek{display:none}.tile{display:none}.float{display:none}}
+@media(max-width:560px){.bento,.work,.fw{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<section id="hero">
+<nav><b>Open Hours</b><div class="links"><a href="#how">Services</a><a href="#proof">Results</a><a href="#work">Work</a><a href="#faq">FAQ</a></div><a class="btn amber" href="#cta">Book a call</a></nav>
+<!-- AI tool logos: replace letters with real logo images -->
+<div class="tile" style="left:6%;top:200px">G</div>
+<div class="tile" style="left:16%;top:420px;animation-delay:-2s">C</div>
+<div class="tile" style="right:7%;top:210px;animation-delay:-4s">AI</div>
+<div class="tile" style="right:17%;top:440px;animation-delay:-1s">P</div>
+<div class="tile" style="left:3%;top:640px;animation-delay:-3s">N</div>
+<div class="tile" style="right:4%;top:660px;animation-delay:-5s">M</div>
+<h1>Your phone rings. Your website <em>answers.</em></h1>
+<p class="lead">We build websites for Irish and Maltese trade businesses, then use SEO, GEO, AEO and AI to bring in inquiries and handle the first reply.</p>
+<a class="btn" href="#cta">Get your free website review</a>
+<div class="trust"><div class="faces"><span>JM</span><span>AB</span><span>SK</span><span>DL</span><span>+</span></div><small><b>Trusted by Professionals Like You</b><br>Electricians, roofers, plumbers and builders</small></div>
+<div class="phone">
+<div class="notch"></div><h3>Inquiry<br>Dashboard</h3>
+<div class="big">+38 <small style="font-size:1.4rem">this month</small></div>
+<div class="mini"><div style="background:var(--mint)"><b>€4.2k</b>Quoted jobs</div><div style="background:var(--rose)"><b>12s</b>First reply</div></div>
+</div>
+<div class="float" style="left:12%;bottom:200px"><small>Google ranking</small><b>#3 → #1</b></div>
+<div class="float" style="right:11%;bottom:240px;animation-delay:-3s"><small>Found by AI answers</small><b>+64%</b></div>
+</section>
+
+<section id="how"><div class="wrap">
+<h2>A website that works while you're on the job</h2>
+<p class="sub">Four jobs your site should do. Hover a card to see it.</p>
+<div class="cards">
+<div class="card on" tabindex="0"><h3>Get found</h3><p>Local SEO so people searching "plumber near me" see you first.</p><div class="demo d1"><div class="bar" style="--w:90%"></div><div class="bar" style="--w:65%"></div><div class="bar" style="--w:78%"></div></div></div>
+<div class="card" tabindex="0"><h3>Get cited</h3><p>GEO and AEO so ChatGPT, Gemini and Claude recommend you.</p><div class="demo d2"><div class="chat">Best roofer in Cork?</div><div class="chat">Try O'Brien Roofing, rated 4.9.</div></div></div>
+<div class="card" tabindex="0"><h3>Reply fast</h3><p>An AI assistant answers every inquiry in seconds, day or night.</p><div class="demo d3"><div class="chat">Can you quote a rewire?</div><div class="chat">Yes. Where is the property?</div><div class="chat">Sliema, 3 bed.</div></div></div>
+<div class="card" tabindex="0"><h3>Book jobs</h3><p>Leads land in your calendar with details already collected.</p><div class="demo d4"><div class="bar" style="--w:70%"></div><div class="bar" style="--w:45%"></div><div class="bar" style="--w:85%"></div></div></div>
+</div></div></section>
+
+<section id="proof"><div class="wrap">
+<h2>Clients love us</h2>
+<p class="sub">Real trades. Real inquiries. Designs, results and words from the people we work with.</p>
+<div class="masonry">
+<div class="pc t"><div class="ph">Video testimonial</div><div class="who"><i></i><b>Seán, Dublin electrician</b></div><p>"Three new jobs in the first week."</p></div>
+<div class="pc dk"><div class="stat">+212%</div><p>More inquiries in 90 days for a Malta roofing firm.</p></div>
+<div class="pc"><div class="ph">Website design</div><div class="who"><i></i><b>Marija, Valletta plumber</b></div><p>"Customers now say they found us on ChatGPT."</p></div>
+<div class="pc"><div class="stat">12 sec</div><p>Average first reply, day or night.</p></div>
+<div class="pc t"><div class="ph">Video testimonial</div><div class="who"><i></i><b>Conor, Galway builder</b></div><p>"Finally a site that looks like our work."</p></div>
+<div class="pc"><div class="ph">Google ranking screenshot</div><p>Page one for 14 local searches.</p></div>
+</div></div></section>
+
+<section id="deliver"><div class="sticky"><div class="wrap"><div class="grid">
+<div>
+<h2>The way we deliver</h2>
+<div class="prog"><i id="prog"></i></div>
+<div>
+<div class="step on"><b>Design with your trade in mind</b><span>Layouts built around quote requests, not decoration.</span></div>
+<div class="step"><b>Optimise for search and AI</b><span>SEO, GEO and AEO set up from day one.</span></div>
+<div class="step"><b>Plug in the AI assistant</b><span>Replies, qualifies and books while you work.</span></div>
+<div class="step"><b>Launch and keep improving</b><span>Monthly reports on inquiries and rankings.</span></div>
+</div></div>
+<div class="stage"><div class="panel" id="panel"></div></div>
+</div></div></div></section>
+
+<section><div class="wrap">
+<h2>We're best in</h2>
+<p class="sub">One team handles design, search and automation, so everything stays consistent.</p>
+<div class="bento">
+<div class="b tall"><h3>Local SEO</h3><p>Rank in the towns where you work.</p><div style="margin-top:150px;text-align:center;color:#fff;font-family:'Instrument Serif';font-size:3.4rem">Page 1</div></div>
+<div class="b"><h3>GEO and AEO</h3><p>Be the answer in AI search.</p><span class="chip">Gemini</span><span class="chip">Claude</span><span class="chip">GPT</span><div class="orb" style="opacity:.5"></div></div>
+<div class="b"><h3>AI assistant</h3><p>Replies to every inquiry fast.</p><div class="orb" style="background:radial-gradient(circle at 40% 35%,#d9d0f5,#8b73e8)"></div></div>
+<div class="b wide"><h3>Websites that look like your work</h3><p>Custom design for Irish and Maltese trades. Fast, clear and built to win quotes.</p><div style="margin-top:20px"><a class="btn" href="#cta">Book a call</a> <a class="btn amber" href="#work">View projects</a></div></div>
+</div></div></section>
+
+<section id="reviews"><div class="wrap">
+<h2>Real customers. Real results.</h2>
+<div class="car"><button class="peek" aria-label="Previous">‹</button>
+<div>
+<div class="slide on"><div><div class="stat">3 to 5 jobs added per month</div><q>They turned our website into the best salesperson we have.</q><p style="margin-top:14px;font-size:.85rem;color:var(--mut)">Seán Byrne, Founder at Byrne Electrical</p></div><div class="ph">Client photo</div></div>
+<div class="slide"><div><div class="stat">First on Google Maps</div><q>We now get quote requests before breakfast.</q><p style="margin-top:14px;font-size:.85rem;color:var(--mut)">Marija Camilleri, Owner at Camilleri Plumbing</p></div><div class="ph">Client photo</div></div>
+<div class="slide"><div><div class="stat">12 hours saved per week</div><q>The assistant answers while we are on the roof.</q><p style="margin-top:14px;font-size:.85rem;color:var(--mut)">Conor Walsh, Director at Walsh Roofing</p></div><div class="ph">Client photo</div></div>
+</div><button class="peek" aria-label="Next">›</button></div>
+<div class="dots"><i class="on"></i><i></i><i></i></div>
+</div></section>
+
+<section id="work"><div class="wrap">
+<h2>Our work</h2><p class="sub">Websites, search wins and AI setups we built for trades across Ireland and Malta.</p></div>
+<h3 class="rh">Websites for electricians and builders</h3>
+<div class="mq"><div class="track l" data-n="1"></div></div>
+<h3 class="rh">Local SEO and AI search wins</h3>
+<div class="mq"><div class="track r" data-n="2"></div></div>
+</section>
+
+<section id="fw"><div class="wrap">
+<h2>The framework</h2><p class="sub">What we do, how we do it and why you need it.</p>
+<div class="tl">
+<div class="ts"><div class="tx"><small>Step 01</small><h3>Book a free call</h3><p>Tell us your trade, your area and your goals. We match you to the right plan.</p><div class="vis v1"><span>SEO</span><span>AI</span><span>Calls</span></div></div></div>
+<div class="ts"><div class="tx"><small>Step 02</small><h3>Meet your project lead</h3><p>One person owns your project, backed by our design and search team, with support six days a week.</p><div class="vis v2"><span>Your lead</span></div></div></div>
+<div class="ts"><div class="tx"><small>Step 03</small><h3>Review and launch</h3><p>You approve the design first. We then build, connect the AI assistant and go live.</p><div class="vis v3"><span>Approved</span></div></div></div>
+<div class="ts"><div class="tx"><small>Step 04</small><h3>Grow every month</h3><p>Monthly reports show new inquiries, rankings and AI mentions. We keep improving.</p><div class="vis v4"><span>+38 inquiries</span></div></div></div>
+</div></div></section>
+
+<section id="faq"><div class="wrap fq">
+<div><h2 style="text-align:left">Frequently asked questions</h2><p style="color:var(--mut);margin:14px 0 22px">Still unsure? We reply the same day.</p><a class="btn" href="#cta">Get a quote</a></div>
+<div>
+<details open><summary>How long does a website take?</summary><p>Most sites launch in two to three weeks.</p></details>
+<details><summary>What are GEO and AEO?</summary><p>They help AI tools like ChatGPT, Gemini and Claude recommend your business in their answers.</p></details>
+<details><summary>Do you only work with Irish and Maltese trades?</summary><p>That is our focus, so we know the local search terms and customers.</p></details>
+<details><summary>Can I edit the website myself?</summary><p>Yes. We also handle updates if you prefer.</p></details>
+<details><summary>What does it cost?</summary><p>Plans start from €790. Pricing is fixed in writing before we begin.</p></details>
+<details><summary>What does the AI assistant do?</summary><p>It answers inquiries, collects job details and books site visits.</p></details>
+</div></div></section>
+
+<section id="cta"><div class="wrap"><h2>Book your free call</h2><p class="sub" style="color:#bcd">Pick a time that suits you. We will review your site before we talk.</p>
+<div class="cal"><div class="ci"><b>Intro call</b><p>30 minutes · Google Meet</p></div>
+<div><div class="cg" id="cg"></div></div>
+<div class="slots"><button>10:00</button><button>11:30</button><button>14:00</button><button>16:30</button></div></div></div></section>
+
+<footer><div class="r"><div><h3 style="font-size:2.6rem;color:#fff;max-width:420px">We're excited to collaborate with you.</h3><a class="btn amber" style="margin-top:22px" href="#cta">Contact us</a></div>
+<div><b style="color:#fff">Contact</b><br>hello@openhours.studio</div>
+<div><b style="color:#fff">Locations</b><br>Dublin, Ireland<br>Valletta, Malta</div></div><div class="mega">open hours</div></footer>
+
+<script>
+const steps=[...document.querySelectorAll('.step')],panel=document.getElementById('panel'),prog=document.getElementById('prog'),sec=document.getElementById('deliver');
+const P=[
+'<h3>Design</h3><div class="row"><i>H</i>Hero with call button<s>Done</s></div><div class="row"><i>Q</i>Quote request form<s>Done</s></div><div class="row"><i>P</i>Project gallery<s>Done</s></div>',
+'<h3>Search</h3><div class="row"><i>S</i>Local SEO<div class="tog"></div></div><div class="row"><i>G</i>GEO<div class="tog"></div></div><div class="row"><i>A</i>AEO<div class="tog"></div></div>',
+'<h3>AI assistant</h3><div class="row"><i>1</i>Greets visitors<s>Live</s></div><div class="row"><i>2</i>Collects job details<s>Live</s></div><div class="row"><i>3</i>Books the visit<s>Live</s></div>',
+'<h3>Monthly report</h3><div class="row"><i>↑</i>Inquiries<s>+38</s></div><div class="row"><i>↑</i>Rankings<s>+9</s></div><div class="row"><i>↑</i>AI mentions<s>+21</s></div>'];
+let cur=-1;function pick(i){if(i===cur)return;cur=i;steps.forEach((s,j)=>s.classList.toggle('on',i===j));panel.innerHTML=P[i]}
+function onScroll(){const r=sec.getBoundingClientRect(),t=Math.min(1,Math.max(0,-r.top/(r.height-innerHeight)));prog.style.width=t*100+'%';pick(Math.min(3,Math.floor(t*4)))}
+addEventListener('scroll',onScroll,{passive:true});onScroll();
+/* marquees */
+const cols=[['#355c6b,#0e2a35','Byrne Electrical, Dublin'],['#a56b34,#3a2410','Camilleri Plumbing, Valletta'],['#4d7a62,#14301f','Green Row, Galway'],['#5d5aa8,#1d1b4a','Walsh Roofing, Sliema'],['#12414f,#f4a73b','Page 1 for "electrician Cork"'],['#6a4fe0,#bfe3d6','Cited by AI search']];
+document.querySelectorAll('.track').forEach(t=>{const o=+t.dataset.n===1?cols.slice(0,4):cols.slice(2);const h=o.map(c=>`<div class="mc"><div style="background:linear-gradient(150deg,${c[0]})">${c[1]}</div></div>`).join('');t.innerHTML=h+h});
+/* calendar */
+const cg=document.getElementById('cg');let h='';['M','T','W','T','F','S','S'].forEach(d=>h+='<b>'+d+'</b>');for(let i=1;i<=28;i++)h+=`<b class="${i%7>0&&i%7<6?'a':''}">${i}</b>`;cg.innerHTML=h;
+cg.onclick=e=>{if(e.target.classList.contains('a')){cg.querySelectorAll('.s').forEach(x=>x.classList.remove('s'));e.target.classList.add('s')}};
+</script>
+</body>
+</html>

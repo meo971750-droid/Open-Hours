@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Scene1 from './Scene1';
-import Scene2 from './Scene2';
 import Scene3 from './Scene3';
 
 // SCENE_DURATIONS in seconds: [4.2, 4.8, 3.8] (total 12.8s)
@@ -286,9 +285,6 @@ export default function GetPageWalkthrough({
         >
           {activeSceneIndex === 0 && (
             <Scene1 progress={sceneProgressRef.current} />
-          )}
-          {activeSceneIndex === 1 && (
-            <Scene2 progress={sceneProgressRef.current} />
           )}
           {activeSceneIndex === 2 && (
             <Scene3 progress={sceneProgressRef.current} />

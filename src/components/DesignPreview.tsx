@@ -18,6 +18,8 @@ export default function DesignPreview({
       <img
         src={slide.mobileImage}
         alt={`Mobile website preview for ${slide.name}`}
+        width={400}
+        height={260}
         className={`w-full h-full object-cover object-top select-none ${className}`}
       />
     );
@@ -28,6 +30,8 @@ export default function DesignPreview({
       <img
         src={slide.image}
         alt={`Website design for ${slide.name}`}
+        width={400}
+        height={260}
         className={`w-full h-full object-cover object-top select-none ${className}`}
       />
     );
@@ -46,7 +50,7 @@ export default function DesignPreview({
           <span className="w-1.5 h-1.5 rounded-full bg-[#FFB74D]" />
           <span className="w-1.5 h-1.5 rounded-full bg-[#81C784]" />
         </div>
-        <span className="text-[9px] font-mono text-[#5E6F77]/80 truncate max-w-[120px]">
+        <span className="text-[9px] font-mono text-[#475754] truncate max-w-[120px]">
           {slide.town.toLowerCase()}.trade
         </span>
         <div className="w-3" />
@@ -60,12 +64,12 @@ export default function DesignPreview({
         >
           {slide.name}
         </div>
-        <h4
+        <p
           style={{ color: slide.palette.ink }}
           className="text-[13px] sm:text-[14px] font-bold leading-tight tracking-tight line-clamp-2 mb-1.5"
         >
           {slide.headline}
-        </h4>
+        </p>
         <div className="flex items-center gap-1.5">
           <div
             style={{
@@ -99,7 +103,7 @@ export default function DesignPreview({
             }}
             className="h-7 rounded border flex items-center justify-center"
           >
-            <span className="text-[8px] font-medium text-[#5E6F77]">
+            <span className="text-[8px] font-medium text-[#475754]">
               P{num}
             </span>
           </div>
@@ -107,7 +111,7 @@ export default function DesignPreview({
       </div>
 
       {/* Bottom Reviews Strip */}
-      <div className="pt-1 border-t border-[rgba(15,42,53,0.06)] flex items-center justify-between text-[8px] text-[#5E6F77] shrink-0">
+      <div className="pt-1 border-t border-[rgba(15,42,53,0.06)] flex items-center justify-between text-[8px] text-[#475754] shrink-0">
         <span>Google reviews appear here</span>
         <span className="w-1.5 h-1.5 rounded-full bg-[#2E9E6B]" />
       </div>

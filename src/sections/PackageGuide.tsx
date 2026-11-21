@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom';
 import { HelpCircle, ArrowRight } from 'lucide-react';
 import Container from '../components/Container';
 import Accent from '../components/Accent';
+import { config } from '../config';
+
+const tierName = (id: string, fallback: string) =>
+  config.pricing?.tiers?.find((t) => t.id === id)?.name || fallback;
 
 const GUIDE_ITEMS = [
   {
@@ -11,18 +15,18 @@ const GUIDE_ITEMS = [
     to: '/packages/1-page-website',
   },
   {
-    text: 'You need a small, complete website.',
-    label: 'Starter',
+    text: 'People search for your trade and you want them to find you and ask for a call or quote.',
+    label: tierName('starter', 'Get Found & Get Called'),
     to: '/packages/starter',
   },
   {
-    text: 'You miss calls on site and want enquiries handled.',
-    label: 'Standard',
+    text: 'You miss calls on site and want enquiries answered fast and booked into your calendar.',
+    label: tierName('standard', 'Fast Replies'),
     to: '/packages/standard',
   },
   {
-    text: 'You have many services, areas or bigger projects.',
-    label: 'Growth',
+    text: 'You want an ongoing system for enquiries, reviews and repeat work.',
+    label: tierName('growth', 'Full Growth Engine'),
     to: '/packages/growth',
   },
 ];

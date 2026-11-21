@@ -3,18 +3,20 @@ import { motion, useInView, useReducedMotion } from 'motion/react';
 import { ArrowRight, Play, Phone } from 'lucide-react';
 import Container from '../components/Container';
 import { config } from '../config';
-import { PACKAGES, SETUP_FROM } from '../content';
 
 export default function WhyOpenHours() {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-6%' });
   const shouldReduceMotion = useReducedMotion();
 
+  const growthTier = (config.pricing?.tiers || []).find((p) => p.id === 'growth');
+  const tierName = growthTier?.name || 'Full Growth Engine';
+
   const growth = config.growth || {
     theme: 'light',
-    pill: 'Growth package',
+    pill: tierName,
     title: 'Go Further',
-    titleAccent: 'Our Growth Package',
+    titleAccent: tierName,
     cards: {
       pages: {
         title: 'Pages for every service and area',
@@ -25,15 +27,17 @@ export default function WhyOpenHours() {
         text: 'Our responsive approach ensures your website and Google profile adapt to every screen and search.',
       },
       list: {
-        title: 'Everything in Growth',
+        title: `Everything in ${tierName}`,
       },
     },
   };
 
-  // 1. Data from pricing tiers (Growth)
-  const growthTier = PACKAGES.find((p) => p.id === 'growth');
-  const setupAmount = growthTier?.setupAmount ?? SETUP_FROM.growth;
-  const priceDisplay = setupAmount ? `€${setupAmount.toLocaleString('en-IE')}` : null;
+  // 1. Data from pricing tiers (growth)
+  const setupAmount = growthTier?.price;
+  const monthlyAmount = growthTier?.monthlyPrice;
+  const priceDisplay = setupAmount
+    ? `from €${setupAmount.toLocaleString('en-IE')}${monthlyAmount ? ` + €${monthlyAmount}/month` : ''}`
+    : null;
 
   // Check matching promises for "Fixed price. A written quote before we start."
   const hasMatchingPromises = (config.promises || []).some(
@@ -42,14 +46,18 @@ export default function WhyOpenHours() {
       p.toLowerCase().includes('price stays the same')
   );
 
-  // Growth tier feature checks for Card 1 & Card 2
-  const growthFeaturesList = growthTier?.features || [];
-  const hasServiceAreaPages = growthFeaturesList.some(
-    (f) =>
-      f.toLowerCase().includes('page') ||
-      f.toLowerCase().includes('area') ||
-      f.toLowerCase().includes('service')
+  // Feature-flagged bullets from growth tier
+  const featuresMap = config.features as unknown as Record<string, boolean | number | undefined>;
+  const enabledSetup = (growthTier?.setupItems || []).filter(
+    (item) => !item.flag || Boolean(featuresMap[item.flag])
   );
+  const enabledMonthly = (growthTier?.monthlyItems || []).filter(
+    (item) => !item.flag || Boolean(featuresMap[item.flag])
+  );
+
+  const hasServiceAreaPages =
+    Boolean(config.features.serviceAreaPages) ||
+    enabledSetup.some((f) => f.label.toLowerCase().includes('geo'));
 
   const card1Title = hasServiceAreaPages
     ? growth.cards?.pages?.title || 'Pages for every service and area'
@@ -66,31 +74,22 @@ export default function WhyOpenHours() {
     growth.cards?.profile?.text ||
     'Our responsive approach ensures your website and Google profile adapt to every screen and search.';
 
-  // Card 3 Bullet list items: features from Growth tier
-  const rawBullets: string[] = [];
-  if (growthTier?.featuresHeading) {
-    rawBullets.push(growthTier.featuresHeading);
-  }
-  growthFeaturesList.forEach((feat) => {
-    rawBullets.push(feat);
-  });
-
-  // Ensure 8 clean items for the two-column grid matching the reference
-  const fallbackBullets = [
-    'Dedicated service & area pages',
-    'Advanced Google Business Profile',
-    'Enquiry tracking & monthly report',
-    'Review-request automated flow',
-    'Google Ads campaign set-up',
-    'Speed & mobile optimisation',
-    'Local search foundations',
-    'Fixed price & direct phone support',
+  const rawBullets: string[] = [
+    ...(growthTier?.everythingInLabel ? [growthTier.everythingInLabel] : []),
+    ...enabledSetup.map((i) => i.label),
+    ...enabledMonthly.map((i) => i.label),
   ];
 
-  const bulletItems =
-    rawBullets.length >= 6
-      ? rawBullets.slice(0, 8)
-      : fallbackBullets;
+  const fallbackBullets = [
+    'Voice agent',
+    'Old-client reactivation',
+    'Review engine',
+    'GEO & Google Ads set-up',
+    'Content and Google Business Profile posts',
+    'Monthly strategy call & reporting dashboard',
+  ];
+
+  const bulletItems = rawBullets.length >= 4 ? rawBullets.slice(0, 8) : fallbackBullets;
 
   const midPoint = Math.ceil(bulletItems.length / 2);
   const col1Bullets = bulletItems.slice(0, midPoint);
@@ -99,52 +98,47 @@ export default function WhyOpenHours() {
   // Client avatar photos from heroProof
   const clientAvatars = (config.heroProof?.avatars || []).slice(0, 4);
 
-  // Smooth scroll and highlight Growth card in Pricing section
+  // Smooth scroll and highlight Full Growth Engine card in Pricing section
   const handleScrollToGrowthPricing = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     const pricingEl = document.getElementById('pricing');
     if (pricingEl) {
       pricingEl.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' });
       setTimeout(() => {
-        const h3s = Array.from(pricingEl.querySelectorAll('h3'));
-        const growthH3 = h3s.find((h) => h.textContent?.trim() === 'Growth');
         const cardEl =
-          (growthH3?.closest('div[class*="rounded-[24px]"]') as HTMLElement) ||
-          (growthH3?.parentElement?.parentElement?.parentElement as HTMLElement);
+          (pricingEl.querySelector('article[data-tier-id="growth"]') as HTMLElement) || null;
         if (cardEl) {
           cardEl.classList.add(
             'ring-4',
-            'ring-[#E07A5F]',
+            'ring-[#14624F]',
             'ring-offset-4',
             'transition-all',
             'duration-300'
           );
           setTimeout(() => {
-            cardEl.classList.remove('ring-4', 'ring-[#E07A5F]', 'ring-offset-4');
+            cardEl.classList.remove('ring-4', 'ring-[#14624F]', 'ring-offset-4');
           }, 1500);
         }
       }, 400);
     }
   };
 
-  // Smooth scroll to contact form and preselect Growth option chip
+  // Smooth scroll to contact form and preselect Full Growth Engine
   const handleGetGrowth = (e: React.MouseEvent) => {
     e.preventDefault();
-    const aboutEl = document.getElementById('about') || document.getElementById('final-cta');
-    if (aboutEl) {
-      aboutEl.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' });
-      setTimeout(() => {
-        const radioGroup = document.querySelector(
-          '[role="radiogroup"][aria-label="Package option selection"]'
-        );
-        if (radioGroup) {
-          const buttons = Array.from(radioGroup.querySelectorAll('button'));
-          const growthBtn = buttons.find((b) => b.textContent?.includes('Growth'));
-          if (growthBtn && growthBtn.getAttribute('aria-checked') !== 'true') {
-            growthBtn.click();
-          }
-        }
-      }, 450);
+    if (growthTier) {
+      window.dispatchEvent(
+        new CustomEvent('openhours:prefill-contact', {
+          detail: {
+            option: growthTier.name,
+            message: `I'm interested in the ${growthTier.name} package (from €${growthTier.price.toLocaleString('en-IE')} + €${growthTier.monthlyPrice}/month).`,
+          },
+        })
+      );
+    }
+    const contactEl = document.getElementById('contact') || document.getElementById('about') || document.getElementById('final-cta');
+    if (contactEl) {
+      contactEl.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' });
     }
   };
 
@@ -157,13 +151,13 @@ export default function WhyOpenHours() {
   };
 
   const titleLine1 = growth.title || 'Go Further';
-  const titleAccent = growth.titleAccent || 'Our Growth Package';
+  const titleAccent = growth.titleAccent || tierName;
 
   return (
     <section
       id="why-open-hours"
       ref={sectionRef}
-      aria-label="Growth package details"
+      aria-label={`${tierName} package details`}
       className="relative w-full overflow-hidden scroll-mt-24 bg-white text-[#0F2A35] py-20 sm:py-28 md:py-32"
     >
       {/* Anchor for backward compatibility with navbar "What you get" links */}
@@ -229,10 +223,10 @@ export default function WhyOpenHours() {
               </div>
             </div>
 
-            {/* Line 1: Growth package price */}
+            {/* Line 1: Full Growth Engine price */}
             {priceDisplay && (
               <p className="text-[17px] sm:text-[19px] font-semibold tracking-tight text-[#0F2A35]">
-                Growth package, from {priceDisplay}
+                {tierName}, {priceDisplay}
               </p>
             )}
 
@@ -605,7 +599,7 @@ export default function WhyOpenHours() {
               <div>
                 {/* Title matching reference layout */}
                 <h3 className="text-[26px] sm:text-[32px] font-bold tracking-tight text-white mb-5">
-                  {growth.cards?.list?.title || 'Everything in Growth'}
+                  {growth.cards?.list?.title || `Everything in ${tierName}`}
                 </h3>
 
                 {/* Two-column bullet list with peach dots */}
@@ -630,19 +624,24 @@ export default function WhyOpenHours() {
                     ))}
                   </ul>
                 </div>
+                {config.features.voiceAgent && (
+                  <p className="mt-3 text-xs text-white/75">
+                    The assistant always says it is an AI. Voice call costs are charged separately.
+                  </p>
+                )}
               </div>
 
               {/* Bottom Row: Buttons (Left) & 3D Pointer Cursor (Right) */}
               <div className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-white/10 relative z-10">
                 {/* Action Buttons */}
                 <div className="flex flex-wrap items-center gap-4">
-                  {/* Glowing outlined pill button "Get Growth" */}
+                  {/* Glowing outlined pill button */}
                   <button
                     type="button"
                     onClick={handleGetGrowth}
                     className="inline-flex items-center gap-2 min-h-[44px] px-6 rounded-full border border-white text-white hover:bg-white/10 shadow-[0_0_24px_rgba(255,255,255,0.25)] hover:shadow-[0_0_32px_rgba(255,255,255,0.4)] text-sm font-semibold transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EBB894]"
                   >
-                    <span>Get Growth</span>
+                    <span>Choose {tierName}</span>
                     <ArrowRight className="w-4 h-4 text-white" />
                   </button>
 

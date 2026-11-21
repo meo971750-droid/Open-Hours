@@ -100,7 +100,7 @@ export function GoogleProfileAnimation() {
         <div className="space-y-1">
           <div className="flex items-center justify-between text-[9px] text-[#5E6F77]">
             <span className="font-medium text-[#1E4A5C]">Profile Strength</span>
-            <span className="font-bold text-[#2E9E6B]">100% Complete</span>
+            <span className="font-bold text-[#2E9E6B]">Complete</span>
           </div>
           <div className="w-full h-1.5 bg-[#EEF3F4] rounded-full overflow-hidden">
             <motion.div
@@ -454,7 +454,7 @@ export function EnquiryTrackerAnimation() {
       {/* Weekly Leads Counter Bar */}
       <div className="bg-[#DCE9EC] rounded-lg px-2 py-1 flex items-center justify-between text-[#1E4A5C] text-[9.5px]">
         <span className="font-medium">14 enquiries recorded this week</span>
-        <span className="font-bold text-[#0F2A35]">100% Tracked</span>
+        <span className="font-bold text-[#0F2A35]">Tracked</span>
       </div>
     </div>
   );
@@ -541,7 +541,7 @@ export function PrivacyComplianceAnimation() {
           <CheckCircle2 className="w-3 h-3 text-[#2E9E6B]" />
           <span>Full Legal Drafts Provided</span>
         </span>
-        <span className="font-semibold text-[#1E4A5C]">100% Client Owned</span>
+        <span className="font-semibold text-[#1E4A5C]">Client Owned</span>
       </div>
     </div>
   );
@@ -627,9 +627,9 @@ export function WarrantySupportAnimation() {
       <div className="flex items-center justify-between text-[9px] text-[#5E6F77] pt-0.5">
         <span className="flex items-center gap-1">
           <Clock className="w-3 h-3 text-[#1E4A5C]" />
-          <span>Rapid Turnaround Guarantee</span>
+          <span>Rapid Turnaround Support</span>
         </span>
-        <span className="font-semibold text-[#2E9E6B]">100% Peace of Mind</span>
+        <span className="font-semibold text-[#2E9E6B]">Ongoing Peace of Mind</span>
       </div>
     </div>
   );

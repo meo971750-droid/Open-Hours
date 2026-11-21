@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useId, useMemo } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
-  Tag,
   Check,
   ArrowRight,
   Minus,
@@ -22,11 +21,17 @@ import {
   Mic,
   Lock,
   LifeBuoy,
+  Calendar,
+  Bell,
+  RefreshCw,
+  Sparkles,
   X,
   Info,
+  Loader2,
 } from 'lucide-react';
-import { config, PricingTierConfig, BuilderFeatureConfig, BuilderFeatureGroup } from '../config';
+import { config, PricingTierConfig, BuilderFeatureGroup } from '../config';
 import { CONTACT, FORM_ENDPOINT } from '../content';
+import { OH_DUR, OH_EASE } from '../lib/motion';
 
 interface PricingProps {
   onOpenAudit?: () => void;
@@ -69,6 +74,14 @@ function FeatureIcon({ name, className = 'w-4 h-4' }: { name: string; className?
       return <Lock className={className} />;
     case 'life-buoy':
       return <LifeBuoy className={className} />;
+    case 'calendar':
+      return <Calendar className={className} />;
+    case 'bell':
+      return <Bell className={className} />;
+    case 'refresh':
+      return <RefreshCw className={className} />;
+    case 'sparkles':
+      return <Sparkles className={className} />;
     default:
       return <Check className={className} />;
   }
@@ -117,22 +130,27 @@ function useAnimatedCount(targetValue: number, shouldReduceMotion: boolean): num
   return displayValue;
 }
 
-export default function Pricing({ onOpenAudit }: PricingProps) {
+export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
   const shouldReduceMotion = useReducedMotion() ?? false;
   const pricingConfig = config.pricing;
   const builderConfig = config.builder;
   const liveRegionId = useId();
 
   // Scroll and prefill helper
-  const handleSelectPackage = (packageName: string) => {
-    const message = `I'm interested in the ${packageName} package.`;
+  const handleSelectPackage = (tier: PricingTierConfig) => {
+    const monthlyPart =
+      typeof tier.monthlyPrice === 'number' && tier.monthlyPrice > 0
+        ? ` + €${tier.monthlyPrice}/month`
+        : '';
+    const message = `I'm interested in the ${tier.name} package (from €${tier.price.toLocaleString('en-IE')}${monthlyPart}).`;
     window.dispatchEvent(
       new CustomEvent('openhours:prefill-contact', {
-        detail: { option: packageName, message },
+        detail: { option: tier.name, message },
       })
     );
 
-    const contactSection = document.getElementById('about');
+    const contactSection =
+      document.getElementById('contact') || document.getElementById('about');
     if (contactSection) {
       contactSection.scrollIntoView({ behavior: 'smooth' });
     }
@@ -180,6 +198,11 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
   // Package selector state: 'starter' | 'standard' | 'growth' | 'scratch'
   const [selectedPackage, setSelectedPackage] = useState<StartingPackage>('standard');
+
+  const selectedTierName =
+    selectedPackage === 'scratch'
+      ? 'Start from scratch'
+      : tiers.find((t) => t.id === selectedPackage)?.name ?? selectedPackage;
 
   // Pre-tick features for the starting package
   const [selectedFeatureIds, setSelectedFeatureIds] = useState<Set<string>>(() => {
@@ -237,33 +260,39 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
   );
   const formatEuro = (amount: number) => euroFormatter.format(amount);
 
-  // Dev-only console warnings: warn if sum for any package is outside 105% to 120% of its "from" price
+  // Dev-only console warnings: warn if set-up or monthly sum for any package is outside 105% to 120%
   useEffect(() => {
     if (import.meta.env?.DEV) {
-      if (basePrice < starterTierPrice) {
-        console.warn(
-          `[PricingBuilder] Default builder basePrice (€${basePrice}) is lower than Starter tier price (€${starterTierPrice}).`
-        );
-      }
-
       const allConfigFeatures = builderConfig?.features || [];
       tiers.forEach((tier) => {
         const tierFeatures = allConfigFeatures.filter((f) =>
           f.includedInTiers?.includes(tier.id as 'starter' | 'standard' | 'growth')
         );
-        const tierFeaturesCost = tierFeatures
+        const tierSetupFeaturesCost = tierFeatures
           .filter((f) => f.billing === 'one-time')
           .reduce((sum, f) => sum + (f.price || 0), 0);
-        const tierCustomTotal = basePrice + tierFeaturesCost;
-        const ratio = tierCustomTotal / tier.price;
-        if (ratio < 1.05 || ratio > 1.20) {
+        const tierCustomSetupTotal = basePrice + tierSetupFeaturesCost;
+        const setupRatio = tierCustomSetupTotal / tier.price;
+
+        if (setupRatio < 1.05 || setupRatio > 1.20) {
           console.warn(
-            `[PricingBuilder] Selecting all features for tier "${tier.name}" gives custom total €${tierCustomTotal} (${Math.round(ratio * 100)}% of package price €${tier.price}), which is outside the 105% to 120% target range.`
+            `[PricingBuilder] Selecting all set-up features for "${tier.name}" gives €${tierCustomSetupTotal} (${Math.round(setupRatio * 100)}% of €${tier.price}), which is outside the 105% to 120% target range.`
           );
+        }
+
+        const tierMonthlyTotal = tierFeatures
+          .filter((f) => f.billing === 'monthly')
+          .reduce((sum, f) => sum + (f.price || 0), 0);
+        if (tier.monthlyPrice > 0) {
+          const monthlyRatio = tierMonthlyTotal / tier.monthlyPrice;
+          if (monthlyRatio < 1.05 || monthlyRatio > 1.20) {
+            console.warn(
+              `[PricingBuilder] Selecting all monthly features for "${tier.name}" gives €${tierMonthlyTotal}/mo (${Math.round(monthlyRatio * 100)}% of €${tier.monthlyPrice}/mo), which is outside the 105% to 120% target range.`
+            );
+          }
         }
       });
 
-      // List every feature still at price 0
       const zeroPriceFeatures = allConfigFeatures
         .filter((f) => !f.price || f.price === 0)
         .map((f) => f.name);
@@ -274,11 +303,11 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
         );
       }
     }
-  }, [basePrice, starterTierPrice, builderConfig, tiers]);
+  }, [basePrice, builderConfig, tiers]);
 
   // Price calculations with useMemo:
-  // Total = base website price + max(0, pages - includedPages) x pricePerExtraPage + sum of selected one-time features.
-  // Monthly features are summed separately and shown as "+ €X / month".
+  // One-time total = base website price + max(0, pages - includedPages) * pricePerExtraPage + sum of selected one-time features.
+  // Monthly total = sum of selected monthly features.
   const {
     oneTimeTotal,
     monthlyTotal,
@@ -319,9 +348,11 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
     };
   }, [pages, includedPages, pricePerExtraPage, visibleFeatures, selectedFeatureIds, basePrice]);
 
+  const hasVoiceAgentSelected = selectedFeatureIds.has('voiceAgent');
   const animatedTotal = useAnimatedCount(oneTimeTotal, shouldReduceMotion);
+  const animatedMonthlyTotal = useAnimatedCount(monthlyTotal, shouldReduceMotion);
 
-  // E5: "TRY A PACKAGE" LIVE RECOMMENDATION IN ESTIMATE CARD
+  // "TRY A PACKAGE" LIVE RECOMMENDATION IN ESTIMATE CARD (dynamic set-up & monthly comparison)
   const packageComparison = useMemo(() => {
     const selectedCount = selectedVisibleFeatures.length;
     if (selectedCount === 0) return null;
@@ -329,14 +360,15 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
     interface TierMatch {
       tier: PricingTierConfig;
       includedCount: number;
-      effectivePrice: number;
+      effectiveSetupPrice: number;
+      effectiveMonthlyPrice: number;
       isFullMatch: boolean;
     }
 
     const matches: TierMatch[] = [];
 
     tiers.forEach((tier) => {
-      const tierFeats = (builderConfig?.features || []).filter((f) =>
+      const tierFeats = visibleFeatures.filter((f) =>
         f.includedInTiers?.includes(tier.id as 'starter' | 'standard' | 'growth')
       );
       const tierFeatIdSet = new Set(tierFeats.map((f) => f.id));
@@ -351,35 +383,58 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
       const tierIncludedPages = (tier as unknown as { includedPages?: number }).includedPages;
       const extraPagesForTier =
         typeof tierIncludedPages === 'number' ? Math.max(0, pages - tierIncludedPages) : 0;
-      const effectiveTierPrice =
+      const effectiveSetupPrice =
         tier.price + (pricePerExtraPage > 0 ? extraPagesForTier * pricePerExtraPage : 0);
 
       matches.push({
         tier,
         includedCount: matchCount,
-        effectivePrice: effectiveTierPrice,
+        effectiveSetupPrice,
+        effectiveMonthlyPrice: tier.monthlyPrice,
         isFullMatch: matchCount === selectedCount,
       });
     });
 
-    // Case 1: One or more packages include ALL selected features and price is LOWER than custom total
-    const fullMatchesLower = matches
-      .filter((m) => m.isFullMatch && m.effectivePrice < oneTimeTotal)
-      .sort((a, b) => a.effectivePrice - b.effectivePrice);
+    // Case 1: One or more packages include ALL selected features -> pick the cheapest
+    const fullMatches = matches
+      .filter((m) => m.isFullMatch)
+      .sort(
+        (a, b) =>
+          a.effectiveSetupPrice - b.effectiveSetupPrice ||
+          a.effectiveMonthlyPrice - b.effectiveMonthlyPrice
+      );
 
-    if (fullMatchesLower.length > 0) {
-      const best = fullMatchesLower[0];
-      const difference = oneTimeTotal - best.effectivePrice;
-      if (difference > 0) {
-        return {
-          type: 'full-saving' as const,
-          tier: best.tier,
-          text: `Everything you selected is included in our ${best.tier.name} package, from ${formatEuro(best.tier.price)}. That is ${formatEuro(difference)} less than this custom build.`,
-        };
+    if (fullMatches.length > 0) {
+      const best = fullMatches[0];
+      const setupDiff = oneTimeTotal - best.effectiveSetupPrice;
+      const monthlyDiff = monthlyTotal - best.effectiveMonthlyPrice;
+
+      // Never show zero or negative differences; if neither is lower, show nothing
+      if (setupDiff <= 0 && monthlyDiff <= 0) {
+        return null;
       }
+
+      let comparisonClause = '';
+      if (setupDiff > 0 && monthlyDiff > 0) {
+        comparisonClause = `That is ${formatEuro(setupDiff)} less set-up and ${formatEuro(
+          monthlyDiff
+        )} less per month than this custom build.`;
+      } else if (setupDiff > 0) {
+        comparisonClause = `That is ${formatEuro(setupDiff)} less set-up than this custom build.`;
+      } else {
+        comparisonClause = `That is ${formatEuro(monthlyDiff)} less per month than this custom build.`;
+      }
+
+      return {
+        type: 'full-saving' as const,
+        tier: best.tier,
+        text: `Everything you selected is included in ${best.tier.name}, from ${formatEuro(
+          best.effectiveSetupPrice
+        )} plus ${formatEuro(best.effectiveMonthlyPrice)} a month. ${comparisonClause}`,
+      };
     }
 
-    // Case 2: No package covers everything, but one covers at least half of the selected features
+    // Case 2: No package covers everything, check if any covers at least half
     const halfThreshold = Math.ceil(selectedCount / 2);
     const partialMatches = matches
       .filter((m) => m.includedCount >= halfThreshold && m.includedCount > 0)
@@ -387,7 +442,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
         if (b.includedCount !== a.includedCount) {
           return b.includedCount - a.includedCount;
         }
-        return a.effectivePrice - b.effectivePrice;
+        return a.effectiveSetupPrice - b.effectiveSetupPrice;
       });
 
     if (partialMatches.length > 0) {
@@ -395,12 +450,21 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
       return {
         type: 'partial-match' as const,
         tier: best.tier,
-        text: `${best.includedCount} of your ${selectedCount} selected features are already included in our ${best.tier.name} package, from ${formatEuro(best.tier.price)}. Compare it before you request.`,
+        text: `${best.includedCount} of your ${selectedCount} selected features are already in ${best.tier.name}. Compare it before you request.`,
       };
     }
 
     return null;
-  }, [selectedVisibleFeatures, tiers, builderConfig, pages, pricePerExtraPage, oneTimeTotal, formatEuro]);
+  }, [
+    selectedVisibleFeatures,
+    tiers,
+    visibleFeatures,
+    pages,
+    pricePerExtraPage,
+    oneTimeTotal,
+    monthlyTotal,
+    formatEuro,
+  ]);
 
   // ----------------------------------------------------
   // "TALK TO SALES" ACCESSIBLE MODAL FORM STATE
@@ -426,9 +490,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
   // Generate plain-text summary message
   const generateSummaryText = () => {
     const pkgName =
-      selectedPackage === 'scratch'
-        ? 'Started from scratch'
-        : selectedPackage.charAt(0).toUpperCase() + selectedPackage.slice(1);
+      selectedPackage === 'scratch' ? 'Started from scratch' : selectedTierName;
 
     const featureItems = selectedVisibleFeatures.map(
       (f) =>
@@ -449,7 +511,8 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
         ? `Selected features:\n${featureItems.join('\n')}`
         : 'Selected features: None',
       `One-time total: ${formatEuro(oneTimeTotal)}`,
-      monthlyTotal > 0 ? `Monthly total: ${formatEuro(monthlyTotal)} / month` : 'Monthly total: None',
+      `Per month total: ${formatEuro(monthlyTotal)} / month`,
+      hasVoiceAgentSelected ? 'Voice call costs are charged separately.' : '',
       builderConfig?.estimateNote ? `Estimate note: ${builderConfig.estimateNote}` : '',
     ].filter(Boolean);
 
@@ -469,7 +532,9 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
   // Close Sales Modal (returns focus with preventScroll)
   const handleCloseSalesModal = () => {
     setIsSalesModalOpen(false);
-    lastFocusedRef.current?.focus({ preventScroll: true });
+    window.requestAnimationFrame(() => {
+      lastFocusedRef.current?.focus({ preventScroll: true });
+    });
   };
 
   // Scroll lock and Esc to close
@@ -614,22 +679,22 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
   return (
     <section
       id="pricing"
-      className="w-full bg-[#EEF3F4] py-20 sm:py-28 md:py-32 overflow-visible scroll-mt-24"
+      className="oh-cv-auto w-full bg-[#F3F5F3] text-[#0B1B22] py-[var(--section-py)] overflow-visible"
     >
-      <div className="w-full max-w-[1280px] mx-auto px-5 sm:px-6 md:px-8">
+      <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* ==================================================== */}
         {/* PART 1: THREE PACKAGE CARDS                          */}
         {/* ==================================================== */}
         <div className="flex flex-col items-center text-center mb-14 sm:mb-20">
-          <h2 className="text-[32px] sm:text-[44px] md:text-[54px] font-normal tracking-[-0.03em] leading-[1.08] text-[#0F2A35] max-w-2xl mb-4">
+          <h2 className="text-[34px] sm:text-[46px] md:text-[56px] font-normal tracking-[-0.03em] leading-[1.08] text-[#0B1B22] max-w-2xl mb-4">
             <span>{pricingConfig?.title || 'Simple pricing,'} </span>
-            <span className="font-serif italic text-[#12303D]">
+            <span className="font-serif italic text-[#14624F]">
               {pricingConfig?.titleAccent || 'fixed in writing'}
             </span>
           </h2>
 
           {pricingConfig?.subtext && (
-            <p className="text-[16px] sm:text-[18px] text-[#5E6F77] max-w-2xl">
+            <p className="text-[16px] sm:text-[18px] text-[#475754] max-w-2xl">
               {pricingConfig.subtext}
             </p>
           )}
@@ -638,11 +703,26 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
         {/* Three Package Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch mb-8 overflow-visible">
           {tiers.map((tier, idx) => {
-            const isStandard = tier.id === 'standard' || tier.highlighted;
+            const isStandard = tier.id === 'standard' || Boolean(tier.highlighted);
+            const featuresMap = config.features as unknown as Record<string, boolean | number | undefined>;
+            const visibleSetupItems = (tier.setupItems || []).filter(
+              (item) => !item.flag || Boolean(featuresMap[item.flag])
+            );
+            const visibleMonthlyItems = (tier.monthlyItems || []).filter(
+              (item) => !item.flag || Boolean(featuresMap[item.flag])
+            );
+            const showsAiAgent =
+              visibleSetupItems.some((item) => item.aiDisclosure) ||
+              visibleMonthlyItems.some((item) => item.aiDisclosure);
+            const deliveryDays =
+              typeof tier.deliveryDays === 'number' && tier.deliveryDays > 0
+                ? tier.deliveryDays
+                : null;
 
             return (
               <motion.article
                 key={tier.id}
+                data-tier-id={tier.id}
                 initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-8%' }}
@@ -651,23 +731,23 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                     ? {}
                     : {
                         y: -4,
-                        transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
+                        transition: { duration: OH_DUR.fast, ease: OH_EASE },
                       }
                 }
                 transition={{
-                  duration: 0.5,
+                  duration: OH_DUR.slow,
                   delay: shouldReduceMotion ? 0 : idx * 0.08,
-                  ease: [0.16, 1, 0.3, 1],
+                  ease: OH_EASE,
                 }}
-                className={`relative rounded-[24px] p-7 sm:p-8 flex flex-col justify-between overflow-visible transition-shadow duration-[220ms] ease-out bg-white ${
+                className={`relative rounded-[28px] p-7 sm:p-8 flex flex-col justify-between overflow-visible transition-shadow duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] bg-white ${
                   isStandard
-                    ? 'border-2 border-[#E3B896] shadow-[0_18px_44px_rgba(30,74,92,0.14)]'
-                    : 'border border-[#0F2A35]/[0.08] shadow-[0_12px_32px_rgba(15,42,53,0.06)]'
+                    ? 'order-first lg:order-none border-2 border-[#6FD6B0] ring-1 ring-[#14624F]/20 shadow-[0_20px_48px_-14px_rgba(20,98,79,0.18)]'
+                    : 'border border-[rgba(11,27,34,0.09)] shadow-[0_12px_32px_rgba(11,27,34,0.06)]'
                 }`}
               >
-                {/* Standard Recommended Pill */}
+                {/* Recommended Pill */}
                 {isStandard && (
-                  <div className="absolute -top-3.5 right-6 z-20 bg-[#E3B896] text-[#0F2A35] text-[12.5px] font-bold px-3.5 py-1 rounded-full shadow-xs whitespace-nowrap">
+                  <div className="absolute -top-3.5 right-6 z-20 bg-[#DDF4EA] text-[#0F4A3E] border border-[#14624F]/25 text-[12px] font-semibold px-3.5 py-1 rounded-full shadow-sm whitespace-nowrap">
                     <span>{tier.tag || 'Recommended'}</span>
                   </div>
                 )}
@@ -675,65 +755,125 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                 <div>
                   {/* Package Name */}
                   <div className="flex items-center mb-2">
-                    <h3 className="text-[26px] font-semibold tracking-[-0.02em] text-[#0F2A35]">
+                    <h3 className="text-[24px] sm:text-[26px] font-semibold tracking-[-0.02em] text-[#0B1B22]">
                       {tier.name}
                     </h3>
                   </div>
 
-                  {/* One-line Description for who it suits */}
-                  {tier.description && (
-                    <p className="text-[15px] leading-[1.5] text-[#5E6F77] mb-5 min-h-[44px]">
-                      {tier.description}
+                  {/* Plain-language Outcome */}
+                  {(tier.outcome || tier.description) && (
+                    <p className="text-[15px] leading-[1.55] text-[#475754] mb-5 min-h-[68px]">
+                      {tier.outcome || tier.description}
                     </p>
                   )}
 
-                  {/* Price block: "from €{price}" */}
-                  <div className="mb-4">
-                    <span className="text-[13.5px] text-[#5E6F77] block mb-0.5 font-normal">
+                  {/* Price block: "from" + large "€X" + "set-up" & "+ €Y / month" */}
+                  <div className="mb-5">
+                    <span className="text-[13px] text-[#475754] block mb-0.5 font-normal">
                       from
                     </span>
-                    <div className="flex items-baseline">
-                      <span className="text-[38px] sm:text-[42px] font-semibold tabular-nums text-[#0F2A35] leading-none">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[38px] sm:text-[42px] font-semibold tabular-nums text-[#0B1B22] leading-none">
                         {formatEuro(tier.price)}
                       </span>
+                      <span className="text-[14.5px] font-medium text-[#475754]">
+                        set-up
+                      </span>
                     </div>
+                    {typeof tier.monthlyPrice === 'number' && tier.monthlyPrice > 0 && (
+                      <div className="mt-1.5 text-[16px] font-semibold tabular-nums text-[#14624F]">
+                        + {formatEuro(tier.monthlyPrice)} / month
+                      </div>
+                    )}
+                    {tier.priceNote && (
+                      <p className="mt-1.5 text-[12.5px] text-[#475754] leading-snug">
+                        {tier.priceNote}
+                      </p>
+                    )}
                   </div>
 
-                  {/* Delivery time: "About {n} working days" */}
-                  {tier.days && (
-                    <div className="flex items-center gap-2 mb-6 text-[14px] font-medium text-[#0F2A35]">
-                      <Clock className="w-4 h-4 text-[#1E4A5C] shrink-0" />
-                      <span>About {tier.days} working days</span>
+                  {/* Delivery time (only if deliveryDays is explicitly configured) */}
+                  {deliveryDays !== null && (
+                    <div className="flex items-center gap-2 mb-6 text-[14px] font-medium text-[#0B1B22]">
+                      <Clock className="w-4 h-4 text-[#14624F] shrink-0" strokeWidth={1.5} />
+                      <span className="tabular-nums">About {deliveryDays} working days</span>
                     </div>
                   )}
 
                   {/* Choose {Package} Button */}
                   <button
                     type="button"
-                    onClick={() => handleSelectPackage(tier.name)}
-                    className="w-full h-[50px] rounded-full text-[15.5px] font-semibold flex items-center justify-center gap-2 transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C] focus-visible:ring-offset-2 cursor-pointer bg-[#0F2A35] hover:bg-[#1A3D4C] text-white shadow-sm"
+                    onClick={() => handleSelectPackage(tier)}
+                    className={`w-full h-[50px] rounded-full text-[15px] font-semibold flex items-center justify-center gap-2 transition-[transform,background-color,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer px-4 ${
+                      isStandard
+                        ? 'oh-btn-primary text-white'
+                        : 'bg-[#050E0D] hover:bg-[#0F4A3E] text-white shadow-sm'
+                    }`}
                   >
-                    <span>Choose {tier.name}</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span className="truncate">Choose {tier.name}</span>
+                    <ArrowRight className="w-4 h-4 shrink-0" strokeWidth={1.75} />
                   </button>
                 </div>
 
-                {/* Feature List (max 8 items) */}
-                {tier.features && tier.features.length > 0 && (
-                  <div className="mt-7 pt-6 border-t border-[rgba(15,42,53,0.08)] flex-1">
-                    <ul className="space-y-3">
-                      {tier.features.slice(0, 8).map((feat, fIdx) => (
-                        <li
-                          key={fIdx}
-                          className="flex items-start gap-3 text-[14.5px] leading-[1.45] text-[#1B1F27]"
-                        >
-                          <div className="w-[20px] h-[20px] rounded-full bg-[#DCE9EC] flex items-center justify-center shrink-0 mt-0.5">
-                            <Check className="w-3.5 h-3.5 text-[#1E4A5C]" strokeWidth={2.5} />
+                {/* Two Labelled Feature Lists: Set-up & Every month */}
+                {(visibleSetupItems.length > 0 || visibleMonthlyItems.length > 0) && (
+                  <div className="mt-7 pt-6 border-t border-[rgba(11,27,34,0.08)] flex-1 flex flex-col justify-between gap-5">
+                    <div className="space-y-5">
+                      {tier.everythingInLabel && (
+                        <p className="text-[13.5px] font-semibold text-[#14624F]">
+                          {tier.everythingInLabel}
+                        </p>
+                      )}
+
+                      {visibleSetupItems.length > 0 && (
+                        <div>
+                          <div className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-[#475754] mb-2.5">
+                            Set-up
                           </div>
-                          <span>{feat}</span>
-                        </li>
-                      ))}
-                    </ul>
+                          <ul className="space-y-2.5">
+                            {visibleSetupItems.map((item, fIdx) => (
+                              <li
+                                key={fIdx}
+                                className="flex items-start gap-2.5 text-[14px] leading-[1.45] text-[#0B1B22]"
+                              >
+                                <div className="w-[18px] h-[18px] rounded-full bg-[#DDF4EA] flex items-center justify-center shrink-0 mt-0.5">
+                                  <Check className="w-3 h-3 text-[#14624F]" strokeWidth={2.5} />
+                                </div>
+                                <span>{item.label}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {visibleMonthlyItems.length > 0 && (
+                        <div>
+                          <div className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-[#475754] mb-2.5">
+                            Every month
+                          </div>
+                          <ul className="space-y-2.5">
+                            {visibleMonthlyItems.map((item, mIdx) => (
+                              <li
+                                key={mIdx}
+                                className="flex items-start gap-2.5 text-[14px] leading-[1.45] text-[#0B1B22]"
+                              >
+                                <div className="w-[18px] h-[18px] rounded-full bg-[#DDF4EA] flex items-center justify-center shrink-0 mt-0.5">
+                                  <Check className="w-3 h-3 text-[#14624F]" strokeWidth={2.5} />
+                                </div>
+                                <span>{item.label}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {showsAiAgent && (
+                      <p className="pt-3 border-t border-[rgba(11,27,34,0.06)] text-[12px] text-[#475754] flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-[#14624F] shrink-0" strokeWidth={1.75} />
+                        <span>The assistant always says it is an AI.</span>
+                      </p>
+                    )}
                   </div>
                 )}
               </motion.article>
@@ -741,10 +881,18 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
           })}
         </div>
 
-        {/* Small print note under cards */}
-        {pricingConfig?.smallPrint && (
-          <div className="text-center text-[13px] text-[#5E6F77] mb-20 max-w-2xl mx-auto leading-relaxed">
-            <p>{pricingConfig.smallPrint}</p>
+        {/* Estimate and optional notes below the three cards */}
+        {(pricingConfig?.estimateNote ||
+          pricingConfig?.termNote ||
+          pricingConfig?.vatNote ||
+          pricingConfig?.deliveryNote ||
+          pricingConfig?.smallPrint) && (
+          <div className="text-center text-[13px] text-[#475754] mb-20 max-w-2xl mx-auto space-y-1.5 leading-relaxed">
+            {pricingConfig?.estimateNote && <p>{pricingConfig.estimateNote}</p>}
+            {pricingConfig?.termNote && <p>{pricingConfig.termNote}</p>}
+            {pricingConfig?.vatNote && <p>{pricingConfig.vatNote}</p>}
+            {pricingConfig?.deliveryNote && <p>{pricingConfig.deliveryNote}</p>}
+            {pricingConfig?.smallPrint && <p>{pricingConfig.smallPrint}</p>}
           </div>
         )}
 
@@ -752,37 +900,36 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
         {/* PART 2: BUILDER ("Need something different?")        */}
         {/* ==================================================== */}
         {hasBuilderContent && basePrice > 0 && (
-          <div className="mt-16 sm:mt-24 pt-14 border-t border-[#0F2A35]/10">
+          <div className="mt-16 sm:mt-24 pt-14 border-t border-[rgba(11,27,34,0.1)]">
             {/* Builder Heading */}
             <div className="text-center mb-10 sm:mb-14">
-              <h3 className="text-[28px] sm:text-[38px] font-normal tracking-[-0.02em] leading-tight text-[#0F2A35] mb-3">
+              <h3 className="text-[28px] sm:text-[38px] font-normal tracking-[-0.02em] leading-tight text-[#0B1B22] mb-3">
                 <span>Need something </span>
-                <span className="font-serif italic text-[#12303D]">different?</span>
+                <span className="font-serif italic text-[#14624F]">different?</span>
               </h3>
-              <p className="text-[16px] sm:text-[17px] text-[#5E6F77] max-w-xl mx-auto">
+              <p className="text-[16px] sm:text-[17px] text-[#475754] max-w-xl mx-auto">
                 {builderConfig?.subtext ||
                   'Start from a package and customise each feature. The estimate updates as you go.'}
               </p>
             </div>
 
-            {/* 1. PACKAGE SELECTOR: Segmented tabs for Starter, Standard, Growth, Start from scratch */}
-            <div className="max-w-2xl mx-auto mb-10">
-              <span className="text-[12.5px] font-semibold text-[#5E6F77] uppercase tracking-wider block text-center mb-2.5">
+            {/* 1. PACKAGE SELECTOR: Segmented tabs for the three packages + Start from scratch */}
+            <div className="max-w-3xl mx-auto mb-10">
+              <span className="text-[12.5px] font-semibold text-[#475754] uppercase tracking-wider block text-center mb-2.5">
                 Start from a package:
               </span>
               <div
-                className="bg-[#EEF3F4] p-1.5 rounded-2xl flex flex-wrap sm:flex-nowrap gap-1.5 border border-[#0F2A35]/[0.08]"
+                className="bg-[#E9ECEA] p-1.5 rounded-2xl flex flex-wrap sm:flex-nowrap gap-1.5 border border-[rgba(11,27,34,0.08)]"
                 role="tablist"
                 aria-label="Starting package selector"
               >
-                {(
-                  [
-                    { id: 'starter' as const, label: 'Starter' },
-                    { id: 'standard' as const, label: 'Standard' },
-                    { id: 'growth' as const, label: 'Growth' },
-                    { id: 'scratch' as const, label: 'Start from scratch' },
-                  ] as const
-                ).map((tab) => {
+                {[
+                  ...tiers.map((tier) => ({
+                    id: tier.id as StartingPackage,
+                    label: tier.name,
+                  })),
+                  { id: 'scratch' as const, label: 'Start from scratch' },
+                ].map((tab) => {
                   const isActive = selectedPackage === tab.id;
                   return (
                     <button
@@ -795,10 +942,10 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                         e.stopPropagation();
                         handleSelectStartingPackage(tab.id);
                       }}
-                      className={`flex-1 min-w-[120px] py-2.5 px-3 rounded-xl text-[13.5px] sm:text-[14px] font-semibold transition-all duration-150 cursor-pointer text-center ${
+                      className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-[13px] sm:text-[13.5px] font-semibold transition-all duration-150 cursor-pointer text-center leading-tight ${
                         isActive
-                          ? 'bg-white text-[#0F2A35] shadow-xs'
-                          : 'text-[#5E6F77] hover:text-[#0F2A35] hover:bg-white/50'
+                          ? 'bg-white text-[#0F4A3E] shadow-xs'
+                          : 'text-[#475754] hover:text-[#0B1B22] hover:bg-white/60'
                       }`}
                     >
                       {tab.label}
@@ -813,20 +960,20 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
               {/* LEFT COLUMN: Options (Pages Stepper + Feature Toggles) */}
               <div className="lg:col-span-7 space-y-8">
                 {/* 1. Pages Stepper */}
-                <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[#0F2A35]/[0.08] shadow-xs">
+                <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[rgba(11,27,34,0.09)] shadow-xs">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                     <div>
-                      <span className="text-[17px] font-semibold text-[#0F2A35] block">
+                      <span className="text-[17px] font-semibold text-[#0B1B22] block">
                         How many pages?
                       </span>
-                      <span className="text-[13px] text-[#5E6F77]">
+                      <span className="text-[13px] text-[#475754]">
                         {includedPages} page{includedPages > 1 ? 's' : ''} included in base build
                         {pricePerExtraPage > 0 ? `, then €${pricePerExtraPage} per extra page.` : '.'}
                       </span>
                     </div>
 
                     {/* Stepper Controls */}
-                    <div className="inline-flex items-center gap-3 bg-[#EEF3F4] p-1.5 rounded-full self-start sm:self-auto border border-[#0F2A35]/[0.06]">
+                    <div className="inline-flex items-center gap-3 bg-[#F3F5F3] p-1.5 rounded-full self-start sm:self-auto border border-[rgba(11,27,34,0.08)]">
                       <button
                         type="button"
                         aria-label="Decrease page count"
@@ -836,12 +983,12 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                           e.stopPropagation();
                           setPages((p) => Math.max(minPages, p - 1));
                         }}
-                        className="w-9 h-9 rounded-full bg-white text-[#0F2A35] flex items-center justify-center hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer"
+                        className="w-9 h-9 rounded-full bg-white text-[#0B1B22] flex items-center justify-center hover:bg-[#DDF4EA] disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
 
-                      <span className="w-8 text-center font-bold text-[17px] tabular-nums text-[#0F2A35]">
+                      <span className="w-8 text-center font-bold text-[17px] tabular-nums text-[#0B1B22]">
                         {pages}
                       </span>
 
@@ -854,7 +1001,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                           e.stopPropagation();
                           setPages((p) => Math.min(maxPages, p + 1));
                         }}
-                        className="w-9 h-9 rounded-full bg-white text-[#0F2A35] flex items-center justify-center hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer"
+                        className="w-9 h-9 rounded-full bg-white text-[#0B1B22] flex items-center justify-center hover:bg-[#DDF4EA] disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -863,8 +1010,8 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
                   {/* Typical page examples */}
                   {builderConfig?.pageExamples && builderConfig.pageExamples.length > 0 && (
-                    <div className="pt-3 border-t border-[rgba(15,42,53,0.06)] text-[12.5px] text-[#5E6F77]">
-                      <span className="font-medium text-[#0F2A35]">Typical pages: </span>
+                    <div className="pt-3 border-t border-[rgba(11,27,34,0.07)] text-[12.5px] text-[#475754]">
+                      <span className="font-medium text-[#0B1B22]">Typical pages: </span>
                       <span>{builderConfig.pageExamples.join(', ')}</span>
                     </div>
                   )}
@@ -872,14 +1019,14 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
                 {/* 2. Grouped Feature List */}
                 {visibleFeatures.length > 0 && (
-                  <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[#0F2A35]/[0.08] shadow-xs min-h-[460px]">
+                  <div className="bg-white rounded-[24px] p-6 sm:p-7 border border-[rgba(11,27,34,0.09)] shadow-xs min-h-[460px]">
                     {/* Header with Title and Select all / Clear all */}
-                    <div className="flex items-center justify-between gap-4 mb-5 pb-3 border-b border-[rgba(15,42,53,0.06)]">
+                    <div className="flex items-center justify-between gap-4 mb-5 pb-3 border-b border-[rgba(11,27,34,0.07)]">
                       <div>
-                        <h4 className="text-[17px] font-semibold text-[#0F2A35]">
+                        <h4 className="text-[17px] font-semibold text-[#0B1B22]">
                           Features
                         </h4>
-                        <span className="text-[12.5px] text-[#5E6F77]">
+                        <span className="text-[12.5px] text-[#475754]">
                           Include or exclude any feature to match your exact brief.
                         </span>
                       </div>
@@ -893,11 +1040,11 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                               new Set(visibleFeatures.map((f) => f.id))
                             );
                           }}
-                          className="text-[#1E4A5C] hover:text-[#0F2A35] font-medium cursor-pointer transition-colors"
+                          className="text-[#14624F] hover:text-[#0F4A3E] font-medium cursor-pointer transition-colors"
                         >
                           Select all
                         </button>
-                        <span className="text-slate-300">|</span>
+                        <span aria-hidden="true" className="text-[#0B1B22]/30">|</span>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -905,7 +1052,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                             e.stopPropagation();
                             setSelectedFeatureIds(new Set());
                           }}
-                          className="text-[#5E6F77] hover:text-[#0F2A35] font-medium cursor-pointer transition-colors"
+                          className="text-[#475754] hover:text-[#0B1B22] font-medium cursor-pointer transition-colors"
                         >
                           Clear all
                         </button>
@@ -929,7 +1076,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
                         return (
                           <div key={group}>
-                            <h5 className="text-[12px] font-semibold text-[#5E6F77] uppercase tracking-wider mb-3">
+                            <h5 className="text-[12px] font-semibold text-[#475754] uppercase tracking-wider mb-3">
                               {group}
                             </h5>
                             <div className="space-y-2.5">
@@ -955,8 +1102,8 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                                     }}
                                     className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-150 flex items-start justify-between gap-4 cursor-pointer select-none ${
                                       isSelected
-                                        ? 'bg-white border-[#1E4A5C]/35 shadow-xs ring-1 ring-[#1E4A5C]/20'
-                                        : 'bg-[#F9FBFC] hover:bg-white border-[#0F2A35]/[0.06] hover:border-[#0F2A35]/15'
+                                        ? 'bg-white border-[#14624F]/35 shadow-xs ring-1 ring-[#6FD6B0]/35'
+                                        : 'bg-[#F9FAF9] hover:bg-white border-[rgba(11,27,34,0.07)] hover:border-[rgba(11,27,34,0.16)]'
                                     }`}
                                   >
                                     <div className="flex items-start gap-3 min-w-0">
@@ -970,15 +1117,15 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                                           toggleFeature(feat.id);
                                         }}
                                         aria-label={feat.name}
-                                        className="mt-1 w-4 h-4 rounded border-slate-300 text-[#1E4A5C] focus:ring-[#1E4A5C] focus:ring-offset-0 cursor-pointer"
+                                        className="mt-1 w-4 h-4 rounded border-[rgba(11,27,34,0.28)] accent-[#14624F] cursor-pointer"
                                       />
 
                                       {/* Icon */}
                                       <div
                                         className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors mt-0.5 ${
                                           isSelected
-                                            ? 'bg-[#0F2A35] text-white shadow-xs'
-                                            : 'bg-[#EEF3F4] text-[#5E6F77]'
+                                            ? 'bg-[#14624F] text-white shadow-xs'
+                                            : 'bg-[#F3F5F3] text-[#475754]'
                                         }`}
                                       >
                                         <FeatureIcon
@@ -990,17 +1137,17 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                                       {/* Name, Description, In Package Tag */}
                                       <div className="min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                          <span className="font-semibold text-[14.5px] sm:text-[15px] text-[#0F2A35] leading-snug">
+                                          <span className="font-semibold text-[14.5px] sm:text-[15px] text-[#0B1B22] leading-snug">
                                             {feat.name}
                                           </span>
                                           {isInCurrentPackage && (
-                                            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#DCE9EC] text-[#1E4A5C] whitespace-nowrap">
-                                              In {selectedPackage.charAt(0).toUpperCase() + selectedPackage.slice(1)}
+                                            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#DDF4EA] text-[#0F4A3E] whitespace-nowrap">
+                                              In {selectedTierName}
                                             </span>
                                           )}
                                         </div>
                                         {feat.description && (
-                                          <p className="text-[12.5px] text-[#5E6F77] mt-0.5 leading-relaxed">
+                                          <p className="text-[12.5px] text-[#475754] mt-0.5 leading-relaxed">
                                             {feat.description}
                                           </p>
                                         )}
@@ -1009,10 +1156,10 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
                                     {/* Price & Billing */}
                                     <div className="text-right shrink-0 pt-0.5 pl-2">
-                                      <span className="font-semibold text-[13px] sm:text-[13.5px] text-[#0F2A35] block">
+                                      <span className="font-semibold text-[13px] sm:text-[13.5px] text-[#0B1B22] block tabular-nums">
                                         {priceLabel}
                                       </span>
-                                      <span className="text-[11px] text-[#5E6F77]">
+                                      <span className="text-[11px] text-[#475754]">
                                         {feat.billing === 'monthly' ? 'monthly' : 'one-time'}
                                       </span>
                                     </div>
@@ -1030,12 +1177,12 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
               {/* RIGHT COLUMN: Sticky Estimate Card on Desktop */}
               <div className="lg:col-span-5 lg:sticky lg:top-28">
-                <div className="bg-[#F8FAFB] rounded-[24px] p-6 sm:p-8 border border-slate-200/90 shadow-sm">
+                <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-[rgba(11,27,34,0.09)] shadow-[0_14px_36px_-12px_rgba(11,27,34,0.12)]">
                   <div className="mb-4">
-                    <h4 className="text-[20px] font-semibold text-[#0F2A35] leading-tight">
+                    <h4 className="text-[20px] font-semibold text-[#0B1B22] leading-tight">
                       Your estimate
                     </h4>
-                    <span className="text-[13px] text-[#5E6F77]">
+                    <span className="text-[13px] text-[#475754]">
                       {pages} page{pages > 1 ? 's' : ''}
                       {selectedFeatureIds.size > 0
                         ? ` · ${selectedFeatureIds.size} feature${selectedFeatureIds.size > 1 ? 's' : ''} selected`
@@ -1045,23 +1192,33 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
                   {/* Live region for screen readers */}
                   <div id={liveRegionId} aria-live="polite" className="sr-only">
-                    Estimated total: {formatEuro(oneTimeTotal)} one-time
-                    {monthlyTotal > 0 ? ` plus ${formatEuro(monthlyTotal)} per month` : ''}
+                    Estimated total: {formatEuro(oneTimeTotal)} one-time and {formatEuro(monthlyTotal)} per month.
+                    {hasVoiceAgentSelected ? ' Voice call costs are charged separately.' : ''}
                   </div>
 
-                  {/* Main One-Time Price Display */}
+                  {/* Separate One-time and Per month Totals */}
                   <div className="mb-3">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[40px] sm:text-[46px] font-bold tabular-nums text-[#0F2A35] leading-none tracking-tight">
-                        {formatEuro(animatedTotal)}
-                      </span>
-                      <span className="text-[14px] text-[#5E6F77] font-normal">
-                        one-time
-                      </span>
+                    <div className="grid grid-cols-2 gap-4 items-end pb-3 border-b border-[rgba(11,27,34,0.08)]">
+                      <div>
+                        <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#475754] block mb-1">
+                          One-time
+                        </span>
+                        <span className="text-[34px] sm:text-[40px] font-bold tabular-nums text-[#0B1B22] leading-none tracking-tight block">
+                          {formatEuro(animatedTotal)}
+                        </span>
+                      </div>
+                      <div className="pl-4 border-l border-[rgba(11,27,34,0.08)]">
+                        <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#475754] block mb-1">
+                          Per month
+                        </span>
+                        <span className="text-[26px] sm:text-[30px] font-bold tabular-nums text-[#14624F] leading-none tracking-tight block">
+                          {formatEuro(animatedMonthlyTotal)}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Cost Breakdown Line */}
-                    <div className="text-[12.5px] text-[#5E6F77] mt-2 leading-relaxed">
+                    <div className="text-[12.5px] text-[#475754] mt-2.5 leading-relaxed">
                       <span>Base website: {formatEuro(basePrice)}</span>
                       {pagesCost > 0 && <span> + Extra pages: {formatEuro(pagesCost)}</span>}
                       {oneTimeFeaturesCost > 0 && (
@@ -1069,10 +1226,17 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                       )}
                     </div>
 
-                    {/* E5: Try a package recommendation line */}
+                    {hasVoiceAgentSelected && (
+                      <p className="mt-2 text-[12px] text-[#475754] flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-[#14624F] shrink-0" />
+                        <span>Voice call costs are charged separately.</span>
+                      </p>
+                    )}
+
+                    {/* Try a package recommendation line */}
                     {packageComparison && (
-                      <div className="mt-3 p-3 rounded-2xl bg-[#EEF3F4] border border-[#0F2A35]/[0.08] text-[12.5px] text-[#0F2A35] flex items-start gap-2.5 leading-snug">
-                        <Info className="w-4 h-4 text-[#1E4A5C] shrink-0 mt-0.5" />
+                      <div className="mt-3 p-3 rounded-2xl bg-[#DDF4EA]/70 border border-[#14624F]/20 text-[12.5px] text-[#0B1B22] flex items-start gap-2.5 leading-snug">
+                        <Info className="w-4 h-4 text-[#14624F] shrink-0 mt-0.5" />
                         <div>
                           <span>{packageComparison.text} </span>
                           <button
@@ -1082,51 +1246,39 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                               e.stopPropagation();
                               handleSelectStartingPackage(packageComparison.tier.id as StartingPackage);
                             }}
-                            className="font-semibold text-[#1E4A5C] hover:text-[#0F2A35] underline underline-offset-2 ml-1 cursor-pointer transition-colors"
+                            className="font-semibold text-[#14624F] hover:text-[#0F4A3E] underline underline-offset-2 ml-1 cursor-pointer transition-colors"
                           >
-                            View {packageComparison.tier.name} package
+                            View {packageComparison.tier.name}
                           </button>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Monthly ongoing total if any monthly feature selected */}
-                  {monthlyTotal > 0 && (
-                    <div className="pt-2.5 pb-2 border-t border-[rgba(15,42,53,0.06)] mt-2">
-                      <div className="flex items-baseline gap-2 text-[17px] font-semibold text-[#1E4A5C]">
-                        <span>+ €{monthlyTotal} / month</span>
-                        <span className="text-[12.5px] text-[#5E6F77] font-normal">
-                          ongoing
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Estimate Note from config (plain trade language, no savings claims) */}
                   {builderConfig?.estimateNote && (
-                    <p className="text-[12.5px] text-[#5E6F77] leading-relaxed my-4">
+                    <p className="text-[12.5px] text-[#475754] leading-relaxed my-4">
                       {builderConfig.estimateNote}
                     </p>
                   )}
 
                   {/* Selected Features Pill Tags */}
                   {selectedFeatureNames.length > 0 && (
-                    <div className="mb-5 pt-3 border-t border-[rgba(15,42,53,0.06)]">
-                      <span className="text-[11.5px] font-semibold text-[#5E6F77] uppercase tracking-wider block mb-2">
+                    <div className="mb-5 pt-3 border-t border-[rgba(11,27,34,0.08)]">
+                      <span className="text-[11.5px] font-semibold text-[#475754] uppercase tracking-wider block mb-2">
                         Selected features ({selectedFeatureNames.length}):
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {selectedFeatureNames.slice(0, 6).map((name, i) => (
                           <span
                             key={i}
-                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[12px] bg-[#EEF3F4] text-[#0F2A35] font-medium"
+                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[12px] bg-[#F3F5F3] text-[#0B1B22] font-medium"
                           >
                             {name}
                           </span>
                         ))}
                         {selectedFeatureNames.length > 6 && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[12px] bg-[#EEF3F4] text-[#5E6F77] font-medium">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[12px] bg-[#F3F5F3] text-[#475754] font-medium">
                             +{selectedFeatureNames.length - 6} more
                           </span>
                         )}
@@ -1145,7 +1297,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                         e.stopPropagation();
                         handleOpenSalesModal();
                       }}
-                      className="w-full h-[52px] rounded-full text-[16px] font-semibold flex items-center justify-center gap-2 bg-[#0F2A35] hover:bg-[#1A3D4C] text-white shadow-sm transition-all duration-200 cursor-pointer active:scale-[0.99] disabled:opacity-45 disabled:cursor-not-allowed"
+                      className="oh-btn-primary w-full h-[52px] rounded-full text-[16px] font-semibold flex items-center justify-center gap-2 text-white transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer active:scale-[0.98] disabled:opacity-45 disabled:cursor-not-allowed"
                     >
                       <span>Talk to Sales</span>
                       <ArrowRight className="w-4 h-4" />
@@ -1153,7 +1305,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
                     {/* Helper hint if button is disabled */}
                     {selectedFeatureIds.size === 0 && (
-                      <p className="text-xs text-[#5E6F77] text-center mt-2">
+                      <p className="text-xs text-[#475754] text-center mt-2">
                         Select at least one feature or package to talk to sales.
                       </p>
                     )}
@@ -1161,17 +1313,17 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
 
                   {/* "Always included" items */}
                   {builderConfig?.alwaysIncluded && builderConfig.alwaysIncluded.length > 0 && (
-                    <div className="mt-5 pt-4 border-t border-[rgba(15,42,53,0.08)]">
-                      <span className="text-[12px] font-semibold text-[#0F2A35] uppercase tracking-wider block mb-2.5">
+                    <div className="mt-5 pt-4 border-t border-[rgba(11,27,34,0.08)]">
+                      <span className="text-[12px] font-semibold text-[#0B1B22] uppercase tracking-wider block mb-2.5">
                         Always included:
                       </span>
                       <ul className="space-y-2">
                         {builderConfig.alwaysIncluded.map((item, idx) => (
                           <li
                             key={idx}
-                            className="flex items-start gap-2 text-[13px] text-[#1B1F27] leading-tight"
+                            className="flex items-start gap-2 text-[13px] text-[#0B1B22] leading-tight"
                           >
-                            <Check className="w-4 h-4 text-[#1E4A5C] shrink-0 mt-0.5" />
+                            <Check className="w-4 h-4 text-[#14624F] shrink-0 mt-0.5" />
                             <span>{item}</span>
                           </li>
                         ))}
@@ -1182,21 +1334,24 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
               </div>
             </div>
 
-            {/* Mobile Sticky Bottom Bar (Total & Talk to Sales) */}
-            <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-[#0F2A35]/10 p-3.5 sm:p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-40 lg:hidden flex items-center justify-between gap-4">
+            {/* Mobile Inline Summary Bar inside section (avoids clashing with site-wide StickyBottomBar) */}
+            <div className="mt-6 rounded-[20px] bg-white border border-[rgba(11,27,34,0.1)] p-4 shadow-sm lg:hidden flex items-center justify-between gap-4">
               <div className="min-w-0">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-xl sm:text-2xl font-bold tabular-nums text-[#0F2A35] leading-none">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-xl sm:text-2xl font-bold tabular-nums text-[#0B1B22] leading-none">
                     {formatEuro(oneTimeTotal)}
                   </span>
-                  <span className="text-xs text-[#5E6F77]">one-time</span>
+                  <span className="text-xs text-[#475754]">one-time</span>
+                  <span className="text-xs font-semibold text-[#14624F] tabular-nums">
+                    + {formatEuro(monthlyTotal)}/month
+                  </span>
                 </div>
-                {monthlyTotal > 0 && (
-                  <span className="text-xs font-semibold text-[#1E4A5C] block mt-0.5">
-                    + {formatEuro(monthlyTotal)}/mo
+                {hasVoiceAgentSelected && (
+                  <span className="text-[11px] text-[#475754] block mt-0.5">
+                    Voice call costs are charged separately.
                   </span>
                 )}
-                <span className="text-[11px] text-[#5E6F77] truncate block mt-0.5">
+                <span className="text-[11px] text-[#475754] truncate block mt-0.5">
                   {pages} page{pages > 1 ? 's' : ''} · {selectedFeatureIds.size} feature{selectedFeatureIds.size === 1 ? '' : 's'}
                 </span>
               </div>
@@ -1210,7 +1365,7 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
                   e.stopPropagation();
                   handleOpenSalesModal();
                 }}
-                className="px-5 h-11 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5 bg-[#0F2A35] hover:bg-[#1A3D4C] text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+                className="oh-btn-primary px-5 h-11 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5 text-white disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
               >
                 <span>Talk to Sales</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -1218,263 +1373,305 @@ export default function Pricing({ onOpenAudit }: PricingProps) {
             </div>
 
             {/* Accessible "Talk to Sales" Modal Dialog */}
-            {isSalesModalOpen && (
-              <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs overflow-y-auto"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="sales-modal-title"
-                ref={modalRef}
-                onClick={(e) => {
-                  if (e.target === e.currentTarget) {
-                    handleCloseSalesModal();
-                  }
-                }}
-              >
-                <div className="relative w-full max-w-lg bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl border border-slate-200 my-8">
-                  {/* Close button */}
-                  <button
-                    type="button"
-                    onClick={handleCloseSalesModal}
-                    aria-label="Close modal"
-                    className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-[#0F2A35] flex items-center justify-center transition-colors cursor-pointer"
+            <AnimatePresence>
+              {isSalesModalOpen && (
+                <motion.div
+                  initial={shouldReduceMotion ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+                  transition={{ duration: shouldReduceMotion ? 0 : OH_DUR.base, ease: OH_EASE }}
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs overflow-y-auto"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="sales-modal-title"
+                  ref={modalRef}
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                      handleCloseSalesModal();
+                    }
+                  }}
+                >
+                  <motion.div
+                    initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.96, y: 12 }}
+                    transition={{ duration: shouldReduceMotion ? 0 : OH_DUR.base, ease: OH_EASE }}
+                    className="relative w-full max-w-lg bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl border border-[rgba(11,27,34,0.1)] my-8"
                   >
-                    <X className="w-4 h-4" />
-                  </button>
+                    {/* Close button */}
+                    <button
+                      type="button"
+                      onClick={handleCloseSalesModal}
+                      aria-label="Close modal"
+                      className="absolute top-5 right-5 w-9 h-9 rounded-full bg-[#F3F5F3] hover:bg-[#DDF4EA] active:scale-[0.98] text-[#0B1B22] flex items-center justify-center transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
 
-                  <h3
-                    id="sales-modal-title"
-                    className="text-2xl font-bold text-[#0F2A35] mb-2 pr-10"
-                  >
-                    Talk to Sales
-                  </h3>
-                  <p className="text-sm text-[#5E6F77] mb-5">
-                    Review your custom estimate and tell us about your project.
-                  </p>
+                    <h3
+                      id="sales-modal-title"
+                      className="text-2xl font-bold text-[#0B1B22] mb-2 pr-10"
+                    >
+                      Talk to Sales
+                    </h3>
+                    <p className="text-sm text-[#475754] mb-5">
+                      Review your custom estimate and tell us about your project.
+                    </p>
 
-                  {/* Top of Modal: Read-only "Your custom package" summary */}
-                  <div className="bg-[#EEF3F4] rounded-2xl p-4 sm:p-5 border border-[#0F2A35]/10 mb-6 text-xs text-[#0F2A35]">
-                    <div className="flex items-center justify-between pb-3 border-b border-[#0F2A35]/10 mb-3">
-                      <span className="font-bold text-sm text-[#0F2A35]">Your custom package</span>
-                      <span className="font-semibold text-xs text-[#5E6F77] bg-white px-2.5 py-1 rounded-full border border-[#0F2A35]/10">
-                        {selectedPackage === 'scratch'
-                          ? 'Started from scratch'
-                          : `Starting package: ${selectedPackage.charAt(0).toUpperCase() + selectedPackage.slice(1)}`}
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 mb-3">
-                      <div className="flex justify-between text-[#5E6F77]">
-                        <span>Pages:</span>
-                        <span className="font-medium text-[#0F2A35]">{pages} page{pages > 1 ? 's' : ''}</span>
-                      </div>
-
-                      {/* Selected Features List */}
-                      <div className="pt-2 border-t border-[#0F2A35]/10">
-                        <span className="font-semibold text-[#5E6F77] uppercase text-[10.5px] tracking-wider block mb-1.5">
-                          Selected features ({selectedVisibleFeatures.length}):
+                    {/* Top of Modal: Read-only "Your custom package" summary */}
+                    <div className="bg-[#F3F5F3] rounded-2xl p-4 sm:p-5 border border-[rgba(11,27,34,0.08)] mb-6 text-xs text-[#0B1B22]">
+                      <div className="flex items-center justify-between pb-3 border-b border-[rgba(11,27,34,0.08)] mb-3 gap-2">
+                        <span className="font-bold text-sm text-[#0B1B22]">Your custom package</span>
+                        <span className="font-semibold text-xs text-[#475754] bg-white px-2.5 py-1 rounded-full border border-[rgba(11,27,34,0.08)]">
+                          {selectedPackage === 'scratch'
+                            ? 'Started from scratch'
+                            : `Starting package: ${selectedTierName}`}
                         </span>
-                        {selectedVisibleFeatures.length === 0 ? (
-                          <span className="text-[#5E6F77] italic">No features selected</span>
-                        ) : (
-                          <ul className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                            {selectedVisibleFeatures.map((f) => (
-                              <li key={f.id} className="flex items-baseline justify-between gap-2 text-[11.5px]">
-                                <span className="truncate text-[#0F2A35]">• {f.name}</span>
-                                <span className="shrink-0 font-medium text-[#5E6F77]">
-                                  {f.price > 0 ? formatEuro(f.price) : 'Included in package'}{' '}
-                                  <span className="text-[10px] text-[#5E6F77]/80">
-                                    ({f.billing === 'monthly' ? '/month' : 'one-time'})
-                                  </span>
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Totals */}
-                    <div className="pt-2.5 border-t border-[#0F2A35]/10 flex items-baseline justify-between font-bold text-sm">
-                      <span>One-time total:</span>
-                      <span className="text-base text-[#0F2A35]">{formatEuro(oneTimeTotal)}</span>
-                    </div>
-                    {monthlyTotal > 0 && (
-                      <div className="flex items-baseline justify-between text-xs font-semibold text-[#1E4A5C] mt-1">
-                        <span>Monthly total:</span>
-                        <span>+ {formatEuro(monthlyTotal)} / month</span>
-                      </div>
-                    )}
-
-                    {/* Estimate note */}
-                    {builderConfig?.estimateNote && (
-                      <p className="text-[11px] text-[#5E6F77] mt-3 pt-2.5 border-t border-[#0F2A35]/10 leading-relaxed italic">
-                        {builderConfig.estimateNote}
-                      </p>
-                    )}
-                  </div>
-
-                  {salesSubmitted ? (
-                    <div className="text-center py-8">
-                      <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto mb-4">
-                        <Check className="w-6 h-6" />
-                      </div>
-                      <h4 className="text-xl font-bold text-[#0F2A35] mb-2">
-                        Enquiry received
-                      </h4>
-                      <p className="text-sm text-[#5E6F77] mb-6">
-                        Thank you, {salesName}. We'll review your custom build requirements and reply with a fixed quote.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleCloseSalesModal}
-                        className="px-6 h-11 rounded-full bg-[#0F2A35] text-white text-sm font-semibold hover:bg-[#1A3D4C] transition-colors cursor-pointer"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleSalesSubmit} noValidate className="space-y-4">
-                      {/* Honeypot field */}
-                      <input
-                        type="text"
-                        name="_builder_hp"
-                        value={salesHoneypot}
-                        onChange={(e) => setSalesHoneypot(e.target.value)}
-                        tabIndex={-1}
-                        autoComplete="off"
-                        className="hidden"
-                        aria-hidden="true"
-                      />
-
-                      {/* Name */}
-                      <div>
-                        <label
-                          htmlFor="sales-name"
-                          className="block text-xs font-semibold text-[#0F2A35] uppercase tracking-wider mb-1.5"
-                        >
-                          Full name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          id="sales-name"
-                          ref={firstInputRef}
-                          type="text"
-                          value={salesName}
-                          onChange={(e) => {
-                            setSalesName(e.target.value);
-                            if (salesErrors.name) setSalesErrors((prev) => ({ ...prev, name: '' }));
-                          }}
-                          placeholder="Your full name"
-                          className="w-full h-11 px-3.5 rounded-xl border border-slate-200 focus:border-[#1E4A5C] focus:ring-1 focus:ring-[#1E4A5C] text-sm text-[#0F2A35] outline-none"
-                        />
-                        {salesErrors.name && (
-                          <p className="text-xs text-red-500 mt-1">{salesErrors.name}</p>
-                        )}
                       </div>
 
-                      {/* Email */}
-                      <div>
-                        <label
-                          htmlFor="sales-email"
-                          className="block text-xs font-semibold text-[#0F2A35] uppercase tracking-wider mb-1.5"
-                        >
-                          Email address <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          id="sales-email"
-                          type="email"
-                          value={salesEmail}
-                          onChange={(e) => {
-                            setSalesEmail(e.target.value);
-                            if (salesErrors.email) setSalesErrors((prev) => ({ ...prev, email: '' }));
-                          }}
-                          placeholder="you@yourtrade.ie"
-                          className="w-full h-11 px-3.5 rounded-xl border border-slate-200 focus:border-[#1E4A5C] focus:ring-1 focus:ring-[#1E4A5C] text-sm text-[#0F2A35] outline-none"
-                        />
-                        {salesErrors.email && (
-                          <p className="text-xs text-red-500 mt-1">{salesErrors.email}</p>
-                        )}
-                      </div>
-
-                      {/* Phone (optional) */}
-                      <div>
-                        <label
-                          htmlFor="sales-phone"
-                          className="block text-xs font-semibold text-[#0F2A35] uppercase tracking-wider mb-1.5"
-                        >
-                          Phone or WhatsApp <span className="text-slate-400 font-normal lowercase">(optional)</span>
-                        </label>
-                        <input
-                          id="sales-phone"
-                          type="tel"
-                          value={salesPhone}
-                          onChange={(e) => setSalesPhone(e.target.value)}
-                          placeholder="087 123 4567"
-                          className="w-full h-11 px-3.5 rounded-xl border border-slate-200 focus:border-[#1E4A5C] focus:ring-1 focus:ring-[#1E4A5C] text-sm text-[#0F2A35] outline-none"
-                        />
-                      </div>
-
-                      {/* Prefilled editable message */}
-                      <div>
-                        <label
-                          htmlFor="sales-message"
-                          className="block text-xs font-semibold text-[#0F2A35] uppercase tracking-wider mb-1.5"
-                        >
-                          Estimate summary &amp; notes <span className="text-slate-400 font-normal lowercase">(editable)</span>
-                        </label>
-                        <textarea
-                          id="sales-message"
-                          rows={4}
-                          value={salesMessage}
-                          onChange={(e) => setSalesMessage(e.target.value)}
-                          className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1E4A5C] focus:ring-1 focus:ring-[#1E4A5C] text-xs font-mono text-[#0F2A35] leading-relaxed resize-y outline-none"
-                        />
-                      </div>
-
-                      {/* Consent checkbox */}
-                      <div>
-                        <label className="flex items-start gap-2.5 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={salesConsent}
-                            onChange={(e) => {
-                              setSalesConsent(e.target.checked);
-                              if (salesErrors.consent) setSalesErrors((prev) => ({ ...prev, consent: '' }));
-                            }}
-                            className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#1E4A5C] focus:ring-[#1E4A5C] cursor-pointer"
-                          />
-                          <span className="text-xs text-[#5E6F77] leading-relaxed">
-                            I agree to be contacted about this estimate. Details will never be shared or spammed.
-                          </span>
-                        </label>
-                        {salesErrors.consent && (
-                          <p className="text-xs text-red-500 mt-1">{salesErrors.consent}</p>
-                        )}
-                      </div>
-
-                      {/* Status / Fallback Banner */}
-                      {salesStatus && (
-                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
-                          {salesStatus}
+                      <div className="space-y-2 mb-3">
+                        <div className="flex justify-between text-[#475754]">
+                          <span>Pages:</span>
+                          <span className="font-medium text-[#0B1B22] tabular-nums">{pages} page{pages > 1 ? 's' : ''}</span>
                         </div>
+
+                        {/* Selected Features List */}
+                        <div className="pt-2 border-t border-[rgba(11,27,34,0.08)]">
+                          <span className="font-semibold text-[#475754] uppercase text-[10.5px] tracking-wider block mb-1.5">
+                            Selected features ({selectedVisibleFeatures.length}):
+                          </span>
+                          {selectedVisibleFeatures.length === 0 ? (
+                            <span className="text-[#475754] italic">No features selected</span>
+                          ) : (
+                            <ul className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                              {selectedVisibleFeatures.map((f) => (
+                                <li key={f.id} className="flex items-baseline justify-between gap-2 text-[11.5px]">
+                                  <span className="truncate text-[#0B1B22]">• {f.name}</span>
+                                  <span className="shrink-0 font-medium text-[#475754] tabular-nums">
+                                    {f.price > 0 ? formatEuro(f.price) : 'Included in package'}{' '}
+                                    <span className="text-[10px] text-[#475754]">
+                                      ({f.billing === 'monthly' ? '/month' : 'one-time'})
+                                    </span>
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Totals */}
+                      <div className="pt-2.5 border-t border-[rgba(11,27,34,0.08)] flex items-baseline justify-between font-bold text-sm">
+                        <span>One-time:</span>
+                        <span className="text-base text-[#0B1B22] tabular-nums">{formatEuro(oneTimeTotal)}</span>
+                      </div>
+                      <div className="flex items-baseline justify-between text-xs font-semibold text-[#14624F] mt-1">
+                        <span>Per month:</span>
+                        <span className="tabular-nums">{formatEuro(monthlyTotal)}</span>
+                      </div>
+                      {hasVoiceAgentSelected && (
+                        <p className="text-[11px] text-[#475754] mt-2">
+                          Voice call costs are charged separately.
+                        </p>
                       )}
 
-                      {/* Submit Button */}
-                      <div className="pt-2">
+                      {/* Estimate note */}
+                      {builderConfig?.estimateNote && (
+                        <p className="text-[11px] text-[#475754] mt-3 pt-2.5 border-t border-[rgba(11,27,34,0.08)] leading-relaxed italic">
+                          {builderConfig.estimateNote}
+                        </p>
+                      )}
+                    </div>
+
+                    {salesSubmitted ? (
+                      <motion.div
+                        initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: OH_DUR.base, ease: OH_EASE }}
+                        className="text-center py-8"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-[#DDF4EA] text-[#14624F] flex items-center justify-center mx-auto mb-4">
+                          <Check className="w-6 h-6" />
+                        </div>
+                        <h4 className="text-xl font-bold text-[#0B1B22] mb-2">
+                          Enquiry received
+                        </h4>
+                        <p className="text-sm text-[#475754] mb-6">
+                          Thank you, {salesName}. We&apos;ll review your custom build requirements and reply with a fixed quote.
+                        </p>
                         <button
-                          type="submit"
-                          disabled={salesSubmitting}
-                          className="w-full h-12 rounded-full bg-[#0F2A35] hover:bg-[#1A3D4C] text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                          type="button"
+                          onClick={handleCloseSalesModal}
+                          className="oh-btn-primary px-6 h-11 rounded-full text-white text-sm font-semibold active:scale-[0.98] transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer"
                         >
-                          <span>{salesSubmitting ? 'Sending...' : 'Request Custom Package'}</span>
-                          <ArrowRight className="w-4 h-4" />
+                          Close
                         </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              </div>
-            )}
+                      </motion.div>
+                    ) : (
+                      <form onSubmit={handleSalesSubmit} noValidate className="space-y-4">
+                        {/* Honeypot field */}
+                        <input
+                          type="text"
+                          name="_builder_hp"
+                          value={salesHoneypot}
+                          onChange={(e) => setSalesHoneypot(e.target.value)}
+                          tabIndex={-1}
+                          autoComplete="off"
+                          className="hidden"
+                          aria-hidden="true"
+                        />
+
+                        {/* Name */}
+                        <div>
+                          <label
+                            htmlFor="sales-name"
+                            className="block text-xs font-semibold text-[#0B1B22] uppercase tracking-wider mb-1.5"
+                          >
+                            Full name <span className="text-[#14624F]">*</span>
+                          </label>
+                          <input
+                            id="sales-name"
+                            name="fullName"
+                            autoComplete="name"
+                            ref={firstInputRef}
+                            type="text"
+                            value={salesName}
+                            onChange={(e) => {
+                              setSalesName(e.target.value);
+                              if (salesErrors.name) setSalesErrors((prev) => ({ ...prev, name: '' }));
+                            }}
+                            onBlur={() => {
+                              if (!salesName.trim()) {
+                                setSalesErrors((prev) => ({ ...prev, name: 'Please provide your name.' }));
+                              }
+                            }}
+                            placeholder="Your full name"
+                            aria-invalid={Boolean(salesErrors.name)}
+                            className="w-full h-11 px-3.5 rounded-xl border border-[rgba(11,27,34,0.16)] focus:border-[#14624F] focus:ring-1 focus:ring-[#14624F] text-sm text-[#0B1B22] outline-none"
+                          />
+                          {salesErrors.name && (
+                            <p role="alert" className="text-xs text-[#9E2F16] mt-1 font-medium">{salesErrors.name}</p>
+                          )}
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                          <label
+                            htmlFor="sales-email"
+                            className="block text-xs font-semibold text-[#0B1B22] uppercase tracking-wider mb-1.5"
+                          >
+                            Email address <span className="text-[#14624F]">*</span>
+                          </label>
+                          <input
+                            id="sales-email"
+                            name="email"
+                            type="email"
+                            autoComplete="email"
+                            inputMode="email"
+                            value={salesEmail}
+                            onChange={(e) => {
+                              setSalesEmail(e.target.value);
+                              if (salesErrors.email) setSalesErrors((prev) => ({ ...prev, email: '' }));
+                            }}
+                            onBlur={() => {
+                              if (salesEmail.trim() && !/^\S+@\S+\.\S+$/.test(salesEmail.trim())) {
+                                setSalesErrors((prev) => ({ ...prev, email: 'Please provide a valid email address.' }));
+                              }
+                            }}
+                            placeholder="you@yourtrade.ie"
+                            aria-invalid={Boolean(salesErrors.email)}
+                            className="w-full h-11 px-3.5 rounded-xl border border-[rgba(11,27,34,0.16)] focus:border-[#14624F] focus:ring-1 focus:ring-[#14624F] text-sm text-[#0B1B22] outline-none"
+                          />
+                          {salesErrors.email && (
+                            <p role="alert" className="text-xs text-[#9E2F16] mt-1 font-medium">{salesErrors.email}</p>
+                          )}
+                        </div>
+
+                        {/* Phone (optional) */}
+                        <div>
+                          <label
+                            htmlFor="sales-phone"
+                            className="block text-xs font-semibold text-[#0B1B22] uppercase tracking-wider mb-1.5"
+                          >
+                            Phone or WhatsApp <span className="text-[#475754] font-normal lowercase">(optional)</span>
+                          </label>
+                          <input
+                            id="sales-phone"
+                            name="phone"
+                            type="tel"
+                            autoComplete="tel"
+                            inputMode="tel"
+                            value={salesPhone}
+                            onChange={(e) => setSalesPhone(e.target.value)}
+                            placeholder="087 123 4567"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[rgba(11,27,34,0.16)] focus:border-[#14624F] focus:ring-1 focus:ring-[#14624F] text-sm text-[#0B1B22] outline-none"
+                          />
+                        </div>
+
+                        {/* Prefilled editable message */}
+                        <div>
+                          <label
+                            htmlFor="sales-message"
+                            className="block text-xs font-semibold text-[#0B1B22] uppercase tracking-wider mb-1.5"
+                          >
+                            Estimate summary &amp; notes <span className="text-[#475754] font-normal lowercase">(editable)</span>
+                          </label>
+                          <textarea
+                            id="sales-message"
+                            name="message"
+                            rows={4}
+                            value={salesMessage}
+                            onChange={(e) => setSalesMessage(e.target.value)}
+                            className="w-full p-3 rounded-xl border border-[rgba(11,27,34,0.16)] focus:border-[#14624F] focus:ring-1 focus:ring-[#14624F] text-xs font-mono text-[#0B1B22] leading-relaxed resize-y outline-none"
+                          />
+                        </div>
+
+                        {/* Consent checkbox */}
+                        <div>
+                          <label className="flex items-start gap-2.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={salesConsent}
+                              onChange={(e) => {
+                                setSalesConsent(e.target.checked);
+                                if (salesErrors.consent) setSalesErrors((prev) => ({ ...prev, consent: '' }));
+                              }}
+                              className="mt-0.5 w-4 h-4 rounded border-[rgba(11,27,34,0.3)] accent-[#14624F] cursor-pointer"
+                            />
+                            <span className="text-xs text-[#475754] leading-relaxed">
+                              I agree to be contacted about this estimate. Details will never be shared or spammed.
+                            </span>
+                          </label>
+                          {salesErrors.consent && (
+                            <p role="alert" className="text-xs text-[#9E2F16] mt-1 font-medium">{salesErrors.consent}</p>
+                          )}
+                        </div>
+
+                        {/* Status / Fallback Banner */}
+                        {salesStatus && (
+                          <div role="status" className="p-3 rounded-xl bg-[#DDF4EA] border border-[#14624F]/25 text-xs text-[#0F4A3E] leading-relaxed">
+                            {salesStatus}
+                          </div>
+                        )}
+
+                        {/* Submit Button */}
+                        <div className="pt-2">
+                          <button
+                            type="submit"
+                            disabled={salesSubmitting}
+                            className="oh-btn-primary w-full h-12 rounded-full text-white text-sm font-semibold active:scale-[0.98] transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                          >
+                            {salesSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                            <span>{salesSubmitting ? 'Sending...' : 'Request Custom Package'}</span>
+                            {!salesSubmitting && <ArrowRight className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>

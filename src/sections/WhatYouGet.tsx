@@ -11,6 +11,7 @@ import {
   Award,
 } from 'lucide-react';
 import Container from '../components/Container';
+import { config } from '../config';
 import { WHAT_YOU_GET_CONTENT } from '../content';
 import {
   GoogleProfileAnimation,
@@ -38,7 +39,7 @@ export default function WhatYouGet() {
             </h3>
 
             <p className="text-[15px] sm:text-[16px] text-[#5E6F77] max-w-xl mx-auto leading-relaxed">
-              Every Starter, Standard and Growth build comes with these six essentials ready on day one. Extras are quoted in writing before we start.
+              Every {(config.pricing?.tiers || []).map((t) => t.name).join(', ').replace(/, ([^,]+)$/, ' and $1')} build comes with these six essentials ready on day one. Extras are quoted in writing before we start.
             </p>
           </div>
 

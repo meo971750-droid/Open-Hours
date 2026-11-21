@@ -9,10 +9,42 @@ export interface HeroProofAvatar {
 export interface HeroProofConfig {
   avatars: HeroProofAvatar[];
   line: string;
+  line1?: string;
+  line2?: string;
   linkText: string;
   showStars: boolean;
   ratingSourceUrl: string;
   ratingLabel: string;
+  rating?: number | string;
+  source?: string;
+  count?: number;
+  photoNote?: string;
+}
+
+export interface HeroConfig {
+  title: string;
+  accentWord?: string;
+  subtitle: string;
+  ctaLabel: string;
+}
+
+export interface HeroCardConfig {
+  id: string;
+  variant: 'dark' | 'teal-tint' | 'peach-tint' | 'white' | 'dark-pill';
+  label: string;
+  subtitle?: string;
+  meta?: string;
+  tag: string;
+  weekdays?: string[];
+  activeDays?: number[];
+  avatarMonogram?: string;
+  requiresFlag?: keyof AppFeaturesConfig;
+}
+
+export interface HeroToolConfig {
+  id: string;
+  name: string;
+  icon: string;
 }
 
 export interface AppFeaturesConfig {
@@ -26,6 +58,19 @@ export interface AppFeaturesConfig {
   reviewRequests: boolean;
   googleBusinessProfile: boolean;
   enquiryInbox?: boolean;
+  heroTools: boolean;
+  localSeo: boolean;
+  citations: boolean;
+  aiLeadCapture: boolean;
+  autoBooking: boolean;
+  ownerAlerts: boolean;
+  quoteFollowUp: boolean;
+  photoEstimate: boolean;
+  aeoFaq: boolean;
+  oldClientReactivation: boolean;
+  reviewEngine: boolean;
+  geo: boolean;
+  googleAds: boolean;
 }
 
 export interface FrictionPair {
@@ -200,6 +245,20 @@ export interface TestimonialItem {
   sourceUrl: string;
   date: string;
   isTrade: boolean;
+  highlight?: string;
+  logo?: string;
+}
+
+export interface PortfolioItem {
+  id: string;
+  name: string;
+  trade: string;
+  image: string;
+  domain?: string;
+}
+
+export interface ProofConfig {
+  note: string;
 }
 
 export interface GrowthCardsConfig {
@@ -245,15 +304,33 @@ export interface WhyChooseUsConfig {
   banner?: WhyChooseUsBannerConfig;
 }
 
+export interface PricingItemConfig {
+  label: string;
+  flag?: keyof AppFeaturesConfig;
+  aiDisclosure?: boolean;
+}
+
 export interface PricingTierConfig {
   id: string;
   name: string;
   price: number;
-  days: number;
+  monthlyPrice: number;
+  days?: number;
+  deliveryDays?: number;
+  outcome: string;
   description: string;
+  everythingInLabel?: string;
+  priceNote?: string;
+  setupItems: PricingItemConfig[];
+  monthlyItems: PricingItemConfig[];
   features?: string[];
   tag?: string;
   highlighted?: boolean;
+}
+
+export interface PricingFaqItem {
+  question: string;
+  answer: string;
 }
 
 export interface PricingConfig {
@@ -262,6 +339,10 @@ export interface PricingConfig {
   titleAccent: string;
   subtext?: string;
   tiers: PricingTierConfig[];
+  estimateNote?: string;
+  termNote?: string;
+  vatNote?: string;
+  deliveryNote?: string;
   smallPrint?: string;
 }
 
@@ -296,44 +377,297 @@ export interface BuilderConfig {
 export interface VideoTestimonialConfig {
   rating?: number;
   disclosure?: string;
+  highlight?: string;
+  logo?: string;
+}
+
+export interface WorkItemConfig {
+  id: string;
+  title: string;
+  trade?: string;
+  category: string;
+  image: string;
+  videoUrl?: string;
+  liveUrl?: string;
+  isClient?: boolean;
+}
+
+export interface WorkCategoryConfig {
+  id: string;
+  title: string;
+  direction: 'rtl' | 'ltr';
+}
+
+export interface WorkConfig {
+  subtitle: string;
+  conceptFooterNote: string;
+  categories: WorkCategoryConfig[];
+  items: WorkItemConfig[];
+}
+
+export interface ProcessStepConfig {
+  id: string;
+  stepLabel: string;
+  title: string;
+  description: string;
+  timing?: string;
+  visualType: 'intro' | 'quote' | 'build' | 'live';
+}
+
+export interface SocialsConfig {
+  whatsapp?: string;
+  instagram?: string;
+  linkedin?: string;
+  facebook?: string;
+  x?: string;
+}
+
+export interface LegalLinksConfig {
+  terms?: string;
+  privacy?: string;
+  cookies?: string;
 }
 
 export interface AppConfig {
   studioName: string;
   legalName: string;
+  registrationNumber?: string;
+  email: string;
+  phone: string;
   companyAddress: string;
+  workingModelLine: string;
+  contactSubtitle: string;
+  responseTime: string;
+  formEndpoint: string;
   bookingUrl: string;
   liveDemoUrl: string;
+  socials: SocialsConfig;
+  legalLinks: LegalLinksConfig;
+  trades: string[];
+  portfolio: PortfolioItem[];
+  work: WorkConfig;
+  processSubtitle: string;
+  process: ProcessStepConfig[];
+  proof: ProofConfig;
   features: AppFeaturesConfig;
+  hero: HeroConfig;
   heroProof: HeroProofConfig;
+  heroCards: HeroCardConfig[];
+  heroTools: HeroToolConfig[];
+  founderPhoto?: string;
+  socialImage?: string;
+  floatingCtaLabel?: string;
+  missedCallText?: string;
+  whatsapp?: string;
   wayOfWorking: WayOfWorkingConfig;
   bento: BentoConfig;
   whoFor: WhoForConfig;
   growth: GrowthConfig;
   whyChooseUs: WhyChooseUsConfig;
   pricing: PricingConfig;
+  pricingFaqs: PricingFaqItem[];
   builder: BuilderConfig;
   promises: string[];
   coreEssentials: CoreEssentialItem[];
   testimonials: TestimonialItem[];
   videoTestimonial?: VideoTestimonialConfig;
   cta?: {
+    text?: string;
     signature?: string;
   };
+  whiteLabel: WhiteLabelConfig;
+}
+
+export interface WhiteLabelStepConfig {
+  step: number;
+  title: string;
+  you: string;
+  openHours: string;
+  leadLane: 'you' | 'openHours';
+}
+
+export interface WhiteLabelConfig {
+  headingLead: string;
+  headingAccent: string;
+  cardTitle: string;
+  cardSubtitle: string;
+  ctaLabel: string;
+  image?: string;
+  modalTitle: string;
+  modalSubtitle: string;
+  steps: WhiteLabelStepConfig[];
+  whatYouGet: string[];
+  whatWeAsk: string[];
+  modalCtaLabel: string;
 }
 
 export const config: AppConfig = {
   studioName: 'Open Hours',
   legalName: 'Open Hours Studio',
+  registrationNumber: '',
+  email: 'hello@openhours.studio',
+  phone: '',
   companyAddress: '',
+  workingModelLine: 'Direct with the founder. No account managers.',
+  contactSubtitle: 'Tell us about your business and we will reply in writing.',
+  responseTime: '24 hours',
+  formEndpoint: '',
   bookingUrl: '',
   liveDemoUrl: '',
+  founderPhoto: 'https://i.ibb.co.com/6cJH7T24/Profile-Pic.png',
+  socialImage: '/roofing-sites/1-xyz-roofing.png',
+  floatingCtaLabel: 'Any question?',
+  missedCallText:
+    "Sorry we missed you. We're on a job. Send your details and we'll reply today.",
+  whatsapp: '',
+  socials: {
+    whatsapp: '',
+    instagram: '',
+    linkedin: '',
+    facebook: '',
+    x: '',
+  },
+  legalLinks: {
+    terms: '#terms',
+    privacy: '#privacy',
+    cookies: '#cookies',
+  },
+  trades: [
+    'Roofers',
+    'Kitchen fitters',
+    'Extension builders',
+    'Windows & doors',
+    'Landscapers',
+    'Heating installers',
+    'Electricians',
+    'Plumbers',
+  ],
+  portfolio: [
+    {
+      id: 'xyz-roofing',
+      name: 'XYZ Roofing',
+      trade: 'Roofers',
+      image: '/roofing-sites/1-xyz-roofing.png',
+      domain: 'xyzroofing.com',
+    },
+    {
+      id: 'alex-roofing',
+      name: 'Alex Roofing',
+      trade: 'Roofers',
+      image: '/roofing-sites/3-alex-roofing.png',
+      domain: 'alexroofing.com',
+    },
+    {
+      id: 'roofen',
+      name: 'Roofen',
+      trade: 'Roofers',
+      image: '/roofing-sites/4-roofen.png',
+      domain: 'roofen.com',
+    },
+    {
+      id: 'atlantic-slate-roofing',
+      name: 'Atlantic Slate Roofing',
+      trade: 'Roofers',
+      image: '/roofing-sites/5-atlantic-slate-roofing.png',
+      domain: 'atlanticslateroofing.com',
+    },
+  ],
+  work: {
+    subtitle:
+      'Website concepts and local search layouts designed for builders and home-improvement trades across Ireland and Malta.',
+    conceptFooterNote: 'Concept designs shown for illustration. They are not client projects.',
+    categories: [
+      {
+        id: 'trade-websites',
+        title: 'Websites for builders and trades',
+        direction: 'rtl',
+      },
+    ],
+    items: [
+      {
+        id: 'xyz-roofing',
+        title: 'XYZ Roofing',
+        trade: 'Roofers',
+        category: 'trade-websites',
+        image: '/roofing-sites/1-xyz-roofing.png',
+        isClient: false,
+      },
+      {
+        id: 'alex-roofing',
+        title: 'Alex Roofing',
+        trade: 'Roofers',
+        category: 'trade-websites',
+        image: '/roofing-sites/3-alex-roofing.png',
+        isClient: false,
+      },
+      {
+        id: 'roofen',
+        title: 'Roofen',
+        trade: 'Roofers',
+        category: 'trade-websites',
+        image: '/roofing-sites/4-roofen.png',
+        isClient: false,
+      },
+      {
+        id: 'atlantic-slate-roofing',
+        title: 'Atlantic Slate Roofing',
+        trade: 'Roofers',
+        category: 'trade-websites',
+        image: '/roofing-sites/5-atlantic-slate-roofing.png',
+        isClient: false,
+      },
+    ],
+  },
+  processSubtitle: 'What we do, how we do it, and why it matters for your trade.',
+  process: [
+    {
+      id: 'intro-call',
+      stepLabel: 'STEP 01',
+      title: 'Free intro call',
+      description:
+        'Tell us your trade, your area and the jobs you want more of. We check what local customers currently find when they search for you.',
+      timing: '',
+      visualType: 'intro',
+    },
+    {
+      id: 'written-quote',
+      stepLabel: 'STEP 02',
+      title: 'Written quote',
+      description:
+        'You receive a clear, fixed-price written quote and page structure agreed upfront before any work begins.',
+      timing: '',
+      visualType: 'quote',
+    },
+    {
+      id: 'build-and-review',
+      stepLabel: 'STEP 03',
+      title: 'Build and review',
+      description:
+        'We build your homepage concept, full pages and Google Business Profile, then review everything with you for any edits.',
+      timing: 'Concept in ~3 working days',
+      visualType: 'build',
+    },
+    {
+      id: 'go-live',
+      stepLabel: 'STEP 04',
+      title: 'Go live',
+      description:
+        'Your site, domain, quote form and call buttons go live together, with full ownership of every file and login.',
+      timing: 'Live in ~10 working days',
+      visualType: 'live',
+    },
+  ],
+  proof: {
+    note: 'Reviews from past clients of the founder, shared via Senja with permission.',
+  },
   cta: {
+    text: "Let's see what customers find when they look for your trade.",
     signature: 'Open Hours Studio',
   },
   videoTestimonial: {
     rating: 5,
     disclosure: '',
+    highlight: 'Quick, clear build from start to finish',
   },
   testimonials: [
     {
@@ -439,6 +773,26 @@ export const config: AppConfig = {
     reviewRequests: true,
     googleBusinessProfile: true,
     enquiryInbox: true,
+    heroTools: false,
+    localSeo: true,
+    citations: true,
+    aiLeadCapture: true,
+    autoBooking: true,
+    ownerAlerts: true,
+    quoteFollowUp: true,
+    photoEstimate: true,
+    aeoFaq: true,
+    oldClientReactivation: true,
+    reviewEngine: true,
+    geo: true,
+    googleAds: true,
+  },
+  hero: {
+    title: "The website that answers while you're on the job",
+    accentWord: 'answers',
+    subtitle:
+      "Your website replies to quote requests, texts back missed calls and tracks incoming enquiries, so nothing slips while you're on the job.",
+    ctaLabel: 'Talk to Us',
   },
   bento: {
     title: 'All in One Digital Growth Solution',
@@ -451,14 +805,14 @@ export const config: AppConfig = {
     },
     tileB: {
       inboxLabel: 'Enquiry inbox',
-      inboxHeading: 'Every enquiry in one place.',
+      inboxHeading: 'Incoming enquiries in one place.',
       inboxText: 'Quote requests and messages from your site, listed in one simple inbox.',
       fallbackHeading: 'A website built to catch enquiries.',
       tag: 'Illustrative example',
       businessName: 'Sample Roofing Co.',
     },
     tileC: {
-      heading: 'Every enquiry confirmed, nothing gets lost in a pile.',
+      heading: 'Quote requests confirmed, nothing gets lost in a pile.',
       text: 'Your customer gets a confirmation and you get the details straight away.',
       tag: 'Illustrative example',
     },
@@ -513,30 +867,29 @@ export const config: AppConfig = {
     cards: [
       {
         stage: 'Stage 1',
-        title: 'Found on Google, but no website yet',
-        text: 'Customers can see your name, but have nothing to look at and no easy way to send you a quote request.',
+        title: 'Found on Google, but no clear website',
+        text: 'Customers can see your name, and you want them to find you easily and ask for a call or a quote in one tap.',
         packageKey: 'starter',
-        secondaryLink: 'Start with a 1-page website at no cost',
       },
       {
         stage: 'Stage 2',
-        title: 'Website and profile, but neglected',
-        text: "You have both, but they're out of date, hard to enquire from, or nobody has time to look after them.",
+        title: 'Getting enquiries, but missing calls on site',
+        text: 'Enquiries arrive while you work, and you want automatic replies within about a minute plus calendar booking on supported channels.',
         packageKey: 'standard',
       },
       {
         stage: 'Stage 3',
-        title: 'Working well, and ready for more',
-        text: 'Your website and profile are solid. You want more visibility and a tighter path from search to enquiry.',
+        title: 'Established team, ready for steady growth',
+        text: 'Your core site is solid and you want an ongoing system for enquiries, reviews and repeat work.',
         packageKey: 'growth',
       },
     ],
   },
   growth: {
     theme: 'light',
-    pill: 'Growth package',
+    pill: 'Full Growth Engine',
     title: 'Go Further',
-    titleAccent: 'Our Growth Package',
+    titleAccent: 'Full Growth Engine',
     cards: {
       pages: {
         title: 'Pages for every service and area',
@@ -547,7 +900,7 @@ export const config: AppConfig = {
         text: 'Our responsive approach ensures your website and Google profile adapt to every screen and search.',
       },
       list: {
-        title: 'Everything in Growth',
+        title: 'Everything in Full Growth Engine',
       },
     },
   },
@@ -593,57 +946,119 @@ export const config: AppConfig = {
     pill: 'Pricing',
     title: 'Simple pricing,',
     titleAccent: 'fixed in writing',
-    subtext: 'Every build starts with a written quote agreed before we start. No hidden extras.',
+    subtext: 'Every build starts with a clear scope agreed in writing before work starts.',
     tiers: [
       {
         id: 'starter',
-        name: 'Starter',
-        price: 790,
-        days: 7,
-        description: 'A small, complete website for your trade.',
+        name: 'Get Found & Get Called',
+        price: 990,
+        monthlyPrice: 79,
+        outcome: 'People who search can find you, and ask for a call or a quote in one tap.',
+        description: 'People who search can find you, and ask for a call or a quote in one tap.',
+        setupItems: [
+          { label: 'Premium website' },
+          { label: 'Google Business Profile set-up', flag: 'googleBusinessProfile' },
+          { label: 'Local SEO', flag: 'localSeo' },
+          { label: 'Citations', flag: 'citations' },
+          { label: 'Review link', flag: 'reviewRequests' },
+          { label: 'Missed-call text-back', flag: 'missedCallTextBack' },
+        ],
+        monthlyItems: [
+          { label: 'Google Business Profile updates', flag: 'googleBusinessProfile' },
+          { label: 'Monthly report', flag: 'enquiryTracking' },
+        ],
         features: [
-          '3 to 5 pages, mobile-first',
-          'Quote and site-visit request form, with call buttons',
-          'Google Business Profile set-up and tidy-up',
-          'HTTPS and spam-protected forms',
-          'Support after you go live',
+          'Premium website',
+          'Google Business Profile set-up',
+          'Local SEO',
+          'Citations',
+          'Review link',
+          'Missed-call text-back',
+          'Google Business Profile updates (monthly)',
+          'Monthly report (monthly)',
         ],
       },
       {
         id: 'standard',
-        name: 'Standard',
-        price: 1290,
-        days: 10,
+        name: 'Fast Replies',
+        price: 1790,
+        monthlyPrice: 149,
         tag: 'Recommended',
         highlighted: true,
-        description: 'A fuller site that handles enquiries, even after hours.',
+        outcome:
+          'Enquiries get an automatic reply within about a minute, day or night, on supported channels, and qualified leads can book straight into your calendar.',
+        description:
+          'Enquiries get an automatic reply within about a minute, day or night, on supported channels, and qualified leads can book straight into your calendar.',
+        everythingInLabel: 'Everything in Get Found & Get Called, plus:',
+        setupItems: [
+          { label: 'AI lead capture (email and WhatsApp)', flag: 'aiLeadCapture', aiDisclosure: true },
+          { label: 'Automatic booking', flag: 'autoBooking' },
+          { label: 'Owner alerts', flag: 'ownerAlerts' },
+          { label: 'Quote follow-up', flag: 'quoteFollowUp' },
+          { label: 'Photo quote', flag: 'photoEstimate' },
+          { label: 'AEO FAQ', flag: 'aeoFaq' },
+        ],
+        monthlyItems: [
+          { label: 'Monthly enquiry summary', flag: 'enquiryTracking' },
+          { label: 'Follow-up tuning', flag: 'quoteFollowUp' },
+        ],
         features: [
-          '5 to 8 pages, with a project gallery and service-area pages',
-          'Copy written for each service, with FAQs',
-          'Photo quote requests: customers can send a picture of the job',
-          'After-hours auto-reply and missed-call text-back',
-          'Local search foundations',
-          'Review-request link set-up',
+          'AI lead capture (email and WhatsApp)',
+          'Automatic booking',
+          'Owner alerts',
+          'Quote follow-up',
+          'Photo quote',
+          'AEO FAQ',
+          'Monthly enquiry summary (monthly)',
+          'Follow-up tuning (monthly)',
         ],
       },
       {
         id: 'growth',
-        name: 'Growth',
-        price: 2200,
-        days: 14,
-        description: 'For more services, more areas and bigger projects.',
+        name: 'Full Growth Engine',
+        price: 2900,
+        monthlyPrice: 299,
+        priceNote: 'Voice call costs are charged separately.',
+        outcome: 'An ongoing system for enquiries, reviews and repeat work.',
+        description: 'An ongoing system for enquiries, reviews and repeat work.',
+        everythingInLabel: 'Everything in Fast Replies, plus:',
+        setupItems: [
+          { label: 'Voice agent', flag: 'voiceAgent', aiDisclosure: true },
+          { label: 'Old-client reactivation', flag: 'oldClientReactivation' },
+          { label: 'Review engine', flag: 'reviewEngine' },
+          { label: 'GEO', flag: 'geo' },
+          { label: 'Google Ads set-up', flag: 'googleAds' },
+        ],
+        monthlyItems: [
+          { label: 'Content and Google Business Profile posts', flag: 'googleBusinessProfile' },
+          { label: 'Monthly strategy call' },
+          { label: 'Reporting dashboard', flag: 'enquiryTracking' },
+        ],
         features: [
-          'As many pages as your business needs, agreed in your written quote',
-          'A page for each service and area',
-          'Advanced Google Business Profile optimisation',
-          'Google Ads campaign set-up (ad spend paid directly to Google)',
-          'Enquiry tracking and a monthly report',
-          'Review-request flow',
+          'Voice agent',
+          'Old-client reactivation',
+          'Review engine',
+          'GEO',
+          'Google Ads set-up',
+          'Content and Google Business Profile posts (monthly)',
+          'Monthly strategy call (monthly)',
+          'Reporting dashboard (monthly)',
         ],
       },
     ],
-    smallPrint: "Ad spend is paid to Google directly. Domain is registered in the client's name.",
+    estimateNote: 'from prices; final price confirmed in writing before work starts',
+    termNote: '',
+    vatNote: '',
+    deliveryNote: '',
+    smallPrint: '',
   },
+  pricingFaqs: [
+    { question: 'What is the monthly fee for?', answer: '' },
+    { question: 'Can I cancel the monthly plan?', answer: '' },
+    { question: 'Are prices shown with or without VAT?', answer: '' },
+    { question: "What does 'from' mean?", answer: '' },
+    { question: 'Are voice call costs included?', answer: '' },
+  ],
   builder: {
     title: 'Need something different?',
     subtext: 'Choose the pages and features you want. The estimate updates as you go.',
@@ -654,46 +1069,26 @@ export const config: AppConfig = {
     maxPages: 15,
     pageExamples: ['Home', 'Services', 'About', 'Contact', 'Service areas'],
     features: [
-      // OWNER: set real prices, rows with price 0 stay hidden
+      // PROPOSED - owner to confirm: set-up and monthly prices calibrated to ~110% of each package price (rounded to €5 set-up / €1 monthly)
 
       // Group: Website
       {
-        id: 'projectGallery',
-        name: 'Project gallery',
-        description: 'Showcase photos of recent work to build confidence',
-        price: 85, // PROPOSED - owner to confirm
+        id: 'premiumWebsite',
+        name: 'Premium website',
+        description: 'Custom mobile-first website built to turn local visitors into enquiries',
+        price: 100, // PROPOSED - owner to confirm
         billing: 'one-time',
-        icon: 'images',
-        group: 'Website',
-        includedInTiers: ['standard', 'growth'],
-      },
-      {
-        id: 'serviceCopyFaqs',
-        name: 'Copy written for each service, with FAQs',
-        description: 'Clear, plain-language text and common questions for each service',
-        price: 120, // PROPOSED - owner to confirm
-        billing: 'one-time',
-        icon: 'file-text',
-        group: 'Website',
-        includedInTiers: ['standard', 'growth'],
-      },
-      {
-        id: 'securitySpam',
-        name: 'HTTPS and spam-protected forms',
-        description: 'SSL encryption and spam-protected enquiry forms',
-        price: 15, // PROPOSED - owner to confirm
-        billing: 'one-time',
-        icon: 'lock',
+        icon: 'globe',
         group: 'Website',
         includedInTiers: ['starter', 'standard', 'growth'],
       },
 
       // Group: Get found on Google
       {
-        id: 'gbp',
+        id: 'googleBusinessProfileSetup',
         name: 'Google Business Profile set-up',
-        description: 'Profile set-up, verification guidance and tidy-up',
-        price: 35, // PROPOSED - owner to confirm
+        description: 'Profile set-up, categories and verification tidy-up for local Maps',
+        price: 50, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'map-pin',
         group: 'Get found on Google',
@@ -701,160 +1096,254 @@ export const config: AppConfig = {
         includedInTiers: ['starter', 'standard', 'growth'],
       },
       {
-        id: 'advancedGbp',
-        name: 'Advanced Google Business Profile optimisation',
-        description: 'Full profile optimisation to help you stand out in local map searches',
-        price: 280, // PROPOSED - owner to confirm
+        id: 'localSeo',
+        name: 'Local SEO',
+        description: 'Clean local page structure and town signals so Google knows where you work',
+        price: 55, // PROPOSED - owner to confirm
         billing: 'one-time',
-        icon: 'map-pin',
+        icon: 'target',
         group: 'Get found on Google',
-        flag: 'googleBusinessProfile',
-        includedInTiers: ['growth'],
+        flag: 'localSeo',
+        includedInTiers: ['starter', 'standard', 'growth'],
       },
       {
-        id: 'serviceAreaPages',
-        name: 'Service-area pages',
-        description: 'Dedicated pages for towns and localities you cover',
-        price: 95, // PROPOSED - owner to confirm
+        id: 'citations',
+        name: 'Citations',
+        description: 'Consistent name, address and phone details across key Irish and Maltese directories',
+        price: 30, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'layers',
         group: 'Get found on Google',
-        flag: 'serviceAreaPages',
-        includedInTiers: ['standard', 'growth'],
+        flag: 'citations',
+        includedInTiers: ['starter', 'standard', 'growth'],
       },
       {
-        id: 'localSearchFoundations',
-        name: 'Local search foundations',
-        description: 'Clean geographic structure so Google understands your location',
-        price: 70, // PROPOSED - owner to confirm
-        billing: 'one-time',
-        icon: 'globe',
-        group: 'Get found on Google',
-        includedInTiers: ['standard', 'growth'],
-      },
-      {
-        id: 'reviewRequests',
-        name: 'Review requests',
-        description: 'Link setup and automated flow to collect client reviews',
-        price: 75, // PROPOSED - owner to confirm
+        id: 'reviewLink',
+        name: 'Review link',
+        description: 'Short direct Google review link you can send after finishing a job',
+        price: 25, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'star',
         group: 'Get found on Google',
         flag: 'reviewRequests',
+        includedInTiers: ['starter', 'standard', 'growth'],
+      },
+      {
+        id: 'aeoFaq',
+        name: 'AEO FAQ',
+        description: 'Structured question-and-answer blocks built for answer engines and local search',
+        price: 120, // PROPOSED - owner to confirm
+        billing: 'one-time',
+        icon: 'file-text',
+        group: 'Get found on Google',
+        flag: 'aeoFaq',
         includedInTiers: ['standard', 'growth'],
       },
       {
+        id: 'reviewEngine',
+        name: 'Review engine',
+        description: 'Automated post-job follow-up sequence to grow steady Google reviews',
+        price: 180, // PROPOSED - owner to confirm
+        billing: 'one-time',
+        icon: 'star',
+        group: 'Get found on Google',
+        flag: 'reviewEngine',
+        includedInTiers: ['growth'],
+      },
+      {
+        id: 'geo',
+        name: 'GEO',
+        description: 'Generative Engine Optimisation structure for AI search and assistant citations',
+        price: 200, // PROPOSED - owner to confirm
+        billing: 'one-time',
+        icon: 'sparkles',
+        group: 'Get found on Google',
+        flag: 'geo',
+        includedInTiers: ['growth'],
+      },
+      {
         id: 'googleAds',
-        name: 'Google Ads campaign set-up',
-        description: 'Targeted local search campaign (ad spend paid directly to Google)',
-        price: 500, // PROPOSED - owner to confirm
+        name: 'Google Ads set-up',
+        description: 'Targeted local search campaign structure (ad spend paid directly to Google)',
+        price: 280, // PROPOSED - owner to confirm
         billing: 'one-time',
         icon: 'target',
         group: 'Get found on Google',
+        flag: 'googleAds',
         includedInTiers: ['growth'],
       },
 
       // Group: Handle enquiries
       {
-        id: 'quoteForm',
-        name: 'Quote request form',
-        description: 'Quote and site-visit request form with call buttons',
-        price: 25, // PROPOSED - owner to confirm
-        billing: 'one-time',
-        icon: 'form',
-        group: 'Handle enquiries',
-        includedInTiers: ['starter', 'standard', 'growth'],
-      },
-      {
-        id: 'photoQuote',
-        name: 'Photo quote requests',
-        description: 'Customers can attach photos of the job directly to quote requests',
-        price: 45, // PROPOSED - owner to confirm
-        billing: 'one-time',
-        icon: 'camera',
-        group: 'Handle enquiries',
-        includedInTiers: ['standard', 'growth'],
-      },
-      {
-        id: 'whatsapp',
-        name: 'WhatsApp button',
-        description: 'Direct chat button for fast enquiries from mobile visitors',
-        price: 0, // OWNER: set real price
-        billing: 'one-time',
-        icon: 'message',
-        group: 'Handle enquiries',
-        includedInTiers: [],
-      },
-      {
-        id: 'afterHoursAutoReply',
-        name: 'After-hours auto-reply',
-        description: 'Automatic response and details capture when calls or forms arrive after hours',
-        price: 55, // PROPOSED - owner to confirm
-        billing: 'one-time',
-        icon: 'clock',
-        group: 'Handle enquiries',
-        flag: 'afterHoursAutoReply',
-        includedInTiers: ['standard', 'growth'],
-      },
-      {
         id: 'missedCallTextBack',
         name: 'Missed-call text-back',
-        description: "Automatic text sent back to callers when you cannot answer on a job",
-        price: 0, // OWNER: set real price
-        billing: 'monthly',
+        description: 'Automatic text sent shortly after an unanswered call so callers do not move on',
+        price: 40, // PROPOSED - owner to confirm
+        billing: 'one-time',
         icon: 'phone',
         group: 'Handle enquiries',
         flag: 'missedCallTextBack',
+        includedInTiers: ['starter', 'standard', 'growth'],
+      },
+      {
+        id: 'aiLeadCapture',
+        name: 'AI lead capture (email and WhatsApp)',
+        description: 'Automated reply within about a minute on email and WhatsApp; always says it is an AI',
+        price: 250, // PROPOSED - owner to confirm
+        billing: 'one-time',
+        icon: 'message',
+        group: 'Handle enquiries',
+        flag: 'aiLeadCapture',
         includedInTiers: ['standard', 'growth'],
       },
       {
-        id: 'enquiryTracking',
-        name: 'Enquiry tracking',
-        description: 'Track phone calls, WhatsApp messages and quote forms with a monthly report',
-        price: 220, // PROPOSED - owner to confirm
+        id: 'autoBooking',
+        name: 'Automatic booking',
+        description: 'Qualified leads book available call or visit slots straight into your calendar',
+        price: 150, // PROPOSED - owner to confirm
         billing: 'one-time',
-        icon: 'bar-chart',
+        icon: 'calendar',
         group: 'Handle enquiries',
-        flag: 'enquiryTracking',
-        includedInTiers: ['growth'],
+        flag: 'autoBooking',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'ownerAlerts',
+        name: 'Owner alerts',
+        description: 'Summary alerts sent to you when a new lead shares job details or books a slot',
+        price: 80, // PROPOSED - owner to confirm
+        billing: 'one-time',
+        icon: 'bell',
+        group: 'Handle enquiries',
+        flag: 'ownerAlerts',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'quoteFollowUp',
+        name: 'Quote follow-up',
+        description: 'Polite scheduled check-ins sent after a quote so warm jobs do not go quiet',
+        price: 150, // PROPOSED - owner to confirm
+        billing: 'one-time',
+        icon: 'clock',
+        group: 'Handle enquiries',
+        flag: 'quoteFollowUp',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'photoQuote',
+        name: 'Photo quote',
+        description: 'Lets customers attach photos of the job when requesting an estimate',
+        price: 130, // PROPOSED - owner to confirm
+        billing: 'one-time',
+        icon: 'camera',
+        group: 'Handle enquiries',
+        flag: 'photoEstimate',
+        includedInTiers: ['standard', 'growth'],
       },
       {
         id: 'voiceAgent',
         name: 'Voice agent',
-        description: 'Automated assistant answering calls when your tools are in hand',
-        price: 0, // OWNER: set real price
-        billing: 'monthly',
+        description: 'AI phone assistant that answers calls and logs details; always says it is an AI. Call costs charged separately.',
+        price: 350, // PROPOSED - owner to confirm
+        billing: 'one-time',
         icon: 'mic',
         group: 'Handle enquiries',
         flag: 'voiceAgent',
-        includedInTiers: [],
+        includedInTiers: ['growth'],
+      },
+      {
+        id: 'oldClientReactivation',
+        name: 'Old-client reactivation',
+        description: 'Tasteful check-in campaigns to re-engage past customers for repeat work',
+        price: 210, // PROPOSED - owner to confirm
+        billing: 'one-time',
+        icon: 'refresh',
+        group: 'Handle enquiries',
+        flag: 'oldClientReactivation',
+        includedInTiers: ['growth'],
       },
 
       // Group: Ongoing
       {
-        id: 'carePlan',
-        name: 'Care plan',
-        description: 'Hosting, security, updates and backups',
-        price: 39,
+        id: 'gbpUpdates',
+        name: 'Google Business Profile updates',
+        description: 'Regular updates, photos and service checks to keep your profile active',
+        price: 49, // PROPOSED - owner to confirm
         billing: 'monthly',
-        icon: 'shield',
+        icon: 'map-pin',
         group: 'Ongoing',
-        includedInTiers: [],
+        flag: 'googleBusinessProfile',
+        includedInTiers: ['starter', 'standard', 'growth'],
       },
       {
-        id: 'supportAfterLive',
-        name: 'Support after you go live',
-        description: 'Ongoing support and fixes to what we build',
-        price: 10, // PROPOSED - owner to confirm
-        billing: 'one-time',
-        icon: 'life-buoy',
+        id: 'monthlyReport',
+        name: 'Monthly report',
+        description: 'Clear monthly summary of calls, form enquiries and local visibility',
+        price: 38, // PROPOSED - owner to confirm
+        billing: 'monthly',
+        icon: 'bar-chart',
         group: 'Ongoing',
+        flag: 'enquiryTracking',
         includedInTiers: ['starter', 'standard', 'growth'],
+      },
+      {
+        id: 'monthlyEnquirySummary',
+        name: 'Monthly enquiry summary',
+        description: 'Detailed breakdown of enquiry sources, reply speeds and booked slots',
+        price: 37, // PROPOSED - owner to confirm
+        billing: 'monthly',
+        icon: 'file-text',
+        group: 'Ongoing',
+        flag: 'enquiryTracking',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'followUpTuning',
+        name: 'Follow-up tuning',
+        description: 'Monthly refinements to AI reply wording and quote follow-up timing',
+        price: 40, // PROPOSED - owner to confirm
+        billing: 'monthly',
+        icon: 'refresh',
+        group: 'Ongoing',
+        flag: 'quoteFollowUp',
+        includedInTiers: ['standard', 'growth'],
+      },
+      {
+        id: 'contentAndGbpPosts',
+        name: 'Content and Google Business Profile posts',
+        description: 'Fresh project updates and regular Google Business Profile posts published for you',
+        price: 65, // PROPOSED - owner to confirm
+        billing: 'monthly',
+        icon: 'images',
+        group: 'Ongoing',
+        flag: 'googleBusinessProfile',
+        includedInTiers: ['growth'],
+      },
+      {
+        id: 'monthlyStrategyCall',
+        name: 'Monthly strategy call',
+        description: 'Focused monthly review call covering leads, rankings and next priorities',
+        price: 60, // PROPOSED - owner to confirm
+        billing: 'monthly',
+        icon: 'phone',
+        group: 'Ongoing',
+        includedInTiers: ['growth'],
+      },
+      {
+        id: 'reportingDashboard',
+        name: 'Reporting dashboard',
+        description: 'Live view of enquiry activity, sources and campaign performance',
+        price: 40, // PROPOSED - owner to confirm
+        billing: 'monthly',
+        icon: 'bar-chart',
+        group: 'Ongoing',
+        flag: 'enquiryTracking',
+        includedInTiers: ['growth'],
       },
     ],
     alwaysIncluded: [
       'Fixed price agreed in writing before we start',
-      'Domain and website owned 100% by you',
+      'Domain and website owned outright by you',
       'Fast, mobile-friendly design',
       'HTTPS security and spam protection',
     ],
@@ -911,12 +1400,67 @@ export const config: AppConfig = {
         consent: true,
       },
     ],
-    line: 'Trusted by professionals like you.',
+    line: 'Trusted by Professionals Like You',
+    line1: 'Trusted by Professionals Like You',
+    line2: '',
     linkText: 'See what they say',
     showStars: false,
     ratingSourceUrl: '',
     ratingLabel: '',
+    rating: '',
+    source: '',
+    count: undefined,
+    photoNote: '',
   },
+  heroCards: [
+    {
+      id: 'new-enquiry',
+      variant: 'dark',
+      label: 'New enquiry',
+      subtitle: 'Roof repair, Cork',
+      meta: '2 min ago',
+      tag: 'Sample data',
+    },
+    {
+      id: 'weekly-enquiries',
+      variant: 'teal-tint',
+      label: 'Enquiries this week',
+      tag: 'Sample data',
+    },
+    {
+      id: 'call-taps',
+      variant: 'peach-tint',
+      label: 'Call button taps',
+      tag: 'Sample data',
+    },
+    {
+      id: 'missed-call',
+      variant: 'white',
+      label: 'Missed call, text sent',
+      weekdays: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+      activeDays: [1, 3, 5],
+      requiresFlag: 'missedCallTextBack',
+      tag: 'Sample data',
+    },
+    {
+      id: 'google-enquiry',
+      variant: 'dark-pill',
+      label: 'Enquiry from Google',
+      avatarMonogram: 'G',
+      tag: 'Sample data',
+    },
+  ],
+  heroTools: [
+    { id: 'gemini', name: 'Gemini', icon: 'gemini' },
+    { id: 'claude', name: 'Claude', icon: 'claude' },
+    { id: 'chatgpt', name: 'ChatGPT', icon: 'chatgpt' },
+    { id: 'figma', name: 'Figma', icon: 'figma' },
+    { id: 'lovable', name: 'Lovable', icon: 'lovable' },
+    { id: 'whatsapp', name: 'WhatsApp', icon: 'whatsapp' },
+    { id: 'gbp', name: 'Google Business Profile', icon: 'gbp' },
+    { id: 'vercel', name: 'Vercel', icon: 'vercel' },
+    { id: 'github', name: 'GitHub', icon: 'github' },
+  ],
   wayOfWorking: {
     title: 'The way we deliver',
     studioVoice: '', // "we" or "I", not decided; leave empty, do not guess
@@ -926,94 +1470,66 @@ export const config: AppConfig = {
     storyLabel: 'Illustrative story',
     sampleAreas: ['North District', 'West End', 'Harbour View'],
     palette: {
-      searches: { bg: '#0B1B2B', bg2: '#12303D', ink: '#F3F6F8', accent: '#F4B860', accent2: '#E5484D' },
+      searches: { bg: '#050E0D', bg2: '#0F2F2B', ink: '#F3F6F8', accent: '#E8B08F', accent2: '#C8642E' },
       journey:  { bg: '#FBF6EE', bg2: '#F3E9DA', ink: '#12303D', accent: '#C8642E', accent2: '#E8B08F' },
-      solve:    { bg: '#EEF8F3', bg2: '#DDF1E7', ink: '#0F3B2C', accent: '#1E9E6A', accent2: '#9ED9BC' },
-      build:    { bg: '#12304A', bg2: '#0B1F31', ink: '#EAF1F6', accent: '#E8B08F', accent2: '#7FA6C2' },
-      findable: { bg: '#EAF3FF', bg2: '#D7E7FB', ink: '#10284A', accent: '#2F6BFF', accent2: '#9DBCF7' },
-      rank:     { bg: '#1B1F4B', bg2: '#F6C9A5', ink: '#FFF7EE', accent: '#F2B544', accent2: '#F6C9A5' }, // deep navy-indigo, never violet or purple
-      alwaysOn: { bg: '#0A1220', bg2: '#0F1B2E', ink: '#E8EEF4', accent: '#2DD4BF', accent2: '#F4B860' },
-      talk:     { bg: '#12303D', bg2: '#0B1B22', ink: '#FFFFFF', accent: '#E8B08F', accent2: '#C8642E' },
+      solve:    { bg: '#EEF8F3', bg2: '#DDF1E7', ink: '#0F2F2B', accent: '#1E9E6A', accent2: '#A8EBD3' },
+      build:    { bg: '#0B1B22', bg2: '#0F2F2B', ink: '#EAF1F6', accent: '#E8B08F', accent2: '#3FD1A5' },
+      findable: { bg: '#EDF6F2', bg2: '#D8ECE3', ink: '#0F2F2B', accent: '#14574C', accent2: '#A8EBD3' },
+      rank:     { bg: '#0B1B22', bg2: '#14574C', ink: '#FFF7EE', accent: '#E8B08F', accent2: '#A8EBD3' },
+      alwaysOn: { bg: '#050E0D', bg2: '#0F2F2B', ink: '#E8EEF4', accent: '#3FD1A5', accent2: '#E8B08F' },
+      talk:     { bg: '#0F2F2B', bg2: '#050E0D', ink: '#FFFFFF', accent: '#E8B08F', accent2: '#C8642E' },
     },
     pace: {
-      sceneSeconds: 8,
-      holdAfterBeat: 1.4,
-      sceneTransition: 1.1,
-      stagger: 0.12,
-      lineDraw: 1.6,
-      captionDwellPerWord: 0.38,
-      scrollVhPerScene: 90,
+      sceneSeconds: 2.2,
+      holdAfterBeat: 1.0,
+      sceneTransition: 0.25,
+      stagger: 0.1,
+      lineDraw: 1.5,
+      captionDwellPerWord: 0.3,
+      scrollVhPerScene: 45,
     },
     scenes: [
       {
         id: 'searches',
         title: "Your customers are searching. They just can't find you.",
         accentWord: 'searching.',
-        captions: [
-          'A homeowner needs a roofer tonight.',
-          'Local roofers show up, each with a website.',
-          'You are listed, but there is nothing to click.',
-          'They tap a competitor instead.',
-        ],
+        captions: ["A homeowner searches 'roofer near me'"],
       },
       {
         id: 'journey',
         title: 'We map your customer journey and find where it breaks.',
         accentWord: 'journey',
-        captions: [
-          'We follow your customer from search to call.',
-          'Four places where enquiries slip away.',
-        ],
+        captions: ['Clicks drop where contact gets hard'],
       },
       {
         id: 'solve',
         title: 'This is what we actually solve.',
         accentWord: 'solve.',
-        captions: [
-          'Each gap gets a fix.',
-          'The customer reaches you.',
-        ],
+        captions: ['Each gap turns into a clear step'],
       },
       {
         id: 'build',
         title: 'We build a website made to catch enquiries.',
         accentWord: 'enquiries.',
-        captions: [
-          'We draw the site around one goal.',
-          'Call button, headline, quote form.',
-          'Every enquiry gets confirmed.',
-        ],
+        captions: ['Tap to call or request a quote'],
       },
       {
         id: 'findable',
         title: 'We make it easy for Google to understand you.',
         accentWord: 'Google',
-        captions: [
-          'Your business profile gets set up properly.',
-          'Pages for the areas you cover.',
-          'A simple way to ask happy customers.',
-        ],
+        captions: ['Maps, areas and reviews work together'],
       },
       {
         id: 'rank',
         title: 'Ranking takes months, not days.',
         accentWord: 'days.',
-        captions: [
-          'Local rankings build slowly.',
-          'Groundwork adds up, month by month.',
-          'Nobody can promise a position. We never do.',
-        ],
+        captions: ['Steady local signals build month by month'],
       },
       {
         id: 'alwaysOn',
         title: 'Enquiries get handled around the clock.',
         accentWord: 'around',
-        captions: [
-          'A call comes in at night.',
-          'The assistant says it is an AI.',
-          'Name, job and postcode are taken.',
-          'The enquiry is logged for the morning.',
-        ],
+        captions: ['Night calls answered, job logged for morning'],
         enabledWhen: 'voiceAgent',
       },
       {
@@ -1021,12 +1537,82 @@ export const config: AppConfig = {
         title: 'Want us to do this exact process with your business?',
         accentWord: 'process',
         subline: "Tell us your trade and your area, and we'll show you what your customers see today.",
-        captions: [
-          'Calls route, forms ping, quotes flow.',
-          'Ready to get more local work?',
-        ],
+        captions: ['Ready to see what customers see today?'],
       },
     ],
+  },
+  whiteLabel: {
+    headingLead: 'Your white-label build partner',
+    headingAccent: 'for agencies',
+    cardTitle: 'Are you an agency that needs a white-label website partner?',
+    cardSubtitle: 'We can help you with that.',
+    ctaLabel: 'See full process',
+    image: '',
+    modalTitle: 'How white-label works',
+    modalSubtitle:
+      'You keep the client and the brand. We build the website behind the scenes, to a fixed price agreed in writing before work starts.',
+    steps: [
+      {
+        step: 1,
+        title: 'Intro call',
+        you: 'Tell us about your agency, your clients and the websites you sell.',
+        openHours: 'Listen, explain how we work, and say honestly whether we are a good fit.',
+        leadLane: 'you',
+      },
+      {
+        step: 2,
+        title: 'Simple agreement',
+        you: 'Confirm the scope and ground rules.',
+        openHours:
+          'Confirm in writing that your clients will not see the Open Hours name, and sign an NDA if you ask.',
+        leadLane: 'you',
+      },
+      {
+        step: 3,
+        title: 'Project brief',
+        you: "Send your client's brand, content and goals using our short brief form.",
+        openHours: 'Check it and ask only for what is missing.',
+        leadLane: 'you',
+      },
+      {
+        step: 4,
+        title: 'Fixed quote',
+        you: 'Approve it.',
+        openHours:
+          'Send the price and delivery date in writing for each project before work starts.',
+        leadLane: 'openHours',
+      },
+      {
+        step: 5,
+        title: 'Build under your brand',
+        you: "Review it and send us your client's feedback in one go (rounds of changes are set in the quote).",
+        openHours:
+          'Design and build the site with no Open Hours branding, and share progress at agreed checkpoints.',
+        leadLane: 'openHours',
+      },
+      {
+        step: 6,
+        title: 'Handover and launch',
+        you: 'Present it to your client as your work. Your client owns the domain, code, design and assets from day one.',
+        openHours:
+          "Put the site live on your client's domain and hosting and hand over the files and logins.",
+        leadLane: 'openHours',
+      },
+      {
+        step: 7,
+        title: 'Aftercare',
+        you: 'Stay the single point of contact for your client.',
+        openHours: 'Fix issues during the support period agreed in the quote; monthly care is optional.',
+        leadLane: 'openHours',
+      },
+    ],
+    whatYouGet: [
+      'Your brand, not ours',
+      'A fixed price in writing',
+      'Sites your clients own',
+    ],
+    whatWeAsk: ['A clear brief', 'Feedback sent in one go'],
+    modalCtaLabel: 'Talk about a white-label project',
   },
 };
 

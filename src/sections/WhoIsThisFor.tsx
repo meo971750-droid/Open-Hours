@@ -13,7 +13,7 @@ import {
 import Container from '../components/Container';
 import Accent from '../components/Accent';
 import { config } from '../config';
-import { PACKAGES, FIRST_PAGE } from '../content';
+import { PACKAGES } from '../content';
 
 interface WhoIsThisForProps {
   onOpenAudit?: () => void;
@@ -27,24 +27,26 @@ export default function WhoIsThisFor({ onOpenAudit }: WhoIsThisForProps) {
   const whoFor = config.whoFor;
   const cards = whoFor.cards || [];
 
-  // Check if free 1-page offer exists in pricing data or config
-  const hasFree1PageOffer = Boolean(
-    FIRST_PAGE && PACKAGES.some((pkg) => pkg.id === 'first')
-  );
+  const tierList = config.pricing?.tiers || [];
+  const featuresMap = config.features as unknown as Record<string, boolean | number | undefined>;
 
-  // Growth tier features check: inspect whether Google Ads set-up, local SEO, or enquiry tracking exist in PACKAGES
-  const growthTier = PACKAGES.find((pkg) => pkg.id === 'growth');
+  // Full Growth Engine feature checks gated by config.features
+  const growthTierConfig = tierList.find((t) => t.id === 'growth');
   const growthChips: string[] = [];
-  if (growthTier) {
-    const featureText = growthTier.features.join(' ').toLowerCase();
-    if (featureText.includes('google ads')) {
+  if (growthTierConfig) {
+    const enabledItems = [
+      ...growthTierConfig.setupItems,
+      ...growthTierConfig.monthlyItems,
+    ].filter((item) => !item.flag || Boolean(featuresMap[item.flag]));
+    const labels = enabledItems.map((i) => i.label);
+    if (labels.some((l) => l.toLowerCase().includes('google ads'))) {
       growthChips.push('Google Ads set-up');
     }
-    if (featureText.includes('enquiry tracking')) {
-      growthChips.push('Enquiry tracking');
+    if (labels.some((l) => l.toLowerCase().includes('review engine'))) {
+      growthChips.push('Review engine');
     }
-    if (growthChips.length < 2 && (featureText.includes('local seo') || featureText.includes('local search'))) {
-      growthChips.push('Local SEO');
+    if (growthChips.length < 2 && labels.some((l) => l.toLowerCase() === 'geo')) {
+      growthChips.push('GEO');
     }
   }
 
@@ -53,26 +55,25 @@ export default function WhoIsThisFor({ onOpenAudit }: WhoIsThisForProps) {
     const pricingSection = document.getElementById('pricing');
     if (!pricingSection) return;
 
-    // Resolve target package name
-    const targetPkg = PACKAGES.find((pkg) => pkg.id === packageKey);
-    const targetName = targetPkg ? targetPkg.name.toLowerCase() : packageKey.toLowerCase();
+    const targetTier = tierList.find((t) => t.id === packageKey);
+    const targetName = targetTier ? targetTier.name.toLowerCase() : packageKey.toLowerCase();
 
-    // Find the matching article card inside the pricing section
     const articles = Array.from(pricingSection.querySelectorAll('article'));
-    const matchedCard = articles.find((article) => {
-      const h3 = article.querySelector('h3');
-      if (!h3) return false;
-      const text = h3.textContent?.trim().toLowerCase() || '';
-      return text.includes(targetName) || (packageKey === 'first' && (text.includes('1-page') || text.includes('free')));
-    });
+    const matchedCard =
+      (pricingSection.querySelector(`article[data-tier-id="${packageKey}"]`) as HTMLElement | null) ||
+      articles.find((article) => {
+        const h3 = article.querySelector('h3');
+        if (!h3) return false;
+        const text = h3.textContent?.trim().toLowerCase() || '';
+        return text.includes(targetName);
+      });
 
     if (matchedCard) {
       matchedCard.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth', block: 'center' });
-      // Apply brief highlight ring (~1.5s)
       matchedCard.style.transition = 'box-shadow 0.35s ease, outline 0.35s ease, outline-offset 0.35s ease';
-      matchedCard.style.outline = '3px solid #1E4A5C';
+      matchedCard.style.outline = '3px solid #14624F';
       matchedCard.style.outlineOffset = '6px';
-      matchedCard.style.boxShadow = '0 20px 48px rgba(30, 74, 92, 0.28)';
+      matchedCard.style.boxShadow = '0 20px 48px rgba(20, 98, 79, 0.25)';
 
       setTimeout(() => {
         matchedCard.style.outline = 'transparent';
@@ -80,7 +81,6 @@ export default function WhoIsThisFor({ onOpenAudit }: WhoIsThisForProps) {
         matchedCard.style.boxShadow = '';
       }, 1500);
     } else {
-      // Fallback: scroll to pricing section top
       pricingSection.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' });
     }
   };
@@ -126,6 +126,7 @@ export default function WhoIsThisFor({ onOpenAudit }: WhoIsThisForProps) {
            ========================================================================= */}
         <div className="max-w-[1240px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch mb-14 sm:mb-16">
           {cards.map((card, idx) => {
+            const matchedTier = tierList.find((t) => t.id === card.packageKey);
             const matchedPackage = PACKAGES.find((pkg) => pkg.id === card.packageKey);
             const isStage1 = idx === 0;
             const isStage2 = idx === 1;
@@ -137,6 +138,12 @@ export default function WhoIsThisFor({ onOpenAudit }: WhoIsThisForProps) {
               : isStage2
               ? { background: 'linear-gradient(180deg, #FFFFFF 0%, #F5DCCB 100%)' }
               : { background: 'linear-gradient(180deg, #FFFFFF 0%, #D3EBDD 100%)' };
+
+            const displayName = matchedTier?.name || matchedPackage?.name;
+            const displayPrice =
+              matchedTier && typeof matchedTier.price === 'number'
+                ? `from €${matchedTier.price.toLocaleString('en-IE')} + €${matchedTier.monthlyPrice}/mo`
+                : null;
 
             return (
               <motion.article
@@ -180,13 +187,13 @@ export default function WhoIsThisFor({ onOpenAudit }: WhoIsThisForProps) {
                     {card.text}
                   </p>
 
-                  {/* Growth Tier Tiny Chips (if on Card 3 and items exist in pricing data) */}
+                  {/* Growth Tier Tiny Chips */}
                   {isStage3 && growthChips.length > 0 && (
                     <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
                       {growthChips.slice(0, 2).map((chip) => (
                         <span
                           key={chip}
-                          className="text-[11px] font-semibold text-[#1E4A5C] bg-[#EEF4F6] border border-[#1E4A5C]/15 px-2.5 py-0.5 rounded-full"
+                          className="text-[11px] font-semibold text-[#14624F] bg-[#DDF4EA] border border-[#14624F]/15 px-2.5 py-0.5 rounded-full"
                         >
                           {chip}
                         </span>
@@ -195,34 +202,28 @@ export default function WhoIsThisFor({ onOpenAudit }: WhoIsThisForProps) {
                   )}
 
                   {/* Best matched to & See {Package} Button */}
-                  {matchedPackage ? (
+                  {displayName ? (
                     <div className="flex flex-col items-center mt-auto pt-2">
-                      <p className="text-xs font-semibold text-[#0F2A35]/75 uppercase tracking-wider mb-2">
+                      <p className="text-xs font-semibold text-[#0F2A35]/75 uppercase tracking-wider mb-1">
                         Best matched to:{' '}
-                        <span className="font-bold text-[#1E4A5C] normal-case">
-                          {matchedPackage.name}
+                        <span className="font-bold text-[#14624F] normal-case">
+                          {displayName}
                         </span>
                       </p>
+                      {displayPrice && (
+                        <p className="text-xs font-medium text-[#5B6B68] tabular-nums mb-2.5">
+                          {displayPrice}
+                        </p>
+                      )}
 
                       <button
                         type="button"
                         onClick={() => handleScrollToPackage(card.packageKey)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#0F2A35]/20 hover:border-[#1E4A5C] bg-white hover:bg-[#EEF4F6] text-xs font-bold text-[#0F2A35] transition-colors shadow-xs cursor-pointer group"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#0F2A35]/20 hover:border-[#14624F] bg-white hover:bg-[#DDF4EA]/50 text-xs font-bold text-[#0F2A35] transition-colors shadow-xs cursor-pointer group"
                       >
-                        <span>See {matchedPackage.name}</span>
-                        <ArrowRight className="w-3.5 h-3.5 text-[#1E4A5C] transition-transform duration-200 group-hover:translate-x-0.5" />
+                        <span>See {displayName}</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-[#14624F] transition-transform duration-200 group-hover:translate-x-0.5" />
                       </button>
-
-                      {/* Extra link on Card 1 only: Free 1-page website option */}
-                      {isStage1 && hasFree1PageOffer && card.secondaryLink && (
-                        <button
-                          type="button"
-                          onClick={() => handleScrollToPackage('first')}
-                          className="mt-2.5 text-xs text-[#1E4A5C] hover:text-[#0F2A35] underline decoration-[#1E4A5C]/40 hover:decoration-[#0F2A35] underline-offset-2 font-medium cursor-pointer transition-colors"
-                        >
-                          {card.secondaryLink}
-                        </button>
-                      )}
                     </div>
                   ) : null}
                 </div>

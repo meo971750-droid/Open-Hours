@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Tag, ArrowRight } from 'lucide-react';
 import Container from '../components/Container';
 import Accent from '../components/Accent';
-import { PACKAGES, SETUP_FROM } from '../content';
+import { PACKAGES } from '../content';
 import { getPackagePagePath } from '../lib/links';
 
 export default function PackagesSummary() {
@@ -31,9 +31,7 @@ export default function PackagesSummary() {
           {PACKAGES.map((pkg) => {
             const isFirst = pkg.id === 'first';
             const isStandard = pkg.id === 'standard';
-            const priceDisplay = isFirst
-              ? 'At no cost'
-              : `from €${SETUP_FROM[pkg.id as keyof typeof SETUP_FROM]?.toLocaleString() ?? ''} setup`;
+            const priceDisplay = isFirst ? 'At no cost' : pkg.price;
 
             return (
               <article
@@ -59,9 +57,16 @@ export default function PackagesSummary() {
                     {pkg.name}
                   </h3>
 
-                  <div className="text-[18px] font-semibold text-[#0F2A35] mb-3">
+                  <div className="text-[18px] font-semibold text-[#0F2A35] mb-1">
                     {priceDisplay}
                   </div>
+                  {pkg.monthlyAmount ? (
+                    <div className="text-[13.5px] font-medium text-[#14624F] mb-3">
+                      + €{pkg.monthlyAmount} / month
+                    </div>
+                  ) : (
+                    <div className="mb-3" />
+                  )}
 
                   <p className="text-[14.5px] leading-relaxed text-[#5E6F77] mb-6">
                     {pkg.description}

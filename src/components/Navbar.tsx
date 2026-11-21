@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'motion/react';
-import { ArrowRight, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Logo from './Logo';
 import { CTA } from '../content';
 import { CONFIG } from '../config';
+import { OH_DUR, OH_EASE } from '../lib/motion';
 
 const NAV_LINKS = [
-  { label: 'How it works', href: '#how-it-works' },
-  { label: 'Work', href: '#designs' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'FAQ', href: '#faq' },
+  { id: 'services', label: 'Services', href: '#services' },
+  { id: 'proof', label: 'Results', href: '#proof' },
+  { id: 'deliver', label: 'How We Deliver', href: '#deliver' },
+  { id: 'work', label: 'Work', href: '#work' },
+  { id: 'faq', label: 'FAQ', href: '#faq' },
 ];
 
 interface NavbarProps {
@@ -19,30 +21,110 @@ interface NavbarProps {
 
 export default function Navbar({ onOpenAudit }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [activeSection, setActiveSection] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { scrollY } = useScroll();
   const navigate = useNavigate();
   const location = useLocation();
 
   useMotionValueEvent(scrollY, 'change', (latest) => {
-    const previous = scrollY.getPrevious() ?? 0;
-    const diff = latest - previous;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    if (docHeight > 0) {
+      setScrollProgress(Math.min(1, Math.max(0, latest / docHeight)));
+    }
 
-    // After 40px, add glass blur & soft shadow
+    // After 40px, glass pill becomes slightly more opaque while staying fixed
     setScrolled(latest > 40);
 
-    // Hide when scrolling down, show when scrolling up
-    if (latest > 120 && diff > 10) {
-      setHidden(true);
-    } else if (diff < -8 || latest <= 120) {
-      setHidden(false);
+    // Clear active nav indicator while in top hero zone
+    if (latest < 240) {
+      setActiveSection('');
     }
   });
 
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  // Track which section from NAV_LINKS is currently in view across the whole page
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const sectionGroups: Array<{ navId: string; ids: string[] }> = [
+      { navId: 'services', ids: ['services'] },
+      { navId: 'proof', ids: ['proof'] },
+      { navId: 'deliver', ids: ['deliver', 'best-in', 'reviews'] },
+      { navId: 'work', ids: ['work', 'framework', 'built-fast', 'pricing'] },
+      { navId: 'faq', ids: ['faq', 'white-label', 'final-cta'] },
+    ];
+
+    let rafId = 0;
+
+    const computeActive = () => {
+      rafId = 0;
+      const y = window.scrollY;
+      if (y < 220) {
+        setActiveSection('');
+        return;
+      }
+
+      const anchorLine = Math.max(120, Math.round(window.innerHeight * 0.34));
+      let matched = '';
+
+      // Clear nav highlight while inside contact section
+      const contactEl = document.getElementById('contact');
+      if (contactEl) {
+        const rect = contactEl.getBoundingClientRect();
+        if (rect.top <= anchorLine && rect.bottom >= anchorLine) {
+          setActiveSection('');
+          return;
+        }
+      }
+
+      for (const group of sectionGroups) {
+        for (const id of group.ids) {
+          const el = document.getElementById(id);
+          if (!el) continue;
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= anchorLine && rect.bottom >= anchorLine) {
+            matched = group.navId;
+            break;
+          }
+        }
+        if (matched) break;
+      }
+
+      if (matched) {
+        setActiveSection(matched);
+      }
+    };
+
+    const onScroll = () => {
+      if (!rafId) rafId = window.requestAnimationFrame(computeActive);
+    };
+
+    computeActive();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mobileMenuOpen]);
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, id?: string) => {
     e.preventDefault();
     setMobileMenuOpen(false);
+    if (id) setActiveSection(id);
 
     if (href.startsWith('/')) {
       if (href.includes('#')) {
@@ -69,8 +151,8 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
     }
 
     if (href.startsWith('#')) {
-      const id = href.slice(1);
-      const target = document.getElementById(id);
+      const targetId = href.slice(1);
+      const target = document.getElementById(targetId);
       if (target) {
         target.scrollIntoView({ behavior: 'smooth' });
       }
@@ -78,15 +160,14 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
   };
 
   const handleCtaClick = () => {
+    setMobileMenuOpen(false);
+    const contactEl = document.getElementById('contact');
+    if (contactEl) {
+      contactEl.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
     if (CONFIG.bookingUrl && CONFIG.bookingUrl.startsWith('http')) {
       window.location.href = CONFIG.bookingUrl;
-    } else if (CONFIG.bookingUrl && CONFIG.bookingUrl.startsWith('#')) {
-      const el = document.querySelector(CONFIG.bookingUrl);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      } else {
-        onOpenAudit();
-      }
     } else {
       onOpenAudit();
     }
@@ -95,6 +176,7 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setMobileMenuOpen(false);
+    setActiveSection('');
     if (location.pathname === '/') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
@@ -103,112 +185,163 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
     }
   };
 
+  const ctaLabel = CONFIG.hero?.ctaLabel || CTA.label;
+
   return (
     <>
-      <motion.header
-        variants={{
-          visible: { y: 0, opacity: 1 },
-          hidden: { y: -90, opacity: 0 },
-        }}
-        animate={hidden ? 'hidden' : 'visible'}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed top-4 left-0 right-0 z-40 px-6 md:px-10 max-w-[1200px] mx-auto pointer-events-none"
+      {/* 2px Brand-Green Scroll-Progress Line at Very Top */}
+      <div
+        className="fixed top-0 left-0 right-0 h-[2px] z-50 pointer-events-none"
+        aria-hidden="true"
       >
         <div
+          className="h-full w-full origin-left"
+          style={{
+            background: 'linear-gradient(90deg, #0F4A3E 0%, #14735A 65%, #1E9E6A 100%)',
+            transform: `scaleX(${scrollProgress})`,
+          }}
+        />
+      </div>
+
+      {/* Fixed Centred Frosted Glass Nav Pill (~63vw width, ~75px height on desktop) */}
+      <header className="oh-hero-enter oh-hero-delay-nav fixed top-[14px] lg:top-[20px] left-0 right-0 z-40 px-3 sm:px-6 lg:px-0 flex justify-center pointer-events-none">
+        <div
           className={
-            'pointer-events-auto w-full flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3 rounded-full transition-all duration-300 ' +
+            'pointer-events-auto w-full lg:w-[63vw] lg:min-w-[820px] lg:max-w-[1180px] h-[60px] lg:h-[75px] rounded-full flex items-center justify-between gap-3 lg:gap-5 px-4 sm:px-6 lg:pl-7 lg:pr-3 transition-[background-color,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ' +
             (scrolled
-              ? 'bg-white/90 backdrop-blur-md shadow-[0_8px_30px_rgba(15,42,53,0.08)] border border-[rgba(15,42,53,0.08)]'
-              : 'bg-white/95 border border-[rgba(15,42,53,0.05)] shadow-sm')
+              ? 'border border-white shadow-[0_14px_38px_-10px_rgba(11,27,34,0.16)]'
+              : 'border border-white shadow-[0_12px_34px_-10px_rgba(11,27,34,0.10)]')
           }
+          style={{
+            backgroundColor: scrolled ? 'rgba(255, 255, 255, 0.96)' : 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+          }}
         >
-          {/* Zone 1: Logo Wordmark */}
+          {/* Left: Open Hours Logo */}
           <a
             href="/"
             onClick={handleLogoClick}
-            className="flex items-center group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C] rounded-md cursor-pointer"
+            className="flex items-center shrink-0 rounded-md cursor-pointer [&_span]:text-[#0B1B22]"
             aria-label="Open Hours Home"
           >
             <Logo size="md" />
           </a>
 
-          {/* Zone 2: Navigation Links (desktop) */}
-          <nav className="hidden md:flex items-center gap-7 text-[15px] font-medium text-[#5E6F77]">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={(e) => handleLinkClick(e, link.href)}
-                className="relative py-1 text-[#5E6F77] hover:text-[#0F2A35] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C] rounded-sm group cursor-pointer"
-              >
-                <span>{link.label}</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-[#1E4A5C] transition-all duration-300 group-hover:w-full" />
-              </a>
-            ))}
-          </nav>
-
-          {/* Zone 3: Primary CTA */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleCtaClick}
-              className="group relative inline-flex items-center gap-2 bg-[#0F2A35] text-white text-[14px] font-medium h-[42px] sm:h-[48px] px-4 sm:px-5 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C] focus-visible:ring-offset-2 cursor-pointer"
-            >
-              <span>{CTA.label}</span>
-              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-            </button>
-
-            {/* Mobile Hamburger Button */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-full text-[#0F2A35] hover:bg-[#EEF3F4] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4A5C] cursor-pointer"
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open navigation menu'}
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-      </motion.header>
-
-      {/* Mobile Menu Sheet */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-3 top-20 z-50 bg-white rounded-3xl p-6 shadow-2xl border border-[rgba(15,42,53,0.1)] md:hidden max-w-[420px] mx-auto pointer-events-auto"
+          {/* Centre: Links (~18px medium, near-black) */}
+          <nav
+            aria-label="Primary navigation"
+            className="hidden lg:flex items-center justify-center gap-5 xl:gap-7 text-[15px] xl:text-[17px] 2xl:text-[18px] font-medium text-[#0B1B22]"
           >
-            <div className="flex flex-col gap-3">
-              <span className="text-xs uppercase tracking-wider text-[#5E6F77] font-semibold px-2">
-                Navigation
-              </span>
-              {NAV_LINKS.map((link) => (
+            {NAV_LINKS.map((link) => {
+              const isActive = activeSection === link.id;
+              return (
                 <a
                   key={link.label}
                   href={link.href}
-                  onClick={(e) => handleLinkClick(e, link.href)}
-                  className="px-4 py-3 text-lg font-medium text-[#0F2A35] hover:bg-[#EEF3F4] rounded-xl transition-colors cursor-pointer"
+                  aria-current={isActive ? 'location' : undefined}
+                  onClick={(e) => handleLinkClick(e, link.href, link.id)}
+                  className={
+                    'relative py-1 transition-colors duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] rounded-sm group cursor-pointer whitespace-nowrap shrink-0 ' +
+                    (isActive ? 'text-[#0F4A3E] font-semibold' : 'text-[#0B1B22]/90 hover:text-[#14624F]')
+                  }
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  <span
+                    aria-hidden="true"
+                    className={
+                      'absolute bottom-0 left-0 h-[2px] bg-[#14624F] transition-[width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ' +
+                      (isActive ? 'w-full' : 'w-0 group-hover:w-full')
+                    }
+                  />
                 </a>
-              ))}
-              <hr className="my-2 border-[rgba(15,42,53,0.08)]" />
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleCtaClick();
-                }}
-                className="w-full flex items-center justify-center gap-2 bg-[#0F2A35] text-white font-medium h-[48px] rounded-full shadow-md cursor-pointer"
-              >
-                <span>{CTA.label}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+              );
+            })}
+          </nav>
+
+          {/* Right: Deep-Green Gradient Pill CTA + Mobile Hamburger */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleCtaClick}
+              className="hidden lg:inline-flex items-center justify-center h-[52px] px-7 rounded-full text-white text-[16px] xl:text-[17px] font-medium whitespace-nowrap cursor-pointer transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:scale-[1.02] active:scale-[0.98]"
+              style={{
+                background: 'linear-gradient(135deg, #0F4A3E 0%, #14624F 65%, #14735A 100%)',
+                boxShadow:
+                  'inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 24px -6px rgba(63, 209, 165, 0.45)',
+              }}
+            >
+              {ctaLabel}
+            </button>
+
+            {/* Mobile / Tablet Hamburger Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              className="lg:hidden p-2.5 rounded-full text-[#0B1B22] hover:bg-[#DDF4EA]/60 transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-[0.98] cursor-pointer shrink-0"
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5" strokeWidth={1.5} />
+              ) : (
+                <Menu className="w-5 h-5" strokeWidth={1.5} />
+              )}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Full-Width Dropdown Panel */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: OH_DUR.base, ease: OH_EASE }}
+            className="fixed inset-x-3 top-[82px] z-50 rounded-[24px] p-5 shadow-[0_24px_60px_-14px_rgba(11,27,34,0.22)] border border-white lg:hidden pointer-events-auto"
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+            }}
+          >
+            <nav aria-label="Mobile navigation" className="flex flex-col gap-1.5">
+              {NAV_LINKS.map((link) => {
+                const isActive = activeSection === link.id;
+                return (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    aria-current={isActive ? 'location' : undefined}
+                    onClick={(e) => handleLinkClick(e, link.href, link.id)}
+                    className={
+                      'px-4 py-3 text-[17px] font-medium rounded-2xl transition-colors duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer ' +
+                      (isActive
+                        ? 'bg-[#DDF4EA] text-[#0F4A3E] font-semibold'
+                        : 'text-[#0B1B22] hover:bg-[#F3F5F3]')
+                    }
+                  >
+                    {link.label}
+                  </a>
+                );
+              })}
+              <div className="pt-3 mt-1 border-t border-[#0B1B22]/8">
+                <button
+                  type="button"
+                  onClick={handleCtaClick}
+                  className="w-full h-[50px] rounded-full text-white text-[16px] font-medium flex items-center justify-center cursor-pointer transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-[0.98]"
+                  style={{
+                    background: 'linear-gradient(135deg, #0F4A3E 0%, #14624F 65%, #14735A 100%)',
+                    boxShadow:
+                      'inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 24px -6px rgba(63, 209, 165, 0.45)',
+                  }}
+                >
+                  {ctaLabel}
+                </button>
+              </div>
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>

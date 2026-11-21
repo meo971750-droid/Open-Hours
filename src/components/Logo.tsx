@@ -31,14 +31,14 @@ export function LogoMark({
         width="32"
         height="32"
         rx="8"
-        fill={isLight ? 'rgba(255, 255, 255, 0.12)' : '#1E4A5C'}
+        fill={isLight ? 'rgba(255, 255, 255, 0.12)' : '#0F4A3E'}
         stroke={isLight ? 'rgba(255, 255, 255, 0.25)' : 'none'}
         strokeWidth="1"
       />
       {/* The letter 'o' circle */}
       <circle cx="16" cy="16" r="6.5" stroke="#FFFFFF" strokeWidth="2.5" />
-      {/* Peach inner dot */}
-      <circle cx="16" cy="16" r="2.2" fill="#E3B896" />
+      {/* Brand green signature dot */}
+      <circle cx="16" cy="16" r="2.2" fill="#6FD6B0" />
     </svg>
   );
 }
@@ -52,8 +52,8 @@ export default function Logo({ className = '', size = 'md', variant = 'dark' }: 
   };
 
   const isLight = variant === 'light';
-  const textColor = isLight ? 'text-white' : 'text-[#1E4A5C]';
-  const borderColor = isLight ? 'border-white' : 'border-[#1E4A5C]';
+  const textColor = isLight ? 'text-white' : 'text-[#0B1B22]';
+  const borderColor = isLight ? 'border-white' : 'border-[#0B1B22]';
 
   return (
     <div className={'inline-flex items-center gap-2 select-none tracking-tight ' + className}>
@@ -63,7 +63,7 @@ export default function Logo({ className = '', size = 'md', variant = 'dark' }: 
           H
           <span className="relative inline-flex items-center justify-center mx-[1px]">
             <span className={'inline-block w-[0.62em] h-[0.62em] rounded-full border-[2.2px] ' + borderColor} />
-            <span className="absolute w-[0.24em] h-[0.24em] rounded-full bg-[#E3B896]" />
+            <span className="absolute w-[0.24em] h-[0.24em] rounded-full bg-[#1E9E6A]" />
           </span>
           urs
         </span>

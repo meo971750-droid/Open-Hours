@@ -204,7 +204,7 @@ export default function Hero({ onOpenPrivacy, onOpenAudit }: HeroProps) {
                       className="w-4 h-4 rounded text-[#1E4A5C] focus:ring-[#1E4A5C] border-gray-300 cursor-pointer accent-[#1E4A5C]"
                     />
                     <span>
-                      We'll use your email only to reply about your 1-page website. No spam.{' '}
+                      We'll use your email only to reply to your enquiry. No spam.{' '}
                       <button
                         type="button"
                         onClick={onOpenPrivacy}
