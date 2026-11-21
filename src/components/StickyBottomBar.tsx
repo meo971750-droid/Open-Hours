@@ -40,14 +40,7 @@ export default function StickyBottomBar({ onOpenAudit }: StickyBottomBarProps) {
       const isFooterInView = footerRect ? footerRect.top <= winHeight : false;
 
       const nextVisible = heroPassed && !isContactInView && !isFooterInView;
-      setVisible((prev) => {
-        if (prev !== nextVisible) {
-          window.dispatchEvent(
-            new CustomEvent('openhours:bottombar', { detail: { visible: nextVisible } })
-          );
-        }
-        return nextVisible;
-      });
+      setVisible(nextVisible);
     };
 
     const onScroll = () => {
@@ -61,9 +54,21 @@ export default function StickyBottomBar({ onOpenAudit }: StickyBottomBarProps) {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
       if (rafId) window.cancelAnimationFrame(rafId);
-      window.dispatchEvent(new CustomEvent('openhours:bottombar', { detail: { visible: false } }));
     };
   }, []);
+
+  const showBar = visible && !(isSmallMobile && !consent.decided);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('openhours:bottombar', { detail: { visible: showBar } })
+    );
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent('openhours:bottombar', { detail: { visible: false } })
+      );
+    };
+  }, [showBar]);
 
   const handleTalkToUs = () => {
     const contactEl = document.getElementById('contact');
@@ -73,8 +78,6 @@ export default function StickyBottomBar({ onOpenAudit }: StickyBottomBarProps) {
     }
     onOpenAudit();
   };
-
-  const showBar = visible && !(isSmallMobile && !consent.decided);
 
   return (
     <AnimatePresence>

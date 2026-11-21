@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { config, TestimonialItem } from '../config';
 import { ShimmerImage, Tilt3D } from '../components/PremiumPrimitives';
 import { getResponsiveImageProps } from '../lib/images';
+import { mountHeroCloth } from '../lib/heroClothShader';
 
 interface HeroGrewProps {
   onOpenAudit: (email?: string, trade?: string) => void;
@@ -153,8 +154,58 @@ function renderHeadlineWithAccent(title: string, accentWord?: string) {
 
 export default function HeroGrew({ onOpenAudit }: HeroGrewProps) {
   const heroRef = useRef<HTMLElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [clothReady, setClothReady] = useState(false);
   const [failedPhotos, setFailedPhotos] = useState<Record<string, boolean>>({});
   const [failedTrustAvatars, setFailedTrustAvatars] = useState<Record<string, boolean>>({});
+
+  // Initialize raw WebGL cloth shader after first paint
+  useEffect(() => {
+    const section = heroRef.current;
+    const canvas = canvasRef.current;
+    if (!section || !canvas || typeof window === 'undefined') return;
+
+    let cancelled = false;
+    let cleanupCloth = () => {};
+    let idleKind: 'idle' | 'raf' | null = null;
+    let idleId = 0;
+
+    const rafId = window.requestAnimationFrame(() => {
+      if (cancelled) return;
+      const start = () => {
+        if (cancelled) return;
+        cleanupCloth = mountHeroCloth({
+          section,
+          canvas,
+          reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+          onFirstFrame: () => {
+            if (!cancelled) setClothReady(true);
+          },
+        });
+      };
+
+      const w = window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+        cancelIdleCallback?: (id: number) => void;
+      };
+      if (w.requestIdleCallback) {
+        idleKind = 'idle';
+        idleId = w.requestIdleCallback(start, { timeout: 300 });
+      } else {
+        idleKind = 'raf';
+        idleId = window.requestAnimationFrame(start);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(rafId);
+      const w = window as Window & { cancelIdleCallback?: (id: number) => void };
+      if (idleKind === 'idle' && w.cancelIdleCallback) w.cancelIdleCallback(idleId);
+      if (idleKind === 'raf') window.cancelAnimationFrame(idleId);
+      cleanupCloth();
+    };
+  }, []);
 
   // Desktop-only gentle pointer parallax (+/- 6px max), disabled under reduced motion
   useEffect(() => {
@@ -313,6 +364,15 @@ export default function HeroGrew({ onOpenAudit }: HeroGrewProps) {
         {/* Tiny Tiled SVG Noise Grain Layer (~5% opacity, no SVG <filter>) */}
         <div className="absolute inset-0 oh-silk-noise" />
       </div>
+
+      {/* Interactive WebGL Satin Cloth Shader (fades in 400ms after first frame, CSS placeholder underneath) */}
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 w-full h-full z-0 transition-opacity duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+          clothReady ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
 
       {/* 4. FLOATING PORTRAIT CARDS (6 Desktop, 4 Tablet, 2 Mobile; Cards A & D partly behind top glass nav) */}
       {floatingEntries.map(({ slot, client, orderIndex }) => {

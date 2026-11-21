@@ -21,6 +21,7 @@ interface NavbarProps {
 
 export default function Navbar({ onOpenAudit }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -59,6 +60,9 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
 
     const computeActive = () => {
       rafId = 0;
+      const heroEl = document.getElementById('hero');
+      setPastHero(heroEl ? heroEl.getBoundingClientRect().bottom <= 96 : true);
+
       const y = window.scrollY;
       if (y < 220) {
         setActiveSection('');
@@ -213,9 +217,13 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
               : 'border border-white shadow-[0_12px_34px_-10px_rgba(11,27,34,0.10)]')
           }
           style={{
-            backgroundColor: scrolled ? 'rgba(255, 255, 255, 0.96)' : 'rgba(255, 255, 255, 0.92)',
-            backdropFilter: 'blur(18px)',
-            WebkitBackdropFilter: 'blur(18px)',
+            backgroundColor: pastHero
+              ? scrolled
+                ? 'rgba(255, 255, 255, 0.96)'
+                : 'rgba(255, 255, 255, 0.92)'
+              : 'rgba(255, 255, 255, 0.7)',
+            backdropFilter: pastHero ? 'blur(18px)' : 'none',
+            WebkitBackdropFilter: pastHero ? 'blur(18px)' : 'none',
           }}
         >
           {/* Left: Open Hours Logo */}
