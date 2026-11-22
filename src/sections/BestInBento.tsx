@@ -16,6 +16,7 @@ import { config } from '../config';
 import { CTA } from '../content';
 import { LogoMark } from '../components/Logo';
 import { ShimmerImage } from '../components/PremiumPrimitives';
+import DemoTag from '../components/DemoTag';
 
 interface BestInBentoProps {
   onOpenAudit: () => void;
@@ -471,14 +472,10 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
                 </span>
               </div>
 
-              <span className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.09em] text-[#475754]">
-                Illustrative example
-              </span>
-
               {/* Micro-elements 2 & 3: Neutral Skeleton Result Lines + Action Tags */}
               <div
                 aria-hidden="true"
-                className="w-full max-w-[270px] mt-3 rounded-[14px] bg-[#F7F9F8] border border-[rgba(11,27,34,0.06)] px-3.5 py-2.5 space-y-2"
+                className="w-full max-w-[270px] mt-4 rounded-[14px] bg-[#F7F9F8] border border-[rgba(11,27,34,0.06)] px-3.5 py-2.5 space-y-2"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="space-y-1.5 flex-1">
@@ -775,10 +772,6 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
                     );
                   })}
                 </div>
-
-                <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.09em] text-[#475754]">
-                  Illustrative example
-                </span>
               </div>
             </article>
           )}
@@ -815,7 +808,7 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
               </div>
 
               <p className="mt-4 text-[11.5px] text-[#475754]">
-                Concept designs shown for illustration
+                <DemoTag variant="concept" />
               </p>
             </div>
 

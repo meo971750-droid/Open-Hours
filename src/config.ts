@@ -428,7 +428,12 @@ export interface LegalLinksConfig {
   cookies?: string;
 }
 
+export interface UiConfig {
+  demoLabels: boolean;
+}
+
 export interface AppConfig {
+  ui: UiConfig;
   studioName: string;
   legalName: string;
   registrationNumber?: string;
@@ -502,6 +507,9 @@ export interface WhiteLabelConfig {
 }
 
 export const config: AppConfig = {
+  ui: {
+    demoLabels: true,
+  },
   studioName: 'Open Hours',
   legalName: 'Open Hours Studio',
   registrationNumber: '',
@@ -575,7 +583,7 @@ export const config: AppConfig = {
   work: {
     subtitle:
       'Website concepts and local search layouts designed for builders and home-improvement trades across Ireland and Malta.',
-    conceptFooterNote: 'Concept designs shown for illustration. They are not client projects.',
+    conceptFooterNote: 'Concept designs. Not client projects.',
     categories: [
       {
         id: 'trade-websites',

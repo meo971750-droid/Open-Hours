@@ -13,6 +13,9 @@ import {
 import { config, WayOfWorkingSceneItem } from '../config';
 import Scene1Searches from '../components/process/Scene1Searches';
 import { ScenePalette, SceneProps } from '../components/process/types';
+import DemoTag from '../components/DemoTag';
+
+const TIER_B_SCENES = new Set(['build', 'findable', 'alwaysOn', 'always-on']);
 
 interface DeliverScrollProps {
   onOpenAudit?: () => void;
@@ -562,13 +565,9 @@ export default function DeliverScroll({ onOpenAudit }: DeliverScrollProps) {
                             )}
                           </div>
 
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-[0.06em] shrink-0 ${
-                              isDarkCard ? 'bg-white/10 text-white/80' : 'bg-[#F3F5F3] text-[#475754]'
-                            }`}
-                          >
-                            Sample demo
-                          </span>
+                          {TIER_B_SCENES.has(scene.id) && (
+                            <DemoTag tone={isDarkCard ? 'dark' : 'light'} />
+                          )}
                         </div>
 
                         {/* Single Clear Visual */}
@@ -669,13 +668,9 @@ export default function DeliverScroll({ onOpenAudit }: DeliverScrollProps) {
                       <span className="text-[10.5px] font-semibold tabular-nums opacity-85">
                         Step {String(idx + 1).padStart(2, '0')}
                       </span>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-[0.06em] shrink-0 ${
-                          isDarkCard ? 'bg-white/10 text-white/80' : 'bg-[#F3F5F3] text-[#475754]'
-                        }`}
-                      >
-                        Sample demo
-                      </span>
+                      {TIER_B_SCENES.has(scene.id) && (
+                        <DemoTag tone={isDarkCard ? 'dark' : 'light'} />
+                      )}
                     </div>
 
                     <div className="flex-1 min-h-0 flex items-center justify-center py-2">

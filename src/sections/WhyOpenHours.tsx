@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { ArrowRight, Play, Phone } from 'lucide-react';
 import Container from '../components/Container';
+import DemoTag from '../components/DemoTag';
 import { config } from '../config';
 
 export default function WhyOpenHours() {
@@ -294,11 +295,9 @@ export default function WhyOpenHours() {
               </button>
             </div>
 
-            {/* Illustrative tag in corner */}
+            {/* Tier B Demo label in corner */}
             <div className="absolute top-4 right-4 z-20">
-              <span className="text-[11px] font-mono tracking-tight text-[#5E6F77] bg-white/90 backdrop-blur-xs px-2 py-0.5 rounded-md border border-[#0F2A35]/10">
-                Live preview
-              </span>
+              <DemoTag />
             </div>
 
             {/* Bottom 55% Visual: Two overlapping phone mockups rising out of the bottom */}

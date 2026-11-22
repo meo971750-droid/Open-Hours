@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { SAMPLE_DASHBOARD } from '../content';
 import { CONFIG } from '../config';
+import DemoTag from './DemoTag';
 
 export interface MessageItem {
   id: string;
@@ -600,6 +601,7 @@ export default function LiveMockup({
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-center">
+            <DemoTag className="mr-0.5" />
             {/* Timeline Chip: Day 1 morphs to Day 30 · +24 enquiries */}
             <span
               ref={dayChipElRef}

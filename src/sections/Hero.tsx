@@ -9,6 +9,7 @@ import SideTicker, { HorizontalTicker } from '../components/SideTicker';
 import LiveMockup from '../components/LiveMockup';
 import { HERO_CONTENT, HERO_TICKERS } from '../content';
 import { config } from '../config';
+import DemoTag from '../components/DemoTag';
 
 interface HeroProps {
   onOpenPrivacy?: () => void;
@@ -425,7 +426,7 @@ export default function Hero({ onOpenPrivacy, onOpenAudit }: HeroProps) {
 
           {/* Always visible 12px muted line under mockup */}
           <p className="text-[12px] text-[#5E6F77] text-center mt-3">
-            Illustrative example with sample data. Results vary by business.
+            <DemoTag variant="disclaimer" />
           </p>
         </motion.div>
       </div>

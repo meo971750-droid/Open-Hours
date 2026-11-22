@@ -4,6 +4,7 @@ import { ArrowUpRight, Play, X } from 'lucide-react';
 import { config, WorkItemConfig } from '../config';
 import { ShimmerImage, Tilt3D } from '../components/PremiumPrimitives';
 import { OH_DUR, OH_EASE } from '../lib/motion';
+import DemoTag from '../components/DemoTag';
 
 interface OurWorkMarqueeProps {
   onOpenAudit?: () => void;
@@ -130,9 +131,10 @@ function WorkCard({ item, isDuplicate = false, onOpenModal }: WorkCardProps) {
 
           {/* Small Corner Concept Tag */}
           {isConcept && (
-            <span className="pointer-events-none absolute top-2.5 left-2.5 z-10 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-[#050E0D]/90 text-white backdrop-blur-xs border border-white/15">
-              Concept design
-            </span>
+            <DemoTag
+              variant="concept-badge"
+              className="pointer-events-none absolute top-2.5 left-2.5 z-10 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-[#050E0D]/90 text-white backdrop-blur-xs border border-white/15"
+            />
           )}
 
           {/* Centred 56px Action Button */}
@@ -393,8 +395,7 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
       {/* Honest Concept Footer Note */}
       {!hasAnyClientProject && (
         <p className="mt-8 px-4 text-center text-[13px] text-[#475754] max-w-[600px] mx-auto">
-          {config.work?.conceptFooterNote ||
-            'Concept designs shown for illustration. They are not client projects.'}
+          <DemoTag variant="concept" />
         </p>
       )}
 
@@ -435,9 +436,10 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
                     </span>
                   )}
                   {!activeModalItem.isClient && (
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0F4A3E] text-white">
-                      Concept design
-                    </span>
+                    <DemoTag
+                      variant="concept-badge"
+                      className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0F4A3E] text-white"
+                    />
                   )}
                 </div>
 

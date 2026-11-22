@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom';
 import Container from '../components/Container';
 import Accent from '../components/Accent';
 import DesignPreview from '../components/DesignPreview';
+import DemoTag from '../components/DemoTag';
 import { getSectionHref } from '../lib/links';
 import {
   CONCEPT_STUDIES,
@@ -703,7 +704,7 @@ export default function ConceptStudies({ onOpenAudit }: ConceptStudiesProps) {
           </Link>
 
           <p className="text-[13px] text-[#5E6F77] max-w-md">
-            Fictional examples, not client projects. Features depend on your package.
+            <DemoTag variant="concept" /> Features depend on your package.
           </p>
         </div>
       </Container>

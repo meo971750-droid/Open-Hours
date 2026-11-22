@@ -173,10 +173,6 @@ export default function Scene1({ progress }: Scene1Props) {
             </div>
           </div>
 
-          <div className="text-[11px] text-[#5E6F77]/60">
-            Fictional demo view
-          </div>
-
           {/* Form card sliding up over browser (at 1.0s) */}
           {formVisible && (
             <div

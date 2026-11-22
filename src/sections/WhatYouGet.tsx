@@ -11,6 +11,7 @@ import {
   Award,
 } from 'lucide-react';
 import Container from '../components/Container';
+import DemoTag from '../components/DemoTag';
 import { config } from '../config';
 import { WHAT_YOU_GET_CONTENT } from '../content';
 import {
@@ -122,11 +123,11 @@ export default function WhatYouGet() {
                       <div className="h-[195px] sm:h-[210px] rounded-[18px] border border-[rgba(227,184,150,0.35)] overflow-hidden bg-gradient-to-b from-[#F9FBFC] to-[#EEF3F4] relative flex items-center justify-center">
                         {renderAnimatedImage(i)}
                       </div>
-                      <div className="flex justify-end pt-1.5 px-1">
-                        <span className="text-[10.5px] font-medium text-[#E3B896]/65 tracking-wide">
-                          Illustrative example
-                        </span>
-                      </div>
+                      {i !== 4 && (
+                        <div className="flex justify-end pt-1.5 px-1">
+                          <DemoTag tone="warm" />
+                        </div>
+                      )}
                     </div>
 
                     {/* BOTTOM text area on the dark background */}

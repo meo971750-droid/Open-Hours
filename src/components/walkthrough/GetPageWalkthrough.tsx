@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Scene1 from './Scene1';
 import Scene3 from './Scene3';
+import DemoTag from '../DemoTag';
 
 // SCENE_DURATIONS in seconds: [4.2, 4.8, 3.8] (total 12.8s)
 export const SCENE_DURATIONS = [4.2, 4.8, 3.8] as const;
@@ -256,15 +257,9 @@ export default function GetPageWalkthrough({
       className="relative w-full h-[450px] sm:h-[470px] flex flex-col justify-between overflow-hidden"
       aria-hidden="true"
     >
-      {/* Top Bar / Chip "Illustrative walkthrough" */}
-      <div className="relative z-20 flex items-center justify-between pb-2">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white/90 border border-white/15 text-[12px] font-medium backdrop-blur-xs">
-          <span className="w-2 h-2 rounded-full bg-[#2E9E6B]" />
-          <span>Illustrative walkthrough</span>
-        </span>
-        <span className="text-[11px] text-white/50 font-medium">
-          fictional demo
-        </span>
+      {/* Top Bar Corner Demo Tag */}
+      <div className="relative z-20 flex items-center justify-end pb-2">
+        <DemoTag tone="dark" />
       </div>
 
       {/* Main Scaled Canvas Stage (Logical 560 x 420) */}

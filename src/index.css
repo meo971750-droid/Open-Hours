@@ -590,20 +590,83 @@ footer::before {
 }
 
 /* ============================================================================
-   EXPANDING SERVICE CARDS: CONTAINER-SCALED CSS ARTBOARDS
+   EXPANDING SERVICE CARDS: FIXED-WIDTH CONTAINMENT + COMPOSITOR SCALING
    ============================================================================ */
-.oh-exp-stage {
-  container-type: inline-size;
-  --oh-exp-mul: 2;
+.oh-exp-row {
+  --oh-col-w: calc((100% - (var(--oh-n, 4) - 1) * 16px) / (var(--oh-n, 4) + 0.5));
+  --oh-exp-w: calc((100% - (var(--oh-n, 4) - 1) * 16px) * 1.5 / (var(--oh-n, 4) + 0.5));
+  --oh-art-col-scale: 0.67;
+  --oh-art-exp-scale: 1;
+  contain: layout style;
 }
 
-.oh-exp-stage.oh-exp-active {
-  --oh-exp-mul: 1;
+.oh-exp-card {
+  position: relative;
+  flex: none;
+  width: var(--oh-col-w);
+  contain: layout style;
+  transition: width 600ms var(--ease-oh);
+}
+
+.oh-exp-card[data-active="true"] {
+  width: var(--oh-exp-w);
+}
+
+.oh-exp-card-btn {
+  contain: layout paint style;
+  box-shadow: 0 12px 28px -10px rgba(11, 27, 34, 0.08);
+}
+
+.oh-exp-layer-col {
+  width: var(--oh-col-w);
+  opacity: 1;
+  transition: opacity 180ms var(--ease-oh);
+}
+
+.oh-exp-layer-exp {
+  width: var(--oh-exp-w);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms var(--ease-oh);
+}
+
+.oh-exp-card[data-active="true"] .oh-exp-layer-col {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms var(--ease-oh);
+}
+
+.oh-exp-card[data-active="true"] .oh-exp-layer-exp {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 260ms var(--ease-oh) 70ms;
+}
+
+.oh-exp-art-scale {
+  width: 348px;
+  height: 187px;
+  transform-origin: center bottom;
+  transform: translate3d(-50%, 0, 0) scale(var(--oh-art-col-scale));
+  transition: transform 600ms var(--ease-oh);
+}
+
+[data-active="true"] .oh-exp-art-scale {
+  transform: translate3d(-50%, 0, 0) scale(var(--oh-art-exp-scale));
 }
 
 .oh-exp-artboard {
-  font-size: 10px;
-  font-size: calc(100cqw / 30);
+  width: 348px;
+  height: 187px;
+  font-size: 12.8px;
+}
+
+.oh-exp-tag-active {
+  opacity: 0;
+  transition: opacity 300ms var(--ease-oh);
+}
+
+[data-active="true"] .oh-exp-tag-active {
+  opacity: 1;
 }
 
 .oh-exp-pat-dots {
@@ -677,12 +740,12 @@ footer::before {
   100% { opacity: 0.85; transform: translate3d(2.2em, 1.4em, 0) scale(1); }
 }
 
-.oh-exp-phrase-1 { animation: ohExpPhrase1 calc(7.5s * var(--oh-exp-mul)) ease-in-out infinite; }
-.oh-exp-phrase-2 { animation: ohExpPhrase2 calc(7.5s * var(--oh-exp-mul)) ease-in-out infinite; }
-.oh-exp-phrase-3 { animation: ohExpPhrase3 calc(7.5s * var(--oh-exp-mul)) ease-in-out infinite; }
-.oh-exp-ripple-4s { animation: ohExpRipple4s calc(4s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-pin-drop { animation: ohExpPinDrop calc(4s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-cursor-find { animation: ohExpCursorFind calc(6s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
+.oh-exp-phrase-1 { animation: ohExpPhrase1 7.5s ease-in-out -1.5s infinite; }
+.oh-exp-phrase-2 { animation: ohExpPhrase2 7.5s ease-in-out -1.5s infinite; }
+.oh-exp-phrase-3 { animation: ohExpPhrase3 7.5s ease-in-out -1.5s infinite; }
+.oh-exp-ripple-4s { animation: ohExpRipple4s 4s var(--ease-oh) -1.1s infinite; }
+.oh-exp-pin-drop { animation: ohExpPinDrop 4s var(--ease-oh) -1.1s infinite; }
+.oh-exp-cursor-find { animation: ohExpCursorFind 6s var(--ease-oh) -2.8s infinite; }
 
 /* Card 2: Soft 8px stack float + sequential self-drawing SVG ticks */
 @keyframes ohExpStackFloat {
@@ -708,10 +771,10 @@ footer::before {
   96%, 100% { stroke-dashoffset: 1; opacity: 0.2; }
 }
 
-.oh-exp-stack-float { animation: ohExpStackFloat calc(6.4s * var(--oh-exp-mul)) ease-in-out infinite; }
-.oh-exp-tick-1 { stroke-dasharray: 1; animation: ohExpTickDraw1 calc(6s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-tick-2 { stroke-dasharray: 1; animation: ohExpTickDraw2 calc(6s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-tick-3 { stroke-dasharray: 1; animation: ohExpTickDraw3 calc(6s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
+.oh-exp-stack-float { animation: ohExpStackFloat 6.4s ease-in-out -1.6s infinite; }
+.oh-exp-tick-1 { stroke-dasharray: 1; animation: ohExpTickDraw1 6s var(--ease-oh) -4s infinite; }
+.oh-exp-tick-2 { stroke-dasharray: 1; animation: ohExpTickDraw2 6s var(--ease-oh) -4s infinite; }
+.oh-exp-tick-3 { stroke-dasharray: 1; animation: ohExpTickDraw3 6s var(--ease-oh) -4s infinite; }
 
 /* Card 3: 7s phone SMS reply loop + arc traveller + typing dots */
 @keyframes ohExpPhoneIncoming {
@@ -752,14 +815,14 @@ footer::before {
   96%, 100% { opacity: 0; transform: translate3d(7em, 0.9em, 0); }
 }
 
-.oh-exp-phone-in { animation: ohExpPhoneIncoming calc(7s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-phone-typing { animation: ohExpPhoneTyping calc(7s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-phone-reply { animation: ohExpPhoneReply calc(7s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-phone-delivered { animation: ohExpPhoneDelivered calc(7s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-dot-1 { animation: ohExpDotBounce calc(1.1s * var(--oh-exp-mul)) ease-in-out infinite; }
-.oh-exp-dot-2 { animation: ohExpDotBounce calc(1.1s * var(--oh-exp-mul)) ease-in-out 0.16s infinite; }
-.oh-exp-dot-3 { animation: ohExpDotBounce calc(1.1s * var(--oh-exp-mul)) ease-in-out 0.32s infinite; }
-.oh-exp-arc-dot { animation: ohExpArcTravel calc(7s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
+.oh-exp-phone-in { animation: ohExpPhoneIncoming 7s var(--ease-oh) -4.2s infinite; }
+.oh-exp-phone-typing { animation: ohExpPhoneTyping 7s var(--ease-oh) -4.2s infinite; }
+.oh-exp-phone-reply { animation: ohExpPhoneReply 7s var(--ease-oh) -4.2s infinite; }
+.oh-exp-phone-delivered { animation: ohExpPhoneDelivered 7s var(--ease-oh) -4.2s infinite; }
+.oh-exp-dot-1 { animation: ohExpDotBounce 1.1s ease-in-out infinite; }
+.oh-exp-dot-2 { animation: ohExpDotBounce 1.1s ease-in-out 0.16s infinite; }
+.oh-exp-dot-3 { animation: ohExpDotBounce 1.1s ease-in-out 0.32s infinite; }
+.oh-exp-arc-dot { animation: ohExpArcTravel 7s var(--ease-oh) -4.2s infinite; }
 
 /* Card 4: 8s quote form -> send -> right enquiry slide-in + bell ping */
 @keyframes ohExpRowFill1 {
@@ -806,13 +869,22 @@ footer::before {
   84%, 100% { opacity: 0; transform: scale(2); }
 }
 
-.oh-exp-row-1 { animation: ohExpRowFill1 calc(8s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-row-2 { animation: ohExpRowFill2 calc(8s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-row-3 { animation: ohExpRowFill3 calc(8s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-row-4 { animation: ohExpRowFill4 calc(8s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-send-cursor { animation: ohExpSendCursor calc(8s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-enquiry-in { animation: ohExpEnquirySlide calc(8s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
-.oh-exp-bell-ring { animation: ohExpBellPing calc(8s * var(--oh-exp-mul)) var(--ease-oh) infinite; }
+.oh-exp-row-1 { animation: ohExpRowFill1 8s var(--ease-oh) -5.3s infinite; }
+.oh-exp-row-2 { animation: ohExpRowFill2 8s var(--ease-oh) -5.3s infinite; }
+.oh-exp-row-3 { animation: ohExpRowFill3 8s var(--ease-oh) -5.3s infinite; }
+.oh-exp-row-4 { animation: ohExpRowFill4 8s var(--ease-oh) -5.3s infinite; }
+.oh-exp-send-cursor { animation: ohExpSendCursor 8s var(--ease-oh) -5.3s infinite; }
+.oh-exp-enquiry-in { animation: ohExpEnquirySlide 8s var(--ease-oh) -5.3s infinite; }
+.oh-exp-bell-ring { animation: ohExpBellPing 8s var(--ease-oh) -5.3s infinite; }
+
+/* Only the active (expanded) card runs internal CSS animations; inactive cards stay paused on their resting static frame */
+[data-active="false"] .oh-exp-anim {
+  animation-play-state: paused;
+}
+
+[data-active="true"] .oh-exp-anim {
+  animation-play-state: running;
+}
 
 /* Reduced motion overrides */
 @media (prefers-reduced-motion: reduce) {

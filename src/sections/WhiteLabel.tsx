@@ -48,11 +48,6 @@ function WhiteLabelIllustration() {
         <path d="M12 2L14.2 9.8L22 12L14.2 14.2L12 22L9.8 14.2L2 12L9.8 9.8L12 2Z" />
       </svg>
 
-      {/* Illustrative Example Label */}
-      <span className="absolute top-3.5 right-4 z-20 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.07em] bg-white/10 text-[#DDF4EA] border border-white/15">
-        Illustrative example
-      </span>
-
       {/* Floating Stack Wrapper (8px / 7s float) */}
       <div className="oh-whitelabel-float relative z-10 w-full max-w-[340px] sm:max-w-[380px] flex flex-col items-center">
         {/* Three Layered Tilted Browser Windows */}

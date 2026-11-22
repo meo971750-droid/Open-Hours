@@ -14,6 +14,7 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import Accent from '../components/Accent';
+import DemoTag from '../components/DemoTag';
 import {
   INTERACTIVE_FEATURES,
   SAMPLE_ESTIMATE,
@@ -186,7 +187,7 @@ function PhotoEstimateScene({
             {SAMPLE_ESTIMATE.high.toLocaleString('en-IE')}
           </div>
           <p className="text-[12px] text-white/75 leading-tight">
-            Sample estimate. Final price confirmed after inspection.
+            Demo estimate. Final price confirmed after inspection.
           </p>
         </div>
       </div>
@@ -382,7 +383,7 @@ function BeforeAfterScene({
 
       {/* Caption under the window */}
       <p className="mt-3 text-[14px] text-white/70 tracking-wide text-center">
-        Illustrative. Drag to compare.
+        Drag to compare.
       </p>
     </div>
   );
@@ -539,7 +540,6 @@ function VoiceAgentScene({
             <Check className="w-3.5 h-3.5" />
             <span>Message sent to the team</span>
           </div>
-          <span className="text-[11px] text-white/40">Demo audio transcript</span>
         </div>
       </div>
     </div>
@@ -816,7 +816,7 @@ function VisitBookingScene({
                     Request sent to Atlantic Slate Roofing
                   </div>
                   <div className="text-[11px] text-white/60">
-                    Sample only. Nothing is sent.
+                    Demo only. Nothing is sent.
                   </div>
                 </div>
               </div>
@@ -847,6 +847,7 @@ function DemoCardWrapper({
   children,
   isDecorative = false,
   srOnlyText = '',
+  showDemoTag = true,
 }: {
   children: (props: {
     isPaused: boolean;
@@ -855,6 +856,7 @@ function DemoCardWrapper({
   }) => React.ReactNode;
   isDecorative?: boolean;
   srOnlyText?: string;
+  showDemoTag?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -910,12 +912,11 @@ function DemoCardWrapper({
 
   return (
     <div className="relative w-full">
-      {/* Top-left "Sample demo" badge attached outside the demo content, positioned absolutely so it does NOT affect the demo frame's vertical centre */}
-      <div className="absolute -top-7 left-1 z-20 pointer-events-none select-none">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11.5px] font-semibold text-white/80 bg-white/10 backdrop-blur-xs select-none">
-          Sample demo
-        </span>
-      </div>
+      {showDemoTag && (
+        <div className="absolute -top-5 right-2 z-20 pointer-events-none select-none">
+          <DemoTag tone="dark" />
+        </div>
+      )}
 
       <div
         ref={containerRef}
@@ -1172,7 +1173,7 @@ export default function InteractiveFeatures({
                         )}
 
                         {item.id === 'before-after' && (
-                          <DemoCardWrapper>
+                          <DemoCardWrapper showDemoTag={false}>
                             {({ isPaused: p, onUserInteraction: ui, reducedMotion: rm }) => (
                               <BeforeAfterScene
                                 isPaused={p}

@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useReducedMotion } from 'motion/react';
 import { ChevronRight, Play } from 'lucide-react';
 import { config, WayOfWorkingPaletteItem } from '../config';
+import DemoTag from '../components/DemoTag';
+
+const TIER_B_PROCESS_SCENES = new Set(['build', 'findable', 'rank', 'alwaysOn']);
 
 interface OurProcessProps {
   onOpenAudit?: () => void;
@@ -444,9 +447,6 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
       {/* ========================================================= */}
       <div className="wwd-fallback-stack w-full max-w-5xl mx-auto px-5 sm:px-8 py-16 sm:py-24 space-y-12">
         <div className="text-center max-w-2xl mx-auto mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#12303D]/[0.06] text-[12px] font-semibold uppercase tracking-wider text-[#12303D] mb-3">
-            <span>{wwdConfig.storyLabel}</span>
-          </div>
           <h3 className="text-[28px] sm:text-[38px] font-normal tracking-[-0.02em] leading-tight text-[#0F2A35]">
             {wwdConfig.title}
           </h3>
@@ -486,18 +486,12 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
             >
               {/* Card Header */}
               <div className="flex items-center justify-between mb-4">
-                <span
-                  className="text-[11px] font-bold uppercase tracking-[0.08em] px-2.5 py-0.5 rounded-full"
-                  style={{
-                    backgroundColor: `${pal.accent}22`,
-                    color: pal.accent,
-                  }}
-                >
-                  {wwdConfig.storyLabel}
-                </span>
                 <span className="font-mono text-[14px] font-bold tabular-nums" style={{ color: pal.accent }}>
                   {numStr} / {totalStr}
                 </span>
+                {TIER_B_PROCESS_SCENES.has(scene.id) && (
+                  <DemoTag tone="inherit" />
+                )}
               </div>
 
               {/* Headline */}
@@ -588,23 +582,15 @@ export default function OurProcess({ onOpenAudit }: OurProcessProps) {
         {/* ------------------------------------------------------- */}
         <header className="w-full h-full flex flex-col justify-end pb-3 text-center z-10">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <div
-              className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.08em] border"
-              style={{
-                backgroundColor: `${activePalette.accent}18`,
-                color: activePalette.accent,
-                borderColor: `${activePalette.accent}40`,
-              }}
-            >
-              <span>{wwdConfig.storyLabel}</span>
-            </div>
-
             <span
               className="font-mono text-[13px] sm:text-[14px] font-bold tabular-nums tracking-wide"
               style={{ color: activePalette.accent }}
             >
               {String(activeSceneIndex + 1).padStart(2, '0')} / {String(totalScenes).padStart(2, '0')}
             </span>
+            {TIER_B_PROCESS_SCENES.has(activeScene.id) && (
+              <DemoTag tone="inherit" />
+            )}
           </div>
 
           {/* Kinetic Headline */}
@@ -2135,11 +2121,6 @@ function SceneBuildChoreography({
         {/* Punch-hole Camera */}
         <circle cx="0" cy="-276" r="4.5" fill="#05080A" stroke="#1E2832" strokeWidth="1" />
 
-        {/* Label under phone: Illustrative example */}
-        <text x="0" y="334" textAnchor="middle" fill="#7FA6C2" fontSize="11" fontWeight="500" opacity="0.85">
-          Illustrative example
-        </text>
-
         {/* Dimension marks & Real Text Technical Labels (around phone in Beat 1) */}
         <g stroke="#7FA6C2" style={{ opacity: dimOpacity }}>
           {/* Top dimension line */}
@@ -2642,7 +2623,7 @@ function SceneRankChoreography({
         fontWeight="500"
         opacity={fnOpacity}
       >
-        Illustrative example. Results vary.
+        Demo data. Results vary.
       </text>
     </g>
   );
@@ -2738,16 +2719,13 @@ function SceneAlwaysOnChoreography({
       <rect x="0" y="0" width="1600" height="900" fill="#0A1220" />
       <ellipse cx="800" cy="220" rx="600" ry="280" fill="#2DD4BF" opacity="0.035" />
 
-      {/* Clock Chip "11:42 pm" (sample, labelled in footnote) with Crescent Moon */}
+      {/* Clock Chip "11:42 pm" with Crescent Moon */}
       <g transform="translate(140, 60)">
-        <rect x="-66" y="-16" width="132" height="32" rx="16" fill="#0E1B2C" stroke="#2DD4BF33" strokeWidth="1" />
+        <rect x="-56" y="-16" width="112" height="32" rx="16" fill="#0E1B2C" stroke="#2DD4BF33" strokeWidth="1" />
         {/* Crescent Moon SVG */}
-        <path d="M -46,-4 A 6.5,6.5 0 0,1 -46,5 A 4.8,4.8 0 0,0 -46,-4 Z" fill="#F4B860" />
-        <text x="-24" y="5" fill="#E8EEF4" fontSize="11.5" fontWeight="700" fontFamily="monospace">
+        <path d="M -36,-4 A 6.5,6.5 0 0,1 -36,5 A 4.8,4.8 0 0,0 -36,-4 Z" fill="#F4B860" />
+        <text x="8" y="5" textAnchor="middle" fill="#E8EEF4" fontSize="11.5" fontWeight="700" fontFamily="monospace">
           11:42 pm
-        </text>
-        <text x="35" y="5" fill="#6A8296" fontSize="8.5" fontWeight="500">
-          sample
         </text>
       </g>
 
@@ -3003,11 +2981,6 @@ function SceneAlwaysOnChoreography({
 
         {/* Punch-hole Camera */}
         <circle cx="0" cy="-276" r="4.5" fill="#05080A" stroke="#1E2832" strokeWidth="1" />
-
-        {/* Label under phone: Illustrative example */}
-        <text x="0" y="334" textAnchor="middle" fill="#6A8296" fontSize="11" fontWeight="500" opacity="0.85">
-          Illustrative example
-        </text>
       </g>
 
       {/* ------------------------------------------------------------- */}
@@ -3104,7 +3077,7 @@ function SceneAlwaysOnChoreography({
         </g>
       )}
 
-      {/* Footnote (exact text required by user) */}
+      {/* Footnote */}
       <text
         x="800"
         y="865"
@@ -3114,7 +3087,7 @@ function SceneAlwaysOnChoreography({
         fontWeight="500"
         opacity="0.85"
       >
-        Illustrative example. Optional add-on. Check call-recording and consent rules.
+        Optional add-on. Check call-recording and consent rules.
       </text>
     </g>
   );
@@ -3368,7 +3341,7 @@ function SceneTalkChoreography({
         {/* Footnote (max 56ch constraint) */}
         <g transform={isMobile ? 'translate(0, 84)' : 'translate(0, 88)'} textAnchor="middle">
           <text fill="#7E96AA" fontSize={isMobile ? '9' : '10.5'} fontWeight="500">
-            Illustrative story. Search results vary and take time to build.
+            Demo data. Search results vary and take time to build.
           </text>
           <text y="14" fill="#7E96AA" fontSize={isMobile ? '9' : '10.5'} fontWeight="500">
             We never promise rankings or a set number of enquiries.

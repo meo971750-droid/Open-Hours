@@ -3,6 +3,7 @@ import { ArrowUpRight, X } from 'lucide-react';
 import { useReducedMotion } from 'motion/react';
 import Container from '../components/Container';
 import Accent from '../components/Accent';
+import DemoTag from '../components/DemoTag';
 import { TradeName } from '../content';
 import { CONFIG, config } from '../config';
 
@@ -419,7 +420,7 @@ export default function DesignsSlider({ id = 'designs' }: DesignsSliderProps) {
         {/* FOOTER DISCLAIMER                                    */}
         {/* ==================================================== */}
         <p className="text-[13px] text-[#5E6F77] text-center mt-6 sm:mt-8">
-          Concept designs shown for illustration. They are not client projects.
+          <DemoTag variant="concept" />
         </p>
       </Container>
 
@@ -463,11 +464,10 @@ export default function DesignsSlider({ id = 'designs' }: DesignsSliderProps) {
             {/* Footer caption */}
             <div className="w-full mt-3 sm:mt-4 flex flex-col sm:flex-row items-center justify-between gap-1 text-center sm:text-left">
               <span className="text-[14px] sm:text-[15px] font-semibold text-[#12303D]">
-                {lightboxCard.name}{' '}
-                <span className="font-normal text-[#5E6F77]">— Illustrative example</span>
+                {lightboxCard.name}
               </span>
               <span className="text-[12px] sm:text-[13px] text-[#5E6F77]">
-                Concept designs shown for illustration. They are not client projects.
+                <DemoTag variant="concept" />
               </span>
             </div>
           </div>
