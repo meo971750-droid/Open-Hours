@@ -56,7 +56,7 @@ export default function DemoTag({
   if (variant === 'concept') {
     return (
       <span className={className}>
-        {text || config.work?.conceptFooterNote || 'Concept designs. Not client projects.'}
+        {text || config.work?.conceptFooterNote || 'Sample layouts. Not client projects.'}
       </span>
     );
   }
@@ -64,7 +64,7 @@ export default function DemoTag({
   if (variant === 'concept-badge') {
     return (
       <span className={className}>
-        {text || 'Concept design'}
+        {text || 'Sample layout'}
       </span>
     );
   }

@@ -4,7 +4,20 @@ import { ArrowUpRight, Play, X } from 'lucide-react';
 import { config, WorkItemConfig } from '../config';
 import { ShimmerImage, Tilt3D } from '../components/PremiumPrimitives';
 import { OH_DUR, OH_EASE } from '../lib/motion';
-import DemoTag from '../components/DemoTag';
+
+function isStreamableEmbed(url?: string): boolean {
+  return Boolean(url && /streamable\.com\/e\//i.test(url));
+}
+
+function buildMutedWorkEmbedUrl(rawUrl: string, restartFromStart = false): string {
+  const params = restartFromStart
+    ? 'autoplay=1&muted=1&loop=1&nocontrols=1&controls=0&t=0'
+    : 'autoplay=1&muted=1&loop=1&nocontrols=1&controls=0';
+  if (rawUrl.endsWith('?') || rawUrl.endsWith('&')) {
+    return `${rawUrl}${params}`;
+  }
+  return `${rawUrl}${rawUrl.includes('?') ? '&' : '?'}${params}`;
+}
 
 interface OurWorkMarqueeProps {
   onOpenAudit?: () => void;
@@ -49,9 +62,9 @@ interface WorkCardProps {
 function WorkCard({ item, isDuplicate = false, onOpenModal }: WorkCardProps) {
   const [imgFailed, setImgFailed] = useState(false);
 
-  if (imgFailed || !item.image) return null;
+  const isEmbedVideo = isStreamableEmbed(item.videoUrl);
+  if (!isEmbedVideo && (imgFailed || !item.image)) return null;
 
-  const isConcept = !item.isClient;
   const hasVideo = Boolean(item.videoUrl && item.videoUrl.trim());
   const hasLive = Boolean(item.liveUrl && item.liveUrl.trim());
 
@@ -69,10 +82,11 @@ function WorkCard({ item, isDuplicate = false, onOpenModal }: WorkCardProps) {
           tabIndex={isDuplicate ? -1 : undefined}
           onClick={(e) => onOpenModal?.(item, e.currentTarget)}
           aria-label={`Play video for ${item.title}`}
-          className={`${circleClass} cursor-pointer`}
-          style={circleStyle}
+          className="w-full h-full flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6FD6B0] rounded-[16px]"
         >
-          <Play className="w-6 h-6 fill-white text-white ml-0.5" strokeWidth={1.5} aria-hidden="true" />
+          <span className={circleClass} style={circleStyle} aria-hidden="true">
+            <Play className="w-6 h-6 fill-white text-white ml-0.5 pointer-events-none" strokeWidth={1.5} />
+          </span>
         </button>
       );
     }
@@ -108,36 +122,39 @@ function WorkCard({ item, isDuplicate = false, onOpenModal }: WorkCardProps) {
   };
 
   return (
-    <Tilt3D maxDeg={4} disabled={isDuplicate} className="w-[clamp(260px,28vw,420px)] shrink-0">
+    <Tilt3D maxDeg={4} disabled={isDuplicate} className="w-[clamp(280px,30vw,440px)] shrink-0">
       <article className="group w-full bg-white p-[6px] rounded-[20px] border border-[rgba(11,27,34,0.08)] shadow-[var(--e1)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 hover:shadow-[var(--e2)] hover:border-[rgba(20,98,79,0.22)]">
-        <div className="relative aspect-video w-full rounded-[16px] overflow-hidden bg-[#E9ECEA]">
-          <ShimmerImage
-            src={item.image}
-            alt={isDuplicate ? '' : `${item.title}${item.trade ? ` — ${item.trade}` : ''}`}
-            width={420}
-            height={236}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            onError={() => setImgFailed(true)}
-            wrapperClassName="relative w-full h-full"
-            className="w-full h-full object-cover object-top block"
-          />
-
-          {/* Subtle centre scrim so the green glass action circle stays legible over bright screenshots */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-black/10 group-hover:bg-black/18 transition-colors duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-          />
-
-          {/* Small Corner Concept Tag */}
-          {isConcept && (
-            <DemoTag
-              variant="concept-badge"
-              className="pointer-events-none absolute top-2.5 left-2.5 z-10 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-[#050E0D]/90 text-white backdrop-blur-xs border border-white/15"
+        <div className="relative w-full h-0 pb-[52.812%] rounded-[16px] overflow-hidden bg-[#050E0D]">
+          {isEmbedVideo && item.videoUrl ? (
+            <iframe
+              title={isDuplicate ? '' : `${item.title}${item.trade ? ` — ${item.trade}` : ''}`}
+              src={buildMutedWorkEmbedUrl(item.videoUrl)}
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              tabIndex={-1}
+              className="absolute inset-0 w-full h-full border-0 overflow-hidden pointer-events-none"
+            />
+          ) : (
+            <ShimmerImage
+              src={item.image || ''}
+              alt={isDuplicate ? '' : `${item.title}${item.trade ? ` — ${item.trade}` : ''}`}
+              width={440}
+              height={232}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={() => setImgFailed(true)}
+              wrapperClassName="relative w-full h-full"
+              className="w-full h-full object-cover object-top block"
             />
           )}
 
-          {/* Centred 56px Action Button */}
+          {/* Subtle centre scrim so the green glass action circle stays legible */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+          />
+
+          {/* Centred 56px Play / Action Button */}
           <div className="absolute inset-0 z-10 flex items-center justify-center">
             {renderCenterAction()}
           </div>
@@ -164,14 +181,7 @@ function MarqueeCategoryRow({
   isModalOpen,
   onOpenModal,
 }: MarqueeRowProps) {
-  const duplicateRef = useRef<HTMLDivElement>(null);
   const [isTouching, setIsTouching] = useState(false);
-
-  useEffect(() => {
-    const el = duplicateRef.current;
-    if (!el) return;
-    el.setAttribute('inert', '');
-  }, [prefersReducedMotion, items.length]);
 
   const animClass = direction === 'ltr' ? 'work-track-ltr' : 'work-track-rtl';
   const isPaused = prefersReducedMotion || isTouching || isModalOpen;
@@ -215,14 +225,18 @@ function MarqueeCategoryRow({
               ))}
             </div>
 
-            {/* Set 2 (Seamless Loop Duplicate — aria-hidden & inert) */}
+            {/* Set 2 (Seamless Loop Duplicate — aria-hidden & non-tabbable, clickable for pointer users) */}
             <div
-              ref={duplicateRef}
               aria-hidden="true"
               className="flex items-center gap-4 pr-4 shrink-0"
             >
               {items.map((item) => (
-                <WorkCard key={`${item.id}-dup`} item={item} isDuplicate />
+                <WorkCard
+                  key={`${item.id}-dup`}
+                  item={item}
+                  isDuplicate
+                  onOpenModal={onOpenModal}
+                />
               ))}
             </div>
           </div>
@@ -236,6 +250,7 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const motionReduce = useReducedMotion() ?? false;
   const [activeModalItem, setActiveModalItem] = useState<WorkItemConfig | null>(null);
+  const [modalPlayKey, setModalPlayKey] = useState(0);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -299,7 +314,9 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
   }, [activeModalItem]);
 
   const populatedCategories = useMemo(() => {
-    const workItems = (config.work?.items || []).filter((item) => Boolean(item.image));
+    const workItems = (config.work?.items || []).filter((item) =>
+      Boolean(item.videoUrl || item.image)
+    );
     const cats = config.work?.categories || [];
 
     return cats
@@ -313,12 +330,9 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
 
   if (populatedCategories.length === 0) return null;
 
-  const hasAnyClientProject = populatedCategories.some((cat) =>
-    cat.items.some((item) => Boolean(item.isClient))
-  );
-
   const handleOpenModal = (item: WorkItemConfig, trigger: HTMLElement) => {
     triggerRef.current = trigger;
+    setModalPlayKey((k) => k + 1);
     setActiveModalItem(item);
   };
 
@@ -392,14 +406,7 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
         ))}
       </div>
 
-      {/* Honest Concept Footer Note */}
-      {!hasAnyClientProject && (
-        <p className="mt-8 px-4 text-center text-[13px] text-[#475754] max-w-[600px] mx-auto">
-          <DemoTag variant="concept" />
-        </p>
-      )}
-
-      {/* Accessible Video / Image Preview Modal Dialog */}
+      {/* Accessible Image / Muted Video Preview Modal Dialog */}
       <AnimatePresence>
         {activeModalItem && (
           <motion.div
@@ -407,7 +414,7 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
             animate={{ opacity: 1 }}
             exit={motionReduce ? undefined : { opacity: 0 }}
             transition={{ duration: motionReduce ? 0 : OH_DUR.base, ease: OH_EASE }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1B22]/78 backdrop-blur-xs"
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0B1B22]/78 backdrop-blur-xs"
             onClick={() => setActiveModalItem(null)}
           >
             <motion.div
@@ -420,7 +427,7 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
               exit={motionReduce ? undefined : { opacity: 0, scale: 0.96, y: 12 }}
               transition={{ duration: motionReduce ? 0 : OH_DUR.base, ease: OH_EASE }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-[920px] bg-white text-[#0B1B22] rounded-[28px] p-4 sm:p-6 shadow-[var(--e3)] border border-[rgba(11,27,34,0.12)]"
+              className="relative w-full max-w-[920px] max-h-[90vh] overflow-y-auto bg-white text-[#0B1B22] rounded-[28px] p-4 sm:p-6 shadow-[var(--e3)] border border-[rgba(11,27,34,0.12)]"
             >
               <div className="flex items-center justify-between gap-4 pb-3 mb-4 border-b border-[rgba(11,27,34,0.08)]">
                 <div className="flex flex-wrap items-center gap-2.5 min-w-0">
@@ -435,12 +442,6 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
                       {activeModalItem.trade}
                     </span>
                   )}
-                  {!activeModalItem.isClient && (
-                    <DemoTag
-                      variant="concept-badge"
-                      className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0F4A3E] text-white"
-                    />
-                  )}
                 </div>
 
                 <button
@@ -454,15 +455,25 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
                 </button>
               </div>
 
-              <div className="relative aspect-video w-full rounded-[18px] overflow-hidden bg-[#0B1B22]">
-                {activeModalItem.videoUrl ? (
+              <div className="relative w-full h-0 pb-[52.812%] rounded-[18px] overflow-hidden bg-[#0B1B22]">
+                {isStreamableEmbed(activeModalItem.videoUrl) && activeModalItem.videoUrl ? (
+                  <iframe
+                    key={`${activeModalItem.id}-${modalPlayKey}`}
+                    title={activeModalItem.title}
+                    src={buildMutedWorkEmbedUrl(activeModalItem.videoUrl, true)}
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                    className="absolute inset-0 w-full h-full border-0 overflow-hidden pointer-events-none"
+                  />
+                ) : activeModalItem.videoUrl ? (
                   <video
                     src={activeModalItem.videoUrl}
                     poster={activeModalItem.image}
-                    controls
+                    muted
                     autoPlay
+                    loop
                     playsInline
-                    className="w-full h-full object-contain"
+                    className="absolute inset-0 w-full h-full object-contain"
                   />
                 ) : (
                   <img

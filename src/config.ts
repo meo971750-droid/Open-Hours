@@ -387,7 +387,7 @@ export interface WorkItemConfig {
   title: string;
   trade?: string;
   category: string;
-  image: string;
+  image?: string;
   videoUrl?: string;
   liveUrl?: string;
   isClient?: boolean;
@@ -583,46 +583,58 @@ export const config: AppConfig = {
   ],
   work: {
     subtitle:
-      'Website concepts and local search layouts designed for builders and home-improvement trades across Ireland and Malta.',
-    conceptFooterNote: 'Concept designs. Not client projects.',
+      'Local trade websites and search layouts designed for builders and home-improvement trades across Ireland and Malta.',
+    conceptFooterNote: '',
     categories: [
       {
         id: 'trade-websites',
-        title: 'Websites for builders and trades',
+        title: 'Websites built to catch inquiries',
         direction: 'rtl',
       },
     ],
     items: [
       {
-        id: 'xyz-roofing',
+        id: 'work-video-1',
         title: 'XYZ Roofing',
         trade: 'Roofers',
         category: 'trade-websites',
         image: '/roofing-sites/1-xyz-roofing.png',
+        videoUrl: 'https://streamable.com/e/f71s1j?',
         isClient: false,
       },
       {
-        id: 'alex-roofing',
+        id: 'work-video-2',
         title: 'Alex Roofing',
         trade: 'Roofers',
         category: 'trade-websites',
         image: '/roofing-sites/3-alex-roofing.png',
+        videoUrl: 'https://streamable.com/e/m3d1tv?',
         isClient: false,
       },
       {
-        id: 'roofen',
+        id: 'work-video-3',
         title: 'Roofen',
         trade: 'Roofers',
         category: 'trade-websites',
         image: '/roofing-sites/4-roofen.png',
+        videoUrl: 'https://streamable.com/e/bgicak?',
         isClient: false,
       },
       {
-        id: 'atlantic-slate-roofing',
+        id: 'work-video-4',
         title: 'Atlantic Slate Roofing',
         trade: 'Roofers',
         category: 'trade-websites',
         image: '/roofing-sites/5-atlantic-slate-roofing.png',
+        videoUrl: 'https://streamable.com/e/jtrirj?',
+        isClient: false,
+      },
+      {
+        id: 'work-video-5',
+        title: 'Trade Showcase',
+        trade: 'Roofers',
+        category: 'trade-websites',
+        videoUrl: 'https://streamable.com/e/kpc5l8?',
         isClient: false,
       },
     ],
