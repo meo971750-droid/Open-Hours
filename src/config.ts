@@ -591,6 +591,11 @@ export const config: AppConfig = {
         title: 'Websites built to catch inquiries',
         direction: 'rtl',
       },
+      {
+        id: 'trade-websites-row-2',
+        title: '',
+        direction: 'ltr',
+      },
     ],
     items: [
       {
@@ -624,7 +629,7 @@ export const config: AppConfig = {
         id: 'work-video-4',
         title: 'Atlantic Slate Roofing',
         trade: 'Roofers',
-        category: 'trade-websites',
+        category: 'trade-websites-row-2',
         image: '/roofing-sites/5-atlantic-slate-roofing.png',
         videoUrl: 'https://streamable.com/e/jtrirj?',
         isClient: false,
@@ -633,8 +638,16 @@ export const config: AppConfig = {
         id: 'work-video-5',
         title: 'Trade Showcase',
         trade: 'Roofers',
-        category: 'trade-websites',
+        category: 'trade-websites-row-2',
         videoUrl: 'https://streamable.com/e/kpc5l8?',
+        isClient: false,
+      },
+      {
+        id: 'work-video-6',
+        title: 'Local Trade Spotlight',
+        trade: 'Roofers',
+        category: 'trade-websites-row-2',
+        videoUrl: 'https://streamable.com/e/mk8ej8?',
         isClient: false,
       },
     ],

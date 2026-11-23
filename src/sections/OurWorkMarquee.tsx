@@ -185,15 +185,18 @@ function MarqueeCategoryRow({
 
   const animClass = direction === 'ltr' ? 'work-track-ltr' : 'work-track-rtl';
   const isPaused = prefersReducedMotion || isTouching || isModalOpen;
+  const repeatCount = items.length <= 3 ? 2 : 1;
 
   return (
     <div className="space-y-6">
       {/* Category Sub-heading (~40px regular with tight tracking) */}
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h3 className="font-heading text-[clamp(26px,2.9vw,40px)] font-normal leading-[1.15] tracking-[-0.025em] text-[#0B1B22]">
-          {categoryTitle}
-        </h3>
-      </div>
+      {categoryTitle.trim().length > 0 && (
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h3 className="font-heading text-[clamp(26px,2.9vw,40px)] font-normal leading-[1.15] tracking-[-0.025em] text-[#0B1B22]">
+            {categoryTitle}
+          </h3>
+        </div>
+      )}
 
       {prefersReducedMotion ? (
         <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -207,7 +210,7 @@ function MarqueeCategoryRow({
         </div>
       ) : (
         <div
-          className="work-marquee-wrap oh-marquee-fade relative w-full overflow-hidden py-2"
+          className="work-marquee-wrap oh-marquee-fade relative w-full overflow-hidden py-1.5"
           onTouchStart={() => setIsTouching(true)}
           onTouchEnd={() => setIsTouching(false)}
           onTouchCancel={() => setIsTouching(false)}
@@ -218,10 +221,19 @@ function MarqueeCategoryRow({
               animationPlayState: isPaused ? 'paused' : 'running',
             }}
           >
-            {/* Set 1 (Interactive & Accessible) */}
+            {/* Set 1 (Primary accessible cards + visual fill repetition if <=3 items) */}
             <div className="flex items-center gap-4 pr-4 shrink-0">
-              {items.map((item) => (
-                <WorkCard key={item.id} item={item} onOpenModal={onOpenModal} />
+              {Array.from({ length: repeatCount }).map((_, repIdx) => (
+                <React.Fragment key={repIdx}>
+                  {items.map((item) => (
+                    <WorkCard
+                      key={`${item.id}-s1-${repIdx}`}
+                      item={item}
+                      isDuplicate={repIdx > 0}
+                      onOpenModal={onOpenModal}
+                    />
+                  ))}
+                </React.Fragment>
               ))}
             </div>
 
@@ -230,13 +242,17 @@ function MarqueeCategoryRow({
               aria-hidden="true"
               className="flex items-center gap-4 pr-4 shrink-0"
             >
-              {items.map((item) => (
-                <WorkCard
-                  key={`${item.id}-dup`}
-                  item={item}
-                  isDuplicate
-                  onOpenModal={onOpenModal}
-                />
+              {Array.from({ length: repeatCount }).map((_, repIdx) => (
+                <React.Fragment key={repIdx}>
+                  {items.map((item) => (
+                    <WorkCard
+                      key={`${item.id}-s2-${repIdx}`}
+                      item={item}
+                      isDuplicate
+                      onOpenModal={onOpenModal}
+                    />
+                  ))}
+                </React.Fragment>
               ))}
             </div>
           </div>
@@ -322,7 +338,7 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
     return cats
       .map((cat, idx) => ({
         ...cat,
-        direction: (idx % 2 === 0 ? 'rtl' : 'ltr') as 'rtl' | 'ltr',
+        direction: (cat.direction || (idx % 2 === 0 ? 'rtl' : 'ltr')) as 'rtl' | 'ltr',
         items: workItems.filter((item) => item.category === cat.id),
       }))
       .filter((cat) => cat.items.length > 0);
@@ -392,7 +408,7 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
       </div>
 
       {/* Category Rows */}
-      <div className="space-y-14">
+      <div className="space-y-6 sm:space-y-7">
         {populatedCategories.map((cat) => (
           <MarqueeCategoryRow
             key={cat.id}
