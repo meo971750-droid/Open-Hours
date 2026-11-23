@@ -238,6 +238,7 @@ export interface TestimonialItem {
   fullName: string;
   role: string;
   location: string;
+  country?: string;
   rating: number;
   text: string;
   photo: string;

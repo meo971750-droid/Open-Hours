@@ -1,94 +1,65 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Play,
   X,
-  Volume2,
   Award,
+  Star,
+  ExternalLink,
 } from 'lucide-react';
 import { ShimmerImage, Tilt3D } from '../components/PremiumPrimitives';
+import { config } from '../config';
 import { VIDEO_REVIEW } from '../content';
 import { OH_DUR, OH_EASE } from '../lib/motion';
-import { getResponsiveImageProps } from '../lib/images';
-import seanByrneImg from '../assets/images/irish_electrician_portrait_1794505961851.jpg';
-import marijaImg from '../assets/images/malta_plumber_portrait_1794506006630.jpg';
-import conorWalshImg from '../assets/images/galway_roofer_work_1794506004419.jpg';
-import lukeBuilderImg from '../assets/images/atlantic_slate_roofing_1791980952151.jpg';
 
-interface TestimonialItem {
+interface ProofCardItem {
   id: string;
+  anchorId?: string;
   name: string;
   role: string;
-  flag: string;
-  stats: string;
+  location?: string;
+  country?: string;
+  rating?: number;
+  sourceLabel?: string;
+  sourceUrl?: string;
+  date?: string;
+  stats?: string;
+  legacyFlag?: string;
   type: 'video' | 'text' | 'stat';
   avatar?: string;
   image?: string;
   videoSrc?: string;
-  embedUrl?: string;
-  brandLabel?: string;
-  portraitOverlayCard?: boolean;
+  videoEmbedUrl?: string;
   poster?: string;
   quote?: string;
   bullets?: string[];
   statNumber?: string;
   statLabel?: string;
+  brandName?: string;
+  brandRoleLine?: string;
+  fullBleedVideo?: boolean;
+  isConfigReview?: boolean;
 }
 
-const TESTIMONIALS: TestimonialItem[] = [
-  {
-    id: 'sean-byrne',
-    name: 'Seán Byrne',
-    role: 'Founder at Byrne Electrical',
-    flag: '🇮🇪',
-    stats: 'Google 5.0 ★ · 42 reviews',
-    type: 'video',
-    image: seanByrneImg,
-    quote:
-      '"Three new jobs in the first week. Finally a site that looks like our work and actually brings in quotes."',
-    bullets: [
-      'Certified Electrical Contractor, Dublin',
-      'Page 1 for "electrician Dublin"',
-      'Automated WhatsApp inquiry replies',
-    ],
-  },
-  {
-    id: 'dr-robin',
-    name: 'Marija Camilleri',
-    role: 'Owner at Camilleri Plumbing',
-    flag: '🇲🇹',
-    stats: 'Google 5.0 ★ · Valletta & Sliema',
-    type: 'text',
-    image: marijaImg,
-    quote:
-      "I'm really happy and still working with Open Hours. They delivered creative work that not only looked great but also helped my brand grow online. Customers now say they found us on ChatGPT.",
-    bullets: [
-      'Master Plumber & Heating Specialist',
-      'ChatGPT & Gemini citations verified',
-      '12s automatic first response setup',
-    ],
-  },
-  {
-    id: 'conor-walsh',
-    name: 'Conor Walsh',
-    role: 'Director at Walsh Roofing',
-    flag: '🇮🇪',
-    stats: 'Google 4.9 ★ · Galway & Connacht',
-    type: 'video',
-    image: conorWalshImg,
-    quote:
-      '"The assistant answers while we are on the roof. Saves 12 hours every week and stops leads going elsewhere."',
-    bullets: [
-      'Specialist Slate & Tile Roofing',
-      '#1 in Galway Google Maps',
-      'Quote deposit collection online',
-    ],
-  },
+const AARON_FREEDMAN_STREAMABLE_EMBED = 'https://streamable.com/e/36ovtq?';
+const AARON_FREEDMAN_THUMBNAIL =
+  'https://i.ibb.co.com/VcbcTXH9/ac6245a6-13a2-4716-bdfa-79220b85865b.png';
+
+function buildEmbedUrl(baseUrl: string, params: Record<string, string>): string {
+  const query = new URLSearchParams(params).toString();
+  if (baseUrl.endsWith('?') || baseUrl.endsWith('&')) {
+    return `${baseUrl}${query}`;
+  }
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${query}`;
+}
+
+// Non-config cards retained as-is for user review (listed in Pass 20 report)
+const LEGACY_NON_CONFIG_CARDS: ProofCardItem[] = [
   {
     id: 'stat-card',
     name: 'Trade Results Metric',
     role: 'Quarterly Growth Benchmark',
-    flag: '🇲🇹 🇮🇪',
+    legacyFlag: '🇲🇹 🇮🇪',
     stats: 'Across 42 trade builds',
     type: 'stat',
     statNumber: '+212%',
@@ -103,7 +74,7 @@ const TESTIMONIALS: TestimonialItem[] = [
     id: 'rob-o',
     name: "Rob O'Shaughnessy",
     role: 'Director of Switch Dimension',
-    flag: '🇮🇪',
+    legacyFlag: '🇮🇪',
     stats: '42K community members',
     type: 'text',
     image: '/clients/2.webp',
@@ -115,69 +86,141 @@ const TESTIMONIALS: TestimonialItem[] = [
       'Fast, clear collaboration',
     ],
   },
-  {
-    id: 'luke-builder',
-    name: 'Luke Farrugia',
-    role: 'Lead Builder, Coastal Extensions',
-    flag: '🇲🇹',
-    stats: 'Over 28 completed builds',
-    type: 'video',
-    image: lukeBuilderImg,
-    quote:
-      '"Customers tell us our website is the clearest and most professional trade website in Malta."',
-    bullets: [
-      'Modern home extensions & renovations',
-      'High-res project portfolio gallery',
-      'Zero maintenance headaches',
-    ],
-  },
-  {
-    id: 'aaron-freedman',
-    name: VIDEO_REVIEW.reviewerName || 'Aaron Freedman',
-    role: 'Online Coach @ A2Z Fitness',
-    brandLabel: 'A2Z Fitness',
-    flag: '🇮🇪',
-    stats: 'Verified Video Client',
-    type: 'video',
-    portraitOverlayCard: true,
-    avatar: '/clients/1.webp',
-    image: 'https://i.ibb.co.com/PzMx0tJK/ac6245a6-13a2-4716-bdfa-79220b85865b.png',
-    poster: 'https://i.ibb.co.com/PzMx0tJK/ac6245a6-13a2-4716-bdfa-79220b85865b.png',
-    embedUrl: 'https://streamable.com/e/36ovtq?loop=0',
-    quote:
-      'Zuhayer has been a fantastic partner in building this website. As for how the website actually looks, it’s impeccable.',
-    bullets: [
-      'Impeccable visual layout',
-      'Clear, strategic content structure',
-      'Smooth collaboration from day one',
-    ],
-  },
-  {
-    id: 'jeanne-m',
-    name: 'Jeanne M',
-    role: 'Acting President',
-    flag: '🇮🇪',
-    stats: 'Verified Client · Senja',
-    type: 'text',
-    image: '/clients/4.webp',
-    quote:
-      'Zuhayer was very attentive and asked questions to ensure he understood what I needed. The communication was probably the best I have had with website builders.',
-    bullets: [
-      'Prompt, patient revisions',
-      'Delivered cleanly on schedule',
-      'Direct founder communication',
-    ],
-  },
 ];
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'OH';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+function buildSectionCards(): ProofCardItem[] {
+  const seenReviewers = new Set<string>();
+  const videoReviewerName =
+    VIDEO_REVIEW.permissionConfirmed && config.videoTestimonial
+      ? (VIDEO_REVIEW.reviewerName || '').trim()
+      : '';
+  const videoReviewerKey = videoReviewerName.toLowerCase();
+
+  const cards: ProofCardItem[] = [];
+
+  for (const t of config.testimonials || []) {
+    const normalized = t.fullName.trim().toLowerCase();
+    if (!normalized || seenReviewers.has(normalized)) continue;
+    seenReviewers.add(normalized);
+
+    const isAaronFreedman = normalized === 'aaron freedman';
+    const isMatchingVideoReviewer =
+      isAaronFreedman || (Boolean(videoReviewerKey) && normalized === videoReviewerKey);
+    const cardThumbnail = isAaronFreedman
+      ? AARON_FREEDMAN_THUMBNAIL
+      : isMatchingVideoReviewer
+        ? VIDEO_REVIEW.poster || t.photo
+        : undefined;
+
+    cards.push({
+      id: t.id,
+      anchorId: `review-${t.id}`,
+      name: t.fullName,
+      role: t.role,
+      location: t.location,
+      country: t.country,
+      rating:
+        typeof t.rating === 'number' && t.rating > 0
+          ? t.rating
+          : isMatchingVideoReviewer &&
+              typeof config.videoTestimonial?.rating === 'number' &&
+              config.videoTestimonial.rating > 0
+            ? config.videoTestimonial.rating
+            : 0,
+      sourceLabel: t.sourceLabel,
+      sourceUrl: t.sourceUrl,
+      date: t.date,
+      type: isMatchingVideoReviewer ? 'video' : 'text',
+      avatar: t.photo,
+      videoSrc: isAaronFreedman
+        ? undefined
+        : isMatchingVideoReviewer
+          ? VIDEO_REVIEW.src
+          : undefined,
+      videoEmbedUrl: isAaronFreedman ? AARON_FREEDMAN_STREAMABLE_EMBED : undefined,
+      poster: isMatchingVideoReviewer ? cardThumbnail : undefined,
+      image: cardThumbnail,
+      quote: t.text,
+      brandName: isAaronFreedman ? 'A2Z Fitness' : undefined,
+      brandRoleLine: isAaronFreedman ? 'Online Coach @ A2Z Fitness' : undefined,
+      fullBleedVideo: isAaronFreedman,
+      isConfigReview: true,
+    });
+  }
+
+  // If videoTestimonial belongs to a reviewer not in config.testimonials, include it once
+  if (
+    videoReviewerName &&
+    !seenReviewers.has(videoReviewerKey) &&
+    VIDEO_REVIEW.permissionConfirmed &&
+    config.videoTestimonial
+  ) {
+    seenReviewers.add(videoReviewerKey);
+    cards.unshift({
+      id: 'video-testimonial',
+      name: videoReviewerName,
+      role: VIDEO_REVIEW.reviewerLine?.trim() || 'Client',
+      rating:
+        typeof config.videoTestimonial.rating === 'number' &&
+        config.videoTestimonial.rating > 0
+          ? config.videoTestimonial.rating
+          : 0,
+      sourceLabel: 'Video review',
+      type: 'video',
+      videoSrc: VIDEO_REVIEW.src,
+      poster: VIDEO_REVIEW.poster,
+      image: VIDEO_REVIEW.poster,
+      isConfigReview: true,
+    });
+  }
+
+  return [...cards, ...LEGACY_NON_CONFIG_CARDS];
+}
+
+function distributeMasonryColumns(items: ProofCardItem[], colCount: number): ProofCardItem[][] {
+  const cols: ProofCardItem[][] = Array.from({ length: colCount }, () => []);
+  const heights = Array.from({ length: colCount }, () => 0);
+
+  // Place tall media/stat cards first cleanly across balanced columns
+  const estimateWeight = (item: ProofCardItem) => {
+    if (item.fullBleedVideo) return 1.85;
+    if (item.type === 'video') return 2.4;
+    if (item.type === 'stat') return 1.8;
+    const len = item.quote?.length || 0;
+    return len > 240 ? 1.55 : len > 120 ? 1.25 : 1.0;
+  };
+
+  for (const item of items) {
+    let shortestCol = 0;
+    for (let i = 1; i < colCount; i++) {
+      if (heights[i] < heights[shortestCol]) {
+        shortestCol = i;
+      }
+    }
+    cols[shortestCol].push(item);
+    heights[shortestCol] += estimateWeight(item);
+  }
+
+  return cols;
+}
 
 interface ClientsLoveUsProps {
   onOpenAudit?: () => void;
 }
 
 export default function ClientsLoveUs({ onOpenAudit: _onOpenAudit }: ClientsLoveUsProps) {
-  const [activeVideoModal, setActiveVideoModal] = useState<TestimonialItem | null>(null);
-
+  const [activeVideoModal, setActiveVideoModal] = useState<ProofCardItem | null>(null);
   const lastTriggerRef = React.useRef<HTMLElement | null>(null);
+
+  const cards = useMemo(() => buildSectionCards(), []);
+  const desktopColumns = useMemo(() => distributeMasonryColumns(cards, 3), [cards]);
 
   useEffect(() => {
     if (!activeVideoModal) return;
@@ -191,16 +234,22 @@ export default function ClientsLoveUs({ onOpenAudit: _onOpenAudit }: ClientsLove
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeVideoModal]);
 
-  // Balanced 3-column masonry distribution (~equal visual height across all columns):
-  // Col 1: Aaron Freedman (video) + Marija Camilleri (text) + Rob O'Shaughnessy (text)
-  // Col 2: Seán Byrne (video) + Stat Card + Jeanne M (text)
-  // Col 3: Conor Walsh (video) + Luke Farrugia (video)
-  const col1 = [TESTIMONIALS[6], TESTIMONIALS[1], TESTIMONIALS[4]];
-  const col2 = [TESTIMONIALS[0], TESTIMONIALS[3], TESTIMONIALS[7]];
-  const col3 = [TESTIMONIALS[2], TESTIMONIALS[5]];
+  const handlePlay = (item: ProofCardItem, trigger: HTMLElement | null) => {
+    lastTriggerRef.current = trigger;
+    setActiveVideoModal(item);
+  };
+
+  const modalRoleLocation = activeVideoModal
+    ? [activeVideoModal.role, activeVideoModal.location]
+        .filter((v) => Boolean(v && v.trim()))
+        .join(' · ')
+    : '';
 
   return (
-    <section id="proof" className="oh-cv-auto py-[var(--section-py)] bg-[#E9ECEA] text-[#0B1B22] overflow-x-clip">
+    <section
+      id="proof"
+      className="oh-cv-auto py-[var(--section-py)] bg-[#E9ECEA] text-[#0B1B22] overflow-x-clip"
+    >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Heading */}
         <div className="text-center max-w-[760px] mx-auto mb-14 sm:mb-16">
@@ -217,49 +266,30 @@ export default function ClientsLoveUs({ onOpenAudit: _onOpenAudit }: ClientsLove
           </p>
         </div>
 
-        {/* 3-Column Masonry Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
-          {/* Column 1 */}
-          <div className="flex flex-col gap-6">
-            {col1.map((item) => (
-              <TestimonialCard
-                key={item.id}
-                item={item}
-                onPlay={(trigger) => {
-                  lastTriggerRef.current = trigger;
-                  setActiveVideoModal(item);
-                }}
-              />
-            ))}
-          </div>
+        {/* Desktop (>=1024px): Adaptive 3-Column Balanced Masonry */}
+        <div className="hidden lg:grid lg:grid-cols-3 gap-6 items-start">
+          {desktopColumns.map((colItems, colIdx) => (
+            <div key={colIdx} className="flex flex-col gap-6">
+              {colItems.map((item) => (
+                <TestimonialCard
+                  key={item.id}
+                  item={item}
+                  onPlay={(trigger) => handlePlay(item, trigger)}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
 
-          {/* Column 2 */}
-          <div className="flex flex-col gap-6">
-            {col2.map((item) => (
-              <TestimonialCard
-                key={item.id}
-                item={item}
-                onPlay={(trigger) => {
-                  lastTriggerRef.current = trigger;
-                  setActiveVideoModal(item);
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Column 3 (2-up grid on tablet md, stacked column on desktop lg) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-6 md:col-span-2 lg:col-span-1">
-            {col3.map((item) => (
-              <TestimonialCard
-                key={item.id}
-                item={item}
-                onPlay={(trigger) => {
-                  lastTriggerRef.current = trigger;
-                  setActiveVideoModal(item);
-                }}
-              />
-            ))}
-          </div>
+        {/* Mobile & Tablet (<1024px): Reflows cleanly across 1 or 2 columns with zero gaps */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:hidden gap-6 items-start">
+          {cards.map((item) => (
+            <TestimonialCard
+              key={item.id}
+              item={item}
+              onPlay={(trigger) => handlePlay(item, trigger)}
+            />
+          ))}
         </div>
       </div>
 
@@ -267,21 +297,20 @@ export default function ClientsLoveUs({ onOpenAudit: _onOpenAudit }: ClientsLove
       <AnimatePresence>
         {activeVideoModal && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#050E0D]/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#050E0D]/80 backdrop-blur-sm"
             onClick={() => setActiveVideoModal(null)}
           >
             <motion.div
               role="dialog"
               aria-modal="true"
-              aria-label={`Client story from ${activeVideoModal.name}`}
+              aria-label={`Client review from ${activeVideoModal.name}`}
               initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 12 }}
               transition={{ duration: OH_DUR.base, ease: OH_EASE }}
               onClick={(e) => e.stopPropagation()}
-              className="oh-dark-card relative w-full max-w-[460px] text-white rounded-[28px] overflow-hidden shadow-2xl"
+              className="oh-dark-card relative w-full max-w-[460px] max-h-[90vh] overflow-y-auto text-white rounded-[28px] shadow-2xl"
             >
-              {/* Close Button */}
               <button
                 type="button"
                 onClick={() => {
@@ -294,103 +323,88 @@ export default function ClientsLoveUs({ onOpenAudit: _onOpenAudit }: ClientsLove
                 <X className="w-5 h-5" strokeWidth={1.5} />
               </button>
 
-              {activeVideoModal.embedUrl ? (
+              {(activeVideoModal.videoEmbedUrl || activeVideoModal.videoSrc) && (
                 <div className="bg-[#050E0D]">
-                  <div className="relative bg-black w-full max-h-[68vh] overflow-hidden">
-                    <div style={{ position: 'relative', width: '100%', height: 0, paddingBottom: '125.000%' }}>
+                  {activeVideoModal.videoEmbedUrl ? (
+                    <div className="relative w-full h-0 pb-[125%] max-h-[60vh] bg-black overflow-hidden">
                       <iframe
+                        title={`Client video review from ${activeVideoModal.name}`}
+                        src={buildEmbedUrl(activeVideoModal.videoEmbedUrl, { autoplay: '1' })}
                         allow="autoplay; fullscreen"
                         allowFullScreen
-                        height="100%"
-                        src={`${activeVideoModal.embedUrl}${activeVideoModal.embedUrl.includes('?') ? '&' : '?'}autoplay=1`}
-                        width="100%"
-                        title={`Client video review from ${activeVideoModal.name}`}
-                        style={{
-                          border: 'none',
-                          width: '100%',
-                          height: '100%',
-                          position: 'absolute',
-                          left: '0px',
-                          top: '0px',
-                          overflow: 'hidden',
-                        }}
+                        className="absolute inset-0 w-full h-full border-0 overflow-hidden"
                       />
                     </div>
-                  </div>
-                  <div className="p-5 sm:p-6 text-left border-t border-white/10">
-                    <div className="inline-flex items-center gap-2 bg-[#DDF4EA] text-[#0F4A3E] text-xs font-bold px-3 py-1 rounded-full mb-2.5">
-                      <Volume2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      <span>Verified Client Video Review</span>
+                  ) : (
+                    <div className="relative bg-black flex items-center justify-center">
+                      <video
+                        src={activeVideoModal.videoSrc}
+                        poster={activeVideoModal.poster || activeVideoModal.image}
+                        controls
+                        autoPlay
+                        playsInline
+                        className="w-full max-h-[50vh] aspect-[4/5] object-contain bg-black"
+                      />
                     </div>
-                    <h3 className="font-heading text-xl font-bold text-white mb-1">
-                      {activeVideoModal.name}
-                    </h3>
-                    <div className="text-xs text-[#A8EBD3] mb-2">
-                      {activeVideoModal.role} · {activeVideoModal.stats}
-                    </div>
-                    {activeVideoModal.quote && (
-                      <p className="text-white/85 text-xs sm:text-[13px] italic leading-relaxed">
-                        {activeVideoModal.quote}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : activeVideoModal.videoSrc ? (
-                <div className="bg-[#050E0D]">
-                  <div className="relative bg-black flex items-center justify-center">
-                    <video
-                      src={activeVideoModal.videoSrc}
-                      poster={activeVideoModal.poster || activeVideoModal.image}
-                      controls
-                      autoPlay
-                      playsInline
-                      className="w-full max-h-[62vh] aspect-[4/5] object-contain bg-black"
-                    />
-                  </div>
-                  <div className="p-5 sm:p-6 text-left border-t border-white/10">
-                    <div className="inline-flex items-center gap-2 bg-[#DDF4EA] text-[#0F4A3E] text-xs font-bold px-3 py-1 rounded-full mb-2.5">
-                      <Volume2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      <span>Verified Client Video Review</span>
-                    </div>
-                    <h3 className="font-heading text-xl font-bold text-white mb-1">
-                      {activeVideoModal.name}
-                    </h3>
-                    <div className="text-xs text-[#A8EBD3] mb-2">
-                      {activeVideoModal.role} · {activeVideoModal.stats}
-                    </div>
-                    {activeVideoModal.quote && (
-                      <p className="text-white/85 text-xs sm:text-[13px] italic leading-relaxed">
-                        {activeVideoModal.quote}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="relative aspect-[9/14] bg-[#050E0D]">
-                  {activeVideoModal.image && (
-                    <ShimmerImage
-                      src={activeVideoModal.image}
-                      alt={activeVideoModal.name}
-                      loading="lazy"
-                      wrapperClassName="relative w-full h-full"
-                      className="w-full h-full object-cover"
-                    />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#050E0D] via-[#050E0D]/35 to-transparent" />
-
-                  <div className="absolute bottom-6 left-6 right-6 text-left z-10">
-                    <div className="inline-flex items-center gap-2 bg-[#DDF4EA] text-[#0F4A3E] text-xs font-bold px-3 py-1 rounded-full mb-3">
-                      <Volume2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      <span>Verified Trade Client Story</span>
-                    </div>
-                    <h3 className="font-serif text-2xl font-bold text-white mb-2">
+                  <div className="p-5 sm:p-6 text-left border-t border-white/10">
+                    <h3 className="font-heading text-xl font-bold text-white mb-1">
                       {activeVideoModal.name}
                     </h3>
-                    <p className="text-white/90 text-sm italic mb-4">
-                      {activeVideoModal.quote}
-                    </p>
-                    <div className="text-xs text-white/75">
-                      {activeVideoModal.role} · {activeVideoModal.stats}
+                    {modalRoleLocation && (
+                      <div className="text-xs text-[#A8EBD3] mb-2">
+                        {modalRoleLocation}
+                      </div>
+                    )}
+                    {activeVideoModal.quote && (
+                      <p className="text-white/85 text-xs sm:text-[13px] leading-relaxed whitespace-pre-line max-h-[140px] overflow-y-auto mb-3">
+                        {activeVideoModal.quote}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-white/75 pt-2.5 border-t border-white/10">
+                      {typeof activeVideoModal.rating === 'number' &&
+                        activeVideoModal.rating > 0 && (
+                          <div
+                            className="flex items-center gap-0.5 tabular-nums"
+                            role="img"
+                            aria-label={`Rated ${activeVideoModal.rating} out of 5`}
+                          >
+                            {Array.from({ length: 5 }).map((_, starIdx) => (
+                              <Star
+                                key={starIdx}
+                                aria-hidden="true"
+                                strokeWidth={1.5}
+                                className={`w-3.5 h-3.5 ${
+                                  starIdx < (activeVideoModal.rating || 0)
+                                    ? 'text-[#D99B26] fill-[#D99B26]'
+                                    : 'text-white/25'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      <div className="flex items-center gap-2 ml-auto">
+                        {activeVideoModal.sourceUrl ? (
+                          <a
+                            href={activeVideoModal.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 font-medium text-[#A8EBD3] hover:underline"
+                          >
+                            <span>{activeVideoModal.sourceLabel || 'Source'}</span>
+                            <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
+                          </a>
+                        ) : (
+                          activeVideoModal.sourceLabel && (
+                            <span>{activeVideoModal.sourceLabel}</span>
+                          )
+                        )}
+                        {activeVideoModal.date && (
+                          <span className="tabular-nums text-white/60">
+                            {activeVideoModal.date}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -407,139 +421,14 @@ function TestimonialCard({
   item,
   onPlay,
 }: {
-  item: TestimonialItem;
+  item: ProofCardItem;
   onPlay: (trigger: HTMLElement | null) => void;
 }) {
-  const [isHovered, setIsHovered] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [isHoverPlaying, setIsHoverPlaying] = useState(false);
 
-  // Full-bleed Portrait Video Overlay Card (matches focused selector card layout)
-  if (item.portraitOverlayCard && item.embedUrl) {
-    const hoverPlaySrc = `${item.embedUrl}${item.embedUrl.includes('?') ? '&' : '?'}autoplay=1&muted=1`;
-    return (
-      <Tilt3D maxDeg={4}>
-        <div
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className="relative rounded-[24px] overflow-hidden bg-[#050E0D] shadow-[var(--e2)] border border-[rgba(11,27,34,0.1)] group text-left"
-        >
-          <div style={{ position: 'relative', width: '100%', height: 0, paddingBottom: '125.000%' }}>
-            {/* Thumbnail Base Layer */}
-            {item.image && (
-              <img
-                {...getResponsiveImageProps(item.image, [400, 640], '(max-width: 767px) 92vw, 390px')}
-                alt={`${item.name} video review thumbnail`}
-                width={400}
-                height={500}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-[1.02]"
-              />
-            )}
-
-            {/* Hover-to-Play Streamable Video Embed */}
-            {isHovered && (
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  width: '100%',
-                  height: '100%',
-                  zIndex: 20,
-                }}
-              >
-                <div style={{ position: 'relative', width: '100%', height: '0px', paddingBottom: '125.000%' }}>
-                  <iframe
-                    allow="autoplay; fullscreen"
-                    allowFullScreen
-                    height="100%"
-                    src={hoverPlaySrc}
-                    width="100%"
-                    title={`${item.name} video review`}
-                    style={{
-                      border: 'none',
-                      width: '100%',
-                      height: '100%',
-                      position: 'absolute',
-                      left: '0px',
-                      top: '0px',
-                      overflow: 'hidden',
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Interactive Thumbnail Overlay (Play button + Bottom Gradient Scrim + Text) */}
-            <button
-              type="button"
-              onClick={(e) => onPlay(e.currentTarget)}
-              aria-label={`Play video review from ${item.name}`}
-              className={`absolute inset-0 z-10 w-full h-full text-left cursor-pointer transition-opacity duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-                isHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'
-              }`}
-            >
-              {/* Bottom Dark Scrim for AA Legibility */}
-              <div
-                aria-hidden="true"
-                className="absolute inset-0"
-                style={{
-                  background:
-                    'linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.08) 44%, rgba(0, 0, 0, 0.72) 72%, rgba(0, 0, 0, 0.94) 100%)',
-                }}
-              />
-
-              {/* Centered Translucent Play Button */}
-              <span
-                aria-hidden="true"
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/40 backdrop-blur-[3px] border border-white/25 text-white flex items-center justify-center shadow-[0_10px_28px_rgba(0,0,0,0.4)] transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-110"
-              >
-                <Play className="w-6 h-6 fill-white translate-x-0.5" strokeWidth={1.5} />
-              </span>
-
-              {/* Bottom Metadata & Quote Overlay */}
-              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-7 flex flex-col items-start">
-                {(item.avatar || item.brandLabel) && (
-                  <div className="flex items-center gap-2.5 mb-3">
-                    {item.avatar && (
-                      <img
-                        src={item.avatar}
-                        alt={item.brandLabel || item.name}
-                        width={24}
-                        height={24}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        className="w-6 h-6 rounded-full object-cover border border-white/30 shrink-0"
-                      />
-                    )}
-                    {item.brandLabel && (
-                      <span className="text-[14px] font-medium text-white/95 tracking-tight">
-                        {item.brandLabel}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {item.quote && (
-                  <p className="text-[13.5px] sm:text-[14.5px] leading-[1.45] text-white/90 font-normal line-clamp-2 mb-3.5">
-                    {item.quote}
-                  </p>
-                )}
-
-                <h3 className="font-heading text-[18px] sm:text-[19px] font-bold text-white leading-tight">
-                  {item.name}
-                </h3>
-                <p className="text-[12.5px] sm:text-[13px] text-white/75 mt-1 font-normal">
-                  {item.role}
-                </p>
-              </div>
-            </button>
-          </div>
-        </div>
-      </Tilt3D>
-    );
-  }
-
-  // Stat Card Variant (Unified Dark-Card Recipe)
+  // Legacy Stat Card Variant (non-config card retained per Pass 20 Rule 4)
   if (item.type === 'stat') {
     return (
       <Tilt3D maxDeg={4}>
@@ -572,85 +461,298 @@ function TestimonialCard({
     );
   }
 
-  const avatarSrc = item.avatar || item.image;
+  const avatarSrc = item.avatar || (item.isConfigReview ? undefined : item.image);
+  const showAvatarImg = Boolean(avatarSrc && avatarSrc.trim() && !avatarFailed);
+  const roleLocationLine = [item.role, item.location]
+    .filter((v) => Boolean(v && v.trim()))
+    .join(' · ');
+  const flagToDisplay = item.isConfigReview ? item.country?.trim() : item.legacyFlag;
+  const hasRating = typeof item.rating === 'number' && item.rating > 0;
+  const isLongQuote = Boolean(
+    item.isConfigReview &&
+      item.quote &&
+      (item.quote.length > 210 || item.quote.includes('\n'))
+  );
+
+  // Full-Bleed Portrait Video Card Variant (e.g. Aaron Freedman)
+  if (item.fullBleedVideo && (item.videoEmbedUrl || item.videoSrc)) {
+    return (
+      <Tilt3D maxDeg={4}>
+        <div
+          id={item.anchorId}
+          onPointerEnter={(e) => {
+            if (e.pointerType !== 'touch' && item.videoEmbedUrl) {
+              setIsHoverPlaying(true);
+            }
+          }}
+          onPointerLeave={(e) => {
+            if (e.pointerType !== 'touch') {
+              setIsHoverPlaying(false);
+            }
+          }}
+          className="relative w-full h-0 pb-[125%] rounded-[24px] sm:rounded-[28px] overflow-hidden border border-[#0B1B22]/85 bg-black shadow-[0_18px_42px_-16px_rgba(11,27,34,0.28)] scroll-mt-24"
+        >
+          {isHoverPlaying && item.videoEmbedUrl ? (
+            <iframe
+              title={`Client video review from ${item.name}`}
+              src={buildEmbedUrl(item.videoEmbedUrl, { autoplay: '1', muted: '1' })}
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full border-0 overflow-hidden"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => onPlay(e.currentTarget)}
+              aria-label={`Play client video review from ${item.name}`}
+              className="absolute inset-0 w-full h-full block text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6FD6B0]"
+            >
+              {(item.poster || item.image) && (
+                <ShimmerImage
+                  src={item.poster || item.image || ''}
+                  alt={`${item.name} video review`}
+                  width={480}
+                  height={600}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  wrapperClassName="relative w-full h-full"
+                  className="w-full h-full object-cover object-top group-hover:scale-[1.03] transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+                />
+              )}
+
+              {/* Bottom Black Gradient Scrim */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_32%,rgba(0,0,0,0.45)_52%,rgba(0,0,0,0.88)_74%,#000000_92%)]"
+              />
+
+              {/* Centered Translucent Play Circle */}
+              <div
+                aria-hidden="true"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/45 backdrop-blur-xs border border-white/25 text-white flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.38)] group-hover:scale-110 transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] z-10"
+              >
+                <Play className="w-5 h-5 fill-white text-white translate-x-[1.5px]" strokeWidth={1.5} />
+              </div>
+
+              {/* Bottom Brand Badge, Clamped Quote, Name & Role */}
+              <div className="absolute inset-x-0 bottom-0 px-6 pb-6 pt-10 sm:px-7 sm:pb-7 flex flex-col text-left z-10">
+                {item.brandName && (
+                  <div className="flex items-center gap-2.5 mb-3">
+                    {showAvatarImg ? (
+                      <div className="w-7 h-7 rounded-full overflow-hidden border border-white/25 bg-[#0F4A3E] shrink-0">
+                        <ShimmerImage
+                          src={avatarSrc!}
+                          alt={item.name}
+                          width={28}
+                          height={28}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          onError={() => setAvatarFailed(true)}
+                          wrapperClassName="relative w-full h-full"
+                          className="w-full h-full object-cover object-top"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        aria-hidden="true"
+                        className="w-7 h-7 rounded-full bg-[#0F4A3E] text-[#A8EBD3] border border-white/25 flex items-center justify-center font-heading font-bold text-[11px] shrink-0"
+                      >
+                        {getInitials(item.name)}
+                      </div>
+                    )}
+                    <span className="text-[13.5px] font-semibold text-white tracking-[-0.01em] truncate">
+                      {item.brandName}
+                    </span>
+                  </div>
+                )}
+
+                {item.quote && (
+                  <p className="text-[13.5px] sm:text-[14px] leading-[1.45] text-white/90 font-normal line-clamp-2 mb-3.5">
+                    {item.quote}
+                  </p>
+                )}
+
+                <div className="font-heading text-[20px] sm:text-[21px] font-bold leading-[1.15] tracking-[-0.02em] text-white mb-0.5">
+                  {item.name}
+                </div>
+
+                {(item.brandRoleLine || roleLocationLine) && (
+                  <p className="text-[13px] text-white/75 font-normal">
+                    {item.brandRoleLine || roleLocationLine}
+                  </p>
+                )}
+              </div>
+            </button>
+          )}
+        </div>
+      </Tilt3D>
+    );
+  }
 
   return (
     <Tilt3D maxDeg={4}>
-      <div className="oh-card rounded-[28px] p-6 sm:p-7 text-left">
-        {/* Header: Avatar, Name, Flag, Role, Stats */}
+      <div
+        id={item.anchorId}
+        className="oh-card rounded-[28px] p-6 sm:p-7 text-left scroll-mt-24"
+      >
+        {/* Header: Avatar (or Brand Monogram Tile), Name, Optional Country Flag, Role/Location */}
         <div className="flex items-center gap-3.5 mb-4">
-          {avatarSrc ? (
-            <div className="w-12 h-12 rounded-full overflow-hidden border border-[rgba(11,27,34,0.12)] shrink-0">
+          {showAvatarImg ? (
+            <div className="w-12 h-12 rounded-full overflow-hidden border border-[rgba(11,27,34,0.12)] bg-[#0F4A3E] shrink-0">
               <ShimmerImage
-                src={avatarSrc}
+                src={avatarSrc!}
                 alt={item.name}
                 width={48}
                 height={48}
                 loading="lazy"
+                referrerPolicy="no-referrer"
+                onError={() => setAvatarFailed(true)}
                 wrapperClassName="relative w-full h-full"
                 className="w-full h-full object-cover object-top"
               />
             </div>
           ) : (
-            <div className="w-12 h-12 rounded-full bg-[#DDF4EA] text-[#14624F] flex items-center justify-center font-bold text-lg shrink-0">
-              {item.name.charAt(0)}
+            <div
+              aria-hidden="true"
+              className="w-12 h-12 rounded-full bg-[#0F4A3E] text-[#A8EBD3] flex items-center justify-center font-heading font-bold text-[15px] tracking-tight shrink-0"
+            >
+              {getInitials(item.name)}
             </div>
           )}
+
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 font-bold text-[15px] text-[#0B1B22]">
               <span className="truncate">{item.name}</span>
-              <span className="text-base" aria-hidden="true">{item.flag}</span>
+              {flagToDisplay && (
+                <span className="text-base shrink-0" aria-hidden="true">
+                  {flagToDisplay}
+                </span>
+              )}
             </div>
-            <p className="text-xs text-[#475754] truncate">{item.role}</p>
-            <div className="flex items-center gap-1 text-[11px] text-[#475754] mt-0.5 tabular-nums">
-              <span className="text-[#D99B26]" aria-hidden="true">★</span>
-              <span>{item.stats}</span>
-            </div>
+
+            {roleLocationLine && (
+              <p className="text-xs text-[#475754] truncate">{roleLocationLine}</p>
+            )}
+
+            {/* Legacy card stats line (for untouched non-config card only) */}
+            {!item.isConfigReview && item.stats && (
+              <div className="flex items-center gap-1 text-[11px] text-[#475754] mt-0.5 tabular-nums">
+                <span className="text-[#D99B26]" aria-hidden="true">★</span>
+                <span>{item.stats}</span>
+              </div>
+            )}
+
+            {/* Real config review star rating (only shown if rating > 0) */}
+            {item.isConfigReview && hasRating && (
+              <div
+                className="flex items-center gap-0.5 mt-1 tabular-nums"
+                role="img"
+                aria-label={`Rated ${item.rating} out of 5`}
+              >
+                {Array.from({ length: 5 }).map((_, starIdx) => (
+                  <Star
+                    key={starIdx}
+                    aria-hidden="true"
+                    strokeWidth={1.5}
+                    className={`w-3.5 h-3.5 ${
+                      starIdx < (item.rating || 0)
+                        ? 'text-[#D99B26] fill-[#D99B26]'
+                        : 'text-[rgba(11,27,34,0.2)]'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Video Thumbnail Viewport if video type */}
-        {item.type === 'video' && item.image && (
-          <button
-            type="button"
-            onClick={(e) => onPlay(e.currentTarget)}
-            aria-label={`Play client video review from ${item.name}`}
-            className="block w-full text-left relative aspect-[4/5] rounded-[20px] overflow-hidden mb-4 group cursor-pointer border border-[rgba(11,27,34,0.1)] shadow-inner active:scale-[0.99] transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+        {/* Video Viewport (hover on thumbnail starts Streamable embed playback; click opens modal) */}
+        {item.type === 'video' && (item.videoEmbedUrl || item.videoSrc) && (
+          <div
+            onPointerEnter={(e) => {
+              if (e.pointerType !== 'touch' && item.videoEmbedUrl) {
+                setIsHoverPlaying(true);
+              }
+            }}
+            onPointerLeave={(e) => {
+              if (e.pointerType !== 'touch') {
+                setIsHoverPlaying(false);
+              }
+            }}
+            className="relative w-full h-0 pb-[125%] rounded-[20px] overflow-hidden mb-4 border border-[rgba(11,27,34,0.1)] shadow-inner bg-[#050E0D]"
           >
-            <ShimmerImage
-              src={item.image}
-              alt={`${item.name} video review`}
-              width={400}
-              height={500}
-              loading="lazy"
-              wrapperClassName="relative w-full h-full"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-            />
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-150" />
+            {isHoverPlaying && item.videoEmbedUrl ? (
+              <iframe
+                title={`Client video review from ${item.name}`}
+                src={buildEmbedUrl(item.videoEmbedUrl, { autoplay: '1', muted: '1' })}
+                allow="autoplay; fullscreen"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full border-0 overflow-hidden"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => onPlay(e.currentTarget)}
+                aria-label={`Play client video review from ${item.name}`}
+                className="absolute inset-0 w-full h-full block text-left group cursor-pointer active:scale-[0.99] transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] bg-[#050E0D]"
+              >
+                {item.poster || item.image ? (
+                  <ShimmerImage
+                    src={item.poster || item.image || ''}
+                    alt={`${item.name} video review`}
+                    width={400}
+                    height={500}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    wrapperClassName="relative w-full h-full"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-[#0F4A3E] to-[#050E0D]" />
+                )}
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-150" />
 
-            {/* Brand-Green Gradient Play Button */}
-            <div
-              className="absolute inset-0 m-auto w-14 h-14 rounded-full text-white flex items-center justify-center group-hover:scale-110 transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-              style={{
-                background: 'linear-gradient(135deg, #0F4A3E 0%, #14735A 65%, #1E9E6A 100%)',
-                boxShadow:
-                  'inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 10px 26px rgba(63, 209, 165, 0.45)',
-              }}
-            >
-              <Play className="w-6 h-6 fill-white translate-x-0.5" strokeWidth={1.5} aria-hidden="true" />
-            </div>
-          </button>
+                {/* Brand-Green Gradient Play Button */}
+                <div
+                  className="absolute inset-0 m-auto w-14 h-14 rounded-full text-white flex items-center justify-center group-hover:scale-110 transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+                  style={{
+                    background: 'linear-gradient(135deg, #0F4A3E 0%, #14735A 65%, #1E9E6A 100%)',
+                    boxShadow:
+                      'inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 10px 26px rgba(63, 209, 165, 0.45)',
+                  }}
+                >
+                  <Play className="w-6 h-6 fill-white translate-x-0.5" strokeWidth={1.5} aria-hidden="true" />
+                </div>
+              </button>
+            )}
+          </div>
         )}
 
-        {/* Quote / Testimonial Text */}
+        {/* Review Text (Exact copy; long text clamped with Read more / Show less) */}
         {item.quote && (
-          <p className="text-[14px] sm:text-[15px] text-[#0B1B22] leading-relaxed mb-4 font-normal">
-            {item.quote}
-          </p>
+          <div className={item.bullets?.length || item.isConfigReview ? 'mb-4' : ''}>
+            <p
+              className={`text-[14px] sm:text-[15px] text-[#0B1B22] leading-relaxed font-normal whitespace-pre-line ${
+                isLongQuote && !expanded ? 'line-clamp-5' : ''
+              }`}
+            >
+              {item.quote}
+            </p>
+            {isLongQuote && (
+              <button
+                type="button"
+                onClick={() => setExpanded((prev) => !prev)}
+                aria-expanded={expanded}
+                className="mt-1.5 text-[12.5px] font-semibold text-[#14624F] hover:text-[#0A3A30] underline underline-offset-2 transition-colors duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer rounded-xs"
+              >
+                {expanded ? 'Show less' : 'Read more'}
+              </button>
+            )}
+          </div>
         )}
 
-        {/* Bullet Points */}
-        {item.bullets && item.bullets.length > 0 && (
+        {/* Bullet Points (for untouched legacy non-config card only) */}
+        {!item.isConfigReview && item.bullets && item.bullets.length > 0 && (
           <div className="space-y-2 pt-3 border-t border-[rgba(11,27,34,0.08)]">
             {item.bullets.map((bullet, idx) => (
               <div key={idx} className="flex items-start gap-2 text-xs text-[#475754]">
@@ -658,6 +760,28 @@ function TestimonialCard({
                 <span>{bullet}</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Real config review footer: Source Link + Date */}
+        {item.isConfigReview && (item.sourceLabel || item.date) && (
+          <div className="pt-3 border-t border-[rgba(11,27,34,0.08)] flex items-center justify-between gap-2 text-[11.5px] text-[#475754]">
+            {item.sourceUrl ? (
+              <a
+                href={item.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="oh-link-sweep inline-flex items-center gap-1 font-medium text-[#0B1B22] hover:text-[#14624F] rounded-xs"
+              >
+                <span>{item.sourceLabel || 'Source'}</span>
+                <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
+              </a>
+            ) : (
+              <span className="font-medium text-[#0B1B22]">
+                {item.sourceLabel}
+              </span>
+            )}
+            {item.date && <span className="tabular-nums">{item.date}</span>}
           </div>
         )}
       </div>
