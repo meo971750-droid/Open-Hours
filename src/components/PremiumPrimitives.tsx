@@ -1,6 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, useMotionValue, useSpring } from 'motion/react';
-import { OH_SPRING } from '../lib/motion';
 
 interface Tilt3DProps {
   children: React.ReactNode;
@@ -11,7 +9,7 @@ interface Tilt3DProps {
 
 /**
  * Subtle ±4deg 3D pointer tilt on desktop fine-pointer devices only.
- * Disabled automatically on touch devices and when prefers-reduced-motion is active.
+ * Uses rAF + CSS custom properties for zero-runtime-spring compositor performance.
  */
 export function Tilt3D({
   children,
@@ -20,11 +18,8 @@ export function Tilt3D({
   disabled = false,
 }: Tilt3DProps) {
   const [canTilt, setCanTilt] = useState(false);
-  const rotateX = useMotionValue(0);
-  const rotateY = useMotionValue(0);
-
-  const smoothRotateX = useSpring(rotateX, OH_SPRING);
-  const smoothRotateY = useSpring(rotateY, OH_SPRING);
+  const elRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef(0);
 
   useEffect(() => {
     if (disabled || typeof window === 'undefined') {
@@ -46,6 +41,7 @@ export function Tilt3D({
     return () => {
       mqFine.removeEventListener('change', update);
       mqReduce.removeEventListener('change', update);
+      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
     };
   }, [disabled]);
 
@@ -54,33 +50,48 @@ export function Tilt3D({
   }
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    const px = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 .. +0.5
-    const py = (e.clientY - rect.top) / rect.height - 0.5;
-    rotateX.set(-py * 2 * maxDeg);
-    rotateY.set(px * 2 * maxDeg);
+    const node = elRef.current;
+    if (!node) return;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    if (rafRef.current) return;
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = 0;
+      const rect = node.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const px = (clientX - rect.left) / rect.width - 0.5;
+      const py = (clientY - rect.top) / rect.height - 0.5;
+      node.style.setProperty('--rx', `${(-py * 2 * maxDeg).toFixed(2)}deg`);
+      node.style.setProperty('--ry', `${(px * 2 * maxDeg).toFixed(2)}deg`);
+    });
   };
 
   const handlePointerLeave = () => {
-    rotateX.set(0);
-    rotateY.set(0);
+    if (rafRef.current) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+    const node = elRef.current;
+    if (node) {
+      node.style.setProperty('--rx', '0deg');
+      node.style.setProperty('--ry', '0deg');
+    }
   };
 
   return (
-    <motion.div
+    <div
+      ref={elRef}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       style={{
-        transformPerspective: 920,
-        rotateX: smoothRotateX,
-        rotateY: smoothRotateY,
+        transform:
+          'perspective(920px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))',
         transformStyle: 'preserve-3d',
       }}
-      className={className}
+      className={`transition-transform duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${className}`}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -98,6 +109,7 @@ export function ShimmerImage({
   onError,
   src,
   alt = '',
+  decoding = 'async',
   ...rest
 }: ShimmerImageProps) {
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -123,6 +135,7 @@ export function ShimmerImage({
         ref={imgRef}
         src={src}
         alt={alt}
+        decoding={decoding}
         onLoad={(e) => {
           setLoaded(true);
           onLoad?.(e);

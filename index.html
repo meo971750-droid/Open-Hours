@@ -17,7 +17,8 @@
     <meta name="twitter:description" content="Open Hours builds enquiry-focused websites, local SEO and AI lead handling for builders and trades in Ireland and Malta. Packages from €990 set-up + €79/month." />
     <meta name="twitter:image" content="https://openhours.studio/roofing-sites/1-xyz-roofing.png" />
     <link rel="canonical" href="https://openhours.studio/" />
-    <meta name="theme-color" content="#FFFFFF" />
+    <meta name="theme-color" content="#EEF3F0" />
+    <style>html,body,#root{background-color:#EEF3F0;}</style>
     <script>
       // Safe fallback for third-party script rejections (e.g. adblockers blocking external tracking)
       window.addEventListener('unhandledrejection', function(event) {
@@ -29,7 +30,18 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Instrument+Serif:ital@0;1&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Instrument+Serif:ital@0;1&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <script id="oh-jsonld" type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -112,7 +124,7 @@
     }
     </script>
   </head>
-  <body class="bg-[#F3F5F3] text-[#0B1B22] antialiased selection:bg-[#A8EBD3] selection:text-[#0B1B22] overflow-x-clip">
+  <body class="bg-[#EEF3F0] text-[#0B1B22] antialiased selection:bg-[#A8EBD3] selection:text-[#0B1B22] overflow-x-clip">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

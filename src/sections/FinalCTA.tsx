@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
+import React, { useRef, useState } from 'react';
 import { ArrowRight, CheckCircle2, Loader2, Mail } from 'lucide-react';
 import { LogoMark } from '../components/Logo';
 import { config } from '../config';
 import { CTA_CONFIG, CONTACT, devPlaceholder } from '../content';
-import { OH_DUR, OH_EASE } from '../lib/motion';
+import { useAnimationInView } from '../hooks/useAnimationInView';
+import { preloadSectionAndNext } from '../components/LazySection';
 
 interface FinalCTAProps {
   onOpenAudit?: () => void;
@@ -12,7 +12,8 @@ interface FinalCTAProps {
 }
 
 export default function FinalCTA({ onOpenAudit, onOpenPrivacy }: FinalCTAProps) {
-  const shouldReduceMotion = useReducedMotion() ?? false;
+  const sectionRef = useRef<HTMLElement>(null);
+  useAnimationInView(sectionRef, false);
   const [quickEmail, setQuickEmail] = useState('');
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [honeypot, setHoneypot] = useState('');
@@ -38,26 +39,20 @@ export default function FinalCTA({ onOpenAudit, onOpenPrivacy }: FinalCTAProps) 
   const handleOpenContact = (tier?: (typeof tiers)[number]) => {
     const contactEl = document.getElementById('contact');
     if (contactEl) {
-      if (tier) {
-        const monthlyPart =
-          typeof tier.monthlyPrice === 'number' && tier.monthlyPrice > 0
-            ? ` + €${tier.monthlyPrice}/month`
-            : '';
-        window.dispatchEvent(
-          new CustomEvent('openhours:prefill-contact', {
-            detail: {
-              option: tier.name,
-              message: `I'm interested in the ${tier.name} package (from €${tier.price.toLocaleString('en-IE')}${monthlyPart}).`,
-            },
-          })
-        );
-      } else {
-        window.dispatchEvent(
-          new CustomEvent('openhours:prefill-contact', {
-            detail: { focusField: 'name' },
-          })
-        );
-      }
+      const detail = tier
+        ? {
+            option: tier.name,
+            message: `I'm interested in the ${tier.name} package (from €${tier.price.toLocaleString('en-IE')}${
+              typeof tier.monthlyPrice === 'number' && tier.monthlyPrice > 0
+                ? ` + €${tier.monthlyPrice}/month`
+                : ''
+            }).`,
+          }
+        : { focusField: 'name' };
+      (window as Window & { __ohPendingContactPrefill?: unknown }).__ohPendingContactPrefill = detail;
+      preloadSectionAndNext('contact', 'faq');
+      window.dispatchEvent(new CustomEvent('openhours:prefill-contact', { detail }));
+      contactEl.scrollIntoView({ behavior: 'smooth' });
       return;
     }
 
@@ -139,8 +134,9 @@ export default function FinalCTA({ onOpenAudit, onOpenPrivacy }: FinalCTAProps) 
   return (
     <section
       id="final-cta"
+      ref={sectionRef}
       aria-labelledby="final-cta-heading"
-      className="oh-cv-auto oh-grain-dark relative w-full bg-[#050E0D] text-white py-20 sm:py-28 px-4 sm:px-6 overflow-x-clip"
+      className="oh-cv-auto oh-anim-paused oh-grain-dark relative w-full bg-[#050E0D] text-white py-20 sm:py-28 px-4 sm:px-6 overflow-x-clip"
     >
       {/* Top Light-to-Dark Soft Gradient Boundary Bleed */}
       <div
@@ -224,7 +220,7 @@ export default function FinalCTA({ onOpenAudit, onOpenPrivacy }: FinalCTAProps) 
                     'radial-gradient(circle, rgba(168, 235, 211, 0.36) 0%, rgba(63, 209, 165, 0.14) 46%, transparent 72%)',
                 }}
               />
-              <div className="relative w-[88px] h-[88px] rounded-[20px] bg-[#0A3A30]/85 border border-white/28 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.36),0_16px_40px_rgba(5,14,13,0.45)] flex items-center justify-center">
+              <div className="relative w-[88px] h-[88px] rounded-[20px] bg-[#0A3A30]/95 border border-white/28 shadow-[inset_0_1px_1px_rgba(255,255,255,0.36),0_16px_40px_rgba(5,14,13,0.45)] flex items-center justify-center">
                 <LogoMark size={44} variant="light" />
               </div>
             </div>
@@ -232,7 +228,8 @@ export default function FinalCTA({ onOpenAudit, onOpenPrivacy }: FinalCTAProps) 
             {/* Heading (~44px) */}
             <h2
               id="final-cta-heading"
-              className="font-heading text-[30px] sm:text-[44px] font-medium tracking-[-0.025em] leading-[1.1] text-white max-w-[18ch] mb-4 drop-shadow-[0_2px_10px_rgba(5,14,13,0.35)]"
+              className="font-heading text-[30px] sm:text-[44px] font-medium tracking-[-0.025em] leading-[1.1] text-white max-w-[18ch] mb-4"
+              style={{ textShadow: '0 2px 10px rgba(5,14,13,0.35)' }}
             >
               <span className="oh-line-mask">
                 <span className="oh-line-reveal">Ready to talk about your new website?</span>
@@ -306,19 +303,16 @@ export default function FinalCTA({ onOpenAudit, onOpenPrivacy }: FinalCTAProps) 
           {/* Right Quick Email Form */}
           <div className="md:col-span-6">
             {isSubmitted ? (
-              <motion.div
-                initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: OH_DUR.base, ease: OH_EASE }}
+              <div
                 role="status"
                 aria-live="polite"
-                className="rounded-[20px] bg-white/[0.05] border border-[#6FD6B0]/45 p-4 sm:p-5 flex items-center gap-3 text-white"
+                className="oh-scale-in rounded-[20px] bg-white/[0.05] border border-[#6FD6B0]/45 p-4 sm:p-5 flex items-center gap-3 text-white"
               >
                 <CheckCircle2 className="w-5 h-5 text-[#A8EBD3] shrink-0" strokeWidth={1.5} />
                 <span className="text-[14px] text-white/90">
                   Thanks &mdash; we&apos;ve logged {quickEmail.trim()} and will reply in writing.
                 </span>
-              </motion.div>
+              </div>
             ) : (
               <form onSubmit={handleQuickEmailSubmit} noValidate className="space-y-3">
                 <div aria-live="polite" className="sr-only">

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
 import {
   CheckCircle2,
   ArrowRight,
@@ -16,14 +15,13 @@ import {
   devPlaceholder,
   config,
 } from '../content';
-import { OH_DUR, OH_EASE } from '../lib/motion';
+import { useAnimationInView } from '../hooks/useAnimationInView';
 
 interface AboutProps {
   onOpenPrivacy?: () => void;
 }
 
 export default function About({ onOpenPrivacy }: AboutProps) {
-  const shouldReduceMotion = useReducedMotion() ?? false;
   // Form input state
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -42,6 +40,7 @@ export default function About({ onOpenPrivacy }: AboutProps) {
   const [statusMessage, setStatusMessage] = useState('');
 
   const sectionRef = useRef<HTMLElement>(null);
+  useAnimationInView(sectionRef, false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -96,17 +95,36 @@ export default function About({ onOpenPrivacy }: AboutProps) {
 
   // Global Prefill listeners (from package cards, final CTA, design showcase buttons)
   useEffect(() => {
-    const handleCustomPrefill = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail?.option) setSelectedOption(detail.option);
-      if (detail?.message) setMessage(detail.message);
-      if (detail?.trade) setSelectedTrade(detail.trade);
+    type PendingPrefill = {
+      option?: string;
+      message?: string;
+      trade?: string;
+      focusField?: string;
+    };
+    const win = window as Window & { __ohPendingContactPrefill?: PendingPrefill };
+
+    const applyPrefill = (detail?: PendingPrefill | null) => {
+      if (!detail) return;
+      if (detail.option) setSelectedOption(detail.option);
+      if (detail.message) setMessage(detail.message);
+      if (detail.trade) setSelectedTrade(detail.trade);
       if (sectionRef.current) {
         sectionRef.current.scrollIntoView({ behavior: 'smooth' });
         window.setTimeout(() => {
-          (detail?.focusField === 'name' ? nameInputRef.current : messageInputRef.current)?.focus();
+          (detail.focusField === 'name' ? nameInputRef.current : messageInputRef.current)?.focus();
         }, 450);
       }
+    };
+
+    if (win.__ohPendingContactPrefill) {
+      const pending = win.__ohPendingContactPrefill;
+      delete win.__ohPendingContactPrefill;
+      applyPrefill(pending);
+    }
+
+    const handleCustomPrefill = (e: Event) => {
+      delete win.__ohPendingContactPrefill;
+      applyPrefill((e as CustomEvent<PendingPrefill>).detail);
     };
 
     const handleGlobalClick = (e: MouseEvent) => {
@@ -255,7 +273,7 @@ export default function About({ onOpenPrivacy }: AboutProps) {
       id="contact"
       ref={sectionRef}
       aria-labelledby="contact-heading"
-      className="oh-cv-auto oh-grain-dark relative w-full bg-[#050E0D] text-white py-24 sm:py-28 md:py-36 overflow-x-clip"
+      className="oh-cv-auto oh-anim-paused oh-grain-dark relative w-full bg-[#050E0D] text-white py-24 sm:py-28 md:py-36 overflow-x-clip"
     >
       {/* Top & Bottom Light-to-Dark Soft Gradient Boundary Bleeds */}
       <div
@@ -517,16 +535,13 @@ export default function About({ onOpenPrivacy }: AboutProps) {
           <div className="lg:col-span-7">
             <div
               data-spotlight=""
-              className="oh-dark-card rounded-[28px] p-5 sm:p-7 backdrop-blur-md"
+              className="oh-dark-card rounded-[28px] p-5 sm:p-7"
             >
               {isSubmitted ? (
-                <motion.div
-                  initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: OH_DUR.base, ease: OH_EASE }}
+                <div
                   role="status"
                   aria-live="polite"
-                  className="relative z-[3] flex flex-col items-center justify-center text-center py-12 px-4"
+                  className="oh-scale-in relative z-[3] flex flex-col items-center justify-center text-center py-12 px-4"
                 >
                   <div className="w-14 h-14 rounded-full bg-[#14624F]/35 border border-[#6FD6B0] text-[#A8EBD3] flex items-center justify-center mb-5">
                     <CheckCircle2 className="w-8 h-8" strokeWidth={1.5} />
@@ -539,7 +554,7 @@ export default function About({ onOpenPrivacy }: AboutProps) {
                       ? `We will reply in writing within ${config.responseTime.trim()}.`
                       : 'We will review your details and reply in writing shortly.'}
                   </p>
-                </motion.div>
+                </div>
               ) : (
                 <form onSubmit={handleSubmit} noValidate className="relative z-[3] space-y-4">
                   {/* Accessible status live region */}

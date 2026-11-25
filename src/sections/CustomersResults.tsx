@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
-import { ExternalLink, Play, Star, X } from 'lucide-react';
+import React, { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ExternalLink, Play, Star } from 'lucide-react';
 import { config } from '../config';
 import { FOUNDER, VIDEO_REVIEW } from '../content';
 import { ShimmerImage, Tilt3D } from '../components/PremiumPrimitives';
-import { OH_DUR, OH_EASE } from '../lib/motion';
-import { getResponsiveImageProps } from '../lib/images';
+import { useAnimationInView } from '../hooks/useAnimationInView';
+import { getSmallAvatarSrc } from '../lib/images';
+
+const CustomersReviewModal = lazy(() => import('../components/CustomersReviewModal'));
 
 interface CustomersResultsProps {
   onOpenAudit?: () => void;
@@ -76,11 +77,12 @@ function PhotoOrMonogram({
     >
       {showImg ? (
         <ShimmerImage
-          {...getResponsiveImageProps(src || '', [128, 256], '64px')}
+          src={getSmallAvatarSrc(src)}
           alt={alt}
           width={64}
           height={64}
           loading="lazy"
+          decoding="async"
           referrerPolicy="no-referrer"
           onError={() => setImgFailed(true)}
           wrapperClassName="relative w-full h-full"
@@ -96,7 +98,7 @@ function PhotoOrMonogram({
       )}
 
       {logo && (
-        <div className="pointer-events-none absolute bottom-2.5 left-1/2 -translate-x-1/2 bg-black/45 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-white/15">
+        <div className="pointer-events-none absolute bottom-2.5 left-1/2 -translate-x-1/2 bg-black/70 px-2.5 py-1 rounded-lg border border-white/15">
           <img
             src={logo}
             alt=""
@@ -122,7 +124,7 @@ interface ReviewCardProps {
   snapClass?: string;
 }
 
-function ReviewCard({
+const ReviewCard = memo(function ReviewCard({
   slide,
   isDuplicate = false,
   isPlayingVideo = false,
@@ -291,7 +293,7 @@ function ReviewCard({
       </article>
     </Tilt3D>
   );
-}
+});
 
 export default function CustomersResults({ onOpenAudit: _onOpenAudit }: CustomersResultsProps) {
   const slides = useMemo<ProofSlide[]>(() => {
@@ -340,6 +342,9 @@ export default function CustomersResults({ onOpenAudit: _onOpenAudit }: Customer
     return baseSlides;
   }, []);
 
+  const sectionRef = useRef<HTMLElement>(null);
+  useAnimationInView(sectionRef, false);
+
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [isTouching, setIsTouching] = useState(false);
   const [isUserPaused, setIsUserPaused] = useState(false);
@@ -347,8 +352,6 @@ export default function CustomersResults({ onOpenAudit: _onOpenAudit }: Customer
   const [modalSlide, setModalSlide] = useState<ProofSlide | null>(null);
 
   const duplicateSetRef = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
-  const closeModalButtonRef = useRef<HTMLButtonElement>(null);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -366,52 +369,10 @@ export default function CustomersResults({ onOpenAudit: _onOpenAudit }: Customer
     el.setAttribute('inert', '');
   }, [prefersReducedMotion, slides.length]);
 
-  // Accessible modal dialog: scroll lock, initial focus, focus trap, Escape key & focus restore
-  useEffect(() => {
-    if (!modalSlide) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const focusTimer = window.setTimeout(() => {
-      closeModalButtonRef.current?.focus();
-    }, 10);
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setModalSlide(null);
-        return;
-      }
-
-      if (e.key === 'Tab' && modalRef.current) {
-        const focusables = Array.from(
-          modalRef.current.querySelectorAll<HTMLElement>(
-            'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
-          )
-        );
-        if (focusables.length === 0) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      triggerButtonRef.current?.focus();
-    };
-  }, [modalSlide]);
+  const handleCloseModal = useCallback(() => {
+    setModalSlide(null);
+    window.requestAnimationFrame(() => triggerButtonRef.current?.focus());
+  }, []);
 
   if (slides.length === 0) return null;
 
@@ -426,9 +387,10 @@ export default function CustomersResults({ onOpenAudit: _onOpenAudit }: Customer
 
   return (
     <section
+      ref={sectionRef}
       id="reviews"
       aria-label="Client feedback"
-      className="oh-grain-dark relative w-full py-[var(--section-py)] overflow-x-clip text-white"
+      className="oh-cv-auto oh-anim-paused oh-grain-dark relative w-full py-[var(--section-py)] overflow-x-clip text-white"
       style={{
         background:
           'radial-gradient(circle at 12% 16%, rgba(5, 14, 13, 0.96) 0%, transparent 55%), radial-gradient(circle at 86% 84%, rgba(63, 209, 165, 0.22) 0%, transparent 58%), radial-gradient(circle at 72% 24%, rgba(20, 98, 79, 0.36) 0%, transparent 52%), linear-gradient(135deg, #050E0D 0%, #0A3A30 58%, #0F4A3E 100%)',
@@ -570,108 +532,11 @@ export default function CustomersResults({ onOpenAudit: _onOpenAudit }: Customer
         )}
       </div>
 
-      {/* Accessible Full Review Modal Dialog */}
+      {/* Lazy Full Review Modal Dialog */}
       {modalSlide && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1B22]/75 backdrop-blur-xs"
-          onClick={() => setModalSlide(null)}
-        >
-          <motion.div
-            ref={modalRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="review-modal-title"
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: OH_DUR.base, ease: OH_EASE }}
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[580px] max-h-[85vh] overflow-y-auto bg-white text-[#0B1B22] rounded-[28px] p-6 sm:p-8 shadow-[var(--e3)] border border-[rgba(11,27,34,0.12)]"
-          >
-            <button
-              ref={closeModalButtonRef}
-              type="button"
-              onClick={() => setModalSlide(null)}
-              aria-label="Close full review"
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-[#F3F5F3] hover:bg-[#DDF4EA] text-[#0B1B22] flex items-center justify-center transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-[0.98] cursor-pointer"
-            >
-              <X className="w-4 h-4" strokeWidth={1.5} />
-            </button>
-
-            <div className="flex items-center gap-3.5 pr-10 mb-5">
-              <div className="w-14 h-14 rounded-[16px] overflow-hidden shrink-0 bg-[#0A3A30]">
-                <PhotoOrMonogram
-                  src={modalSlide.photo}
-                  alt={modalSlide.fullName}
-                  name={modalSlide.fullName}
-                  textSize="text-lg"
-                />
-              </div>
-              <div>
-                <h3
-                  id="review-modal-title"
-                  className="font-heading text-[20px] sm:text-[22px] font-semibold leading-snug text-[#0B1B22]"
-                >
-                  {modalSlide.fullName}
-                </h3>
-                {(modalSlide.role || modalSlide.location) && (
-                  <p className="text-[13px] text-[#475754]">
-                    {[modalSlide.role, modalSlide.location].filter(Boolean).join(' · ')}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <blockquote className="font-serif text-[20px] sm:text-[23px] leading-[1.35] text-[#0B1B22] whitespace-pre-line mb-6">
-              &ldquo;{modalSlide.text}&rdquo;
-            </blockquote>
-
-            <div className="pt-4 border-t border-[rgba(11,27,34,0.1)] flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-[#475754]">
-              {modalSlide.rating > 0 ? (
-                <div
-                  className="flex items-center gap-0.5 tabular-nums"
-                  role="img"
-                  aria-label={`Rated ${modalSlide.rating} out of 5`}
-                >
-                  {Array.from({ length: 5 }).map((_, starIdx) => (
-                    <Star
-                      key={starIdx}
-                      aria-hidden="true"
-                      strokeWidth={1.5}
-                      className={`w-4 h-4 ${
-                        starIdx < modalSlide.rating
-                          ? 'text-[#D99B26] fill-[#D99B26]'
-                          : 'text-[rgba(11,27,34,0.2)]'
-                      }`}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <span className="font-medium">Client feedback</span>
-              )}
-
-              <div className="flex items-center gap-2.5">
-                {modalSlide.sourceUrl ? (
-                  <a
-                    href={modalSlide.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="oh-link-sweep inline-flex items-center gap-1 font-semibold text-[#0B1B22] hover:text-[#14624F] rounded-xs"
-                  >
-                    <span>{modalSlide.sourceLabel}</span>
-                    <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
-                  </a>
-                ) : (
-                  modalSlide.sourceLabel && (
-                    <span className="font-semibold text-[#0B1B22]">{modalSlide.sourceLabel}</span>
-                  )
-                )}
-                {modalSlide.date && (
-                  <span className="tabular-nums text-[#475754]">{modalSlide.date}</span>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        </div>
+        <Suspense fallback={null}>
+          <CustomersReviewModal slide={modalSlide} onClose={handleCloseModal} />
+        </Suspense>
       )}
     </section>
   );

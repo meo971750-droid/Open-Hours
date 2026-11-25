@@ -1,5 +1,14 @@
-import React, { useState, useEffect, useRef, useId, useMemo } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useId,
+  useMemo,
+  useCallback,
+  memo,
+  lazy,
+  Suspense,
+} from 'react';
 import {
   Check,
   ArrowRight,
@@ -25,13 +34,22 @@ import {
   Bell,
   RefreshCw,
   Sparkles,
-  X,
   Info,
-  Loader2,
 } from 'lucide-react';
-import { config, PricingTierConfig, BuilderFeatureGroup } from '../config';
-import { CONTACT, FORM_ENDPOINT } from '../content';
-import { OH_DUR, OH_EASE } from '../lib/motion';
+import { config, PricingTierConfig, BuilderFeatureConfig, BuilderFeatureGroup } from '../config';
+import { preloadSectionAndNext } from '../components/LazySection';
+
+const PricingSalesModal = lazy(() => import('../components/PricingSalesModal'));
+
+const EURO_FORMATTER = new Intl.NumberFormat('en-IE', {
+  style: 'currency',
+  currency: 'EUR',
+  maximumFractionDigits: 0,
+});
+
+function formatEuroAmount(amount: number): string {
+  return EURO_FORMATTER.format(amount);
+}
 
 interface PricingProps {
   onOpenAudit?: () => void;
@@ -130,31 +148,289 @@ function useAnimatedCount(targetValue: number, shouldReduceMotion: boolean): num
   return displayValue;
 }
 
+const AnimatedEuro = memo(function AnimatedEuro({
+  value,
+  shouldReduceMotion,
+  className,
+}: {
+  value: number;
+  shouldReduceMotion: boolean;
+  className: string;
+}) {
+  const animated = useAnimatedCount(value, shouldReduceMotion);
+  return <span className={className}>{formatEuroAmount(animated)}</span>;
+});
+
+const PricingTierCard = memo(function PricingTierCard({
+  tier,
+  onSelect,
+}: {
+  tier: PricingTierConfig;
+  onSelect: (tier: PricingTierConfig) => void;
+}) {
+  const isStandard = tier.id === 'standard' || Boolean(tier.highlighted);
+  const featuresMap = config.features as unknown as Record<string, boolean | number | undefined>;
+  const visibleSetupItems = (tier.setupItems || []).filter(
+    (item) => !item.flag || Boolean(featuresMap[item.flag])
+  );
+  const visibleMonthlyItems = (tier.monthlyItems || []).filter(
+    (item) => !item.flag || Boolean(featuresMap[item.flag])
+  );
+  const showsAiAgent =
+    visibleSetupItems.some((item) => item.aiDisclosure) ||
+    visibleMonthlyItems.some((item) => item.aiDisclosure);
+  const deliveryDays =
+    typeof tier.deliveryDays === 'number' && tier.deliveryDays > 0 ? tier.deliveryDays : null;
+
+  return (
+    <article
+      data-tier-id={tier.id}
+      className={`relative rounded-[28px] p-7 sm:p-8 flex flex-col justify-between overflow-visible transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 bg-white ${
+        isStandard
+          ? 'order-first lg:order-none border-2 border-[#6FD6B0] ring-1 ring-[#14624F]/20 shadow-[0_20px_48px_-14px_rgba(20,98,79,0.18)]'
+          : 'border border-[rgba(11,27,34,0.09)] shadow-[0_12px_32px_rgba(11,27,34,0.06)]'
+      }`}
+    >
+      {isStandard && (
+        <div className="absolute -top-3.5 right-6 z-20 bg-[#DDF4EA] text-[#0F4A3E] border border-[#14624F]/25 text-[12px] font-semibold px-3.5 py-1 rounded-full shadow-sm whitespace-nowrap">
+          <span>{tier.tag || 'Recommended'}</span>
+        </div>
+      )}
+
+      <div>
+        <div className="flex items-center mb-2">
+          <h3 className="text-[24px] sm:text-[26px] font-semibold tracking-[-0.02em] text-[#0B1B22]">
+            {tier.name}
+          </h3>
+        </div>
+
+        {(tier.outcome || tier.description) && (
+          <p className="text-[15px] leading-[1.55] text-[#475754] mb-5 min-h-[68px]">
+            {tier.outcome || tier.description}
+          </p>
+        )}
+
+        <div className="mb-5">
+          <span className="text-[13px] text-[#475754] block mb-0.5 font-normal">from</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[38px] sm:text-[42px] font-semibold tabular-nums text-[#0B1B22] leading-none">
+              {formatEuroAmount(tier.price)}
+            </span>
+            <span className="text-[14.5px] font-medium text-[#475754]">set-up</span>
+          </div>
+          {typeof tier.monthlyPrice === 'number' && tier.monthlyPrice > 0 && (
+            <div className="mt-1.5 text-[16px] font-semibold tabular-nums text-[#14624F]">
+              + {formatEuroAmount(tier.monthlyPrice)} / month
+            </div>
+          )}
+          {tier.priceNote && (
+            <p className="mt-1.5 text-[12.5px] text-[#475754] leading-snug">{tier.priceNote}</p>
+          )}
+        </div>
+
+        {deliveryDays !== null && (
+          <div className="flex items-center gap-2 mb-6 text-[14px] font-medium text-[#0B1B22]">
+            <Clock className="w-4 h-4 text-[#14624F] shrink-0" strokeWidth={1.5} />
+            <span className="tabular-nums">About {deliveryDays} working days</span>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => onSelect(tier)}
+          className={`w-full h-[50px] rounded-full text-[15px] font-semibold flex items-center justify-center gap-2 transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer px-4 ${
+            isStandard
+              ? 'oh-btn-primary text-white'
+              : 'bg-[#050E0D] hover:bg-[#0F4A3E] text-white shadow-sm'
+          }`}
+        >
+          <span className="truncate">Choose {tier.name}</span>
+          <ArrowRight className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+        </button>
+      </div>
+
+      {(visibleSetupItems.length > 0 || visibleMonthlyItems.length > 0) && (
+        <div className="mt-7 pt-6 border-t border-[rgba(11,27,34,0.08)] flex-1 flex flex-col justify-between gap-5">
+          <div className="space-y-5">
+            {tier.everythingInLabel && (
+              <p className="text-[13.5px] font-semibold text-[#14624F]">
+                {tier.everythingInLabel}
+              </p>
+            )}
+
+            {visibleSetupItems.length > 0 && (
+              <div>
+                <div className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-[#475754] mb-2.5">
+                  Set-up
+                </div>
+                <ul className="space-y-2.5">
+                  {visibleSetupItems.map((item, fIdx) => (
+                    <li
+                      key={fIdx}
+                      className="flex items-start gap-2.5 text-[14px] leading-[1.45] text-[#0B1B22]"
+                    >
+                      <div className="w-[18px] h-[18px] rounded-full bg-[#DDF4EA] flex items-center justify-center shrink-0 mt-0.5">
+                        <Check className="w-3 h-3 text-[#14624F]" strokeWidth={2.5} />
+                      </div>
+                      <span>{item.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {visibleMonthlyItems.length > 0 && (
+              <div>
+                <div className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-[#475754] mb-2.5">
+                  Every month
+                </div>
+                <ul className="space-y-2.5">
+                  {visibleMonthlyItems.map((item, mIdx) => (
+                    <li
+                      key={mIdx}
+                      className="flex items-start gap-2.5 text-[14px] leading-[1.45] text-[#0B1B22]"
+                    >
+                      <div className="w-[18px] h-[18px] rounded-full bg-[#DDF4EA] flex items-center justify-center shrink-0 mt-0.5">
+                        <Check className="w-3 h-3 text-[#14624F]" strokeWidth={2.5} />
+                      </div>
+                      <span>{item.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {showsAiAgent && (
+            <p className="pt-3 border-t border-[rgba(11,27,34,0.06)] text-[12px] text-[#475754] flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 text-[#14624F] shrink-0" strokeWidth={1.75} />
+              <span>The assistant always says it is an AI.</span>
+            </p>
+          )}
+        </div>
+      )}
+    </article>
+  );
+});
+
+const BuilderFeatureRow = memo(function BuilderFeatureRow({
+  feat,
+  isSelected,
+  isInCurrentPackage,
+  selectedTierName,
+  onToggle,
+}: {
+  feat: BuilderFeatureConfig;
+  isSelected: boolean;
+  isInCurrentPackage: boolean;
+  selectedTierName: string;
+  onToggle: (id: string) => void;
+}) {
+  const priceLabel =
+    (feat.price || 0) > 0
+      ? feat.billing === 'monthly'
+        ? `+${formatEuroAmount(feat.price)}/month`
+        : `+${formatEuroAmount(feat.price)}`
+      : 'Included in package';
+
+  return (
+    <label
+      htmlFor={`feat-checkbox-${feat.id}`}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+      className={`p-3.5 sm:p-4 rounded-2xl border transition-[background-color,border-color] duration-150 flex items-start justify-between gap-4 cursor-pointer select-none ${
+        isSelected
+          ? 'bg-white border-[#14624F]/35 shadow-xs ring-1 ring-[#6FD6B0]/35'
+          : 'bg-[#F9FAF9] hover:bg-white border-[rgba(11,27,34,0.07)] hover:border-[rgba(11,27,34,0.16)]'
+      }`}
+    >
+      <div className="flex items-start gap-3 min-w-0">
+        <input
+          type="checkbox"
+          id={`feat-checkbox-${feat.id}`}
+          checked={isSelected}
+          onChange={(e) => {
+            e.stopPropagation();
+            onToggle(feat.id);
+          }}
+          aria-label={feat.name}
+          className="mt-1 w-4 h-4 rounded border-[rgba(11,27,34,0.28)] accent-[#14624F] cursor-pointer"
+        />
+
+        <div
+          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors mt-0.5 ${
+            isSelected ? 'bg-[#14624F] text-white shadow-xs' : 'bg-[#F3F5F3] text-[#475754]'
+          }`}
+        >
+          <FeatureIcon name={feat.icon} className="w-4 h-4" />
+        </div>
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-[14.5px] sm:text-[15px] text-[#0B1B22] leading-snug">
+              {feat.name}
+            </span>
+            {isInCurrentPackage && (
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#DDF4EA] text-[#0F4A3E] whitespace-nowrap">
+                In {selectedTierName}
+              </span>
+            )}
+          </div>
+          {feat.description && (
+            <p className="text-[12.5px] text-[#475754] mt-0.5 leading-relaxed">
+              {feat.description}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="text-right shrink-0 pt-0.5 pl-2">
+        <span className="font-semibold text-[13px] sm:text-[13.5px] text-[#0B1B22] block tabular-nums">
+          {priceLabel}
+        </span>
+        <span className="text-[11px] text-[#475754]">
+          {feat.billing === 'monthly' ? 'monthly' : 'one-time'}
+        </span>
+      </div>
+    </label>
+  );
+});
+
 export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
-  const shouldReduceMotion = useReducedMotion() ?? false;
+  const [shouldReduceMotion, setShouldReduceMotion] = useState(false);
   const pricingConfig = config.pricing;
   const builderConfig = config.builder;
   const liveRegionId = useId();
 
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setShouldReduceMotion(mq.matches);
+    const handleChange = (e: MediaQueryListEvent) => setShouldReduceMotion(e.matches);
+    mq.addEventListener('change', handleChange);
+    return () => mq.removeEventListener('change', handleChange);
+  }, []);
+
   // Scroll and prefill helper
-  const handleSelectPackage = (tier: PricingTierConfig) => {
+  const handleSelectPackage = useCallback((tier: PricingTierConfig) => {
     const monthlyPart =
       typeof tier.monthlyPrice === 'number' && tier.monthlyPrice > 0
         ? ` + €${tier.monthlyPrice}/month`
         : '';
-    const message = `I'm interested in the ${tier.name} package (from €${tier.price.toLocaleString('en-IE')}${monthlyPart}).`;
-    window.dispatchEvent(
-      new CustomEvent('openhours:prefill-contact', {
-        detail: { option: tier.name, message },
-      })
-    );
+    const detail = {
+      option: tier.name,
+      message: `I'm interested in the ${tier.name} package (from €${tier.price.toLocaleString('en-IE')}${monthlyPart}).`,
+    };
+    (window as Window & { __ohPendingContactPrefill?: unknown }).__ohPendingContactPrefill = detail;
+    preloadSectionAndNext('contact', 'faq');
+    window.dispatchEvent(new CustomEvent('openhours:prefill-contact', { detail }));
 
     const contactSection =
       document.getElementById('contact') || document.getElementById('about');
     if (contactSection) {
       contactSection.scrollIntoView({ behavior: 'smooth' });
     }
-  };
+  }, []);
 
   // Filter tiers: explicitly exclude any free / 1-page offer tier
   const tiers: PricingTierConfig[] = (pricingConfig?.tiers || []).filter(
@@ -236,7 +512,7 @@ export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
   };
 
   // Toggle individual feature freely
-  const toggleFeature = (id: string) => {
+  const toggleFeature = useCallback((id: string) => {
     setSelectedFeatureIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -246,19 +522,9 @@ export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
       }
       return next;
     });
-  };
+  }, []);
 
-  // Currency formatter
-  const euroFormatter = useMemo(
-    () =>
-      new Intl.NumberFormat('en-IE', {
-        style: 'currency',
-        currency: 'EUR',
-        maximumFractionDigits: 0,
-      }),
-    []
-  );
-  const formatEuro = (amount: number) => euroFormatter.format(amount);
+  const formatEuro = useCallback((amount: number) => formatEuroAmount(amount), []);
 
   // Dev-only console warnings: warn if set-up or monthly sum for any package is outside 105% to 120%
   useEffect(() => {
@@ -349,8 +615,6 @@ export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
   }, [pages, includedPages, pricePerExtraPage, visibleFeatures, selectedFeatureIds, basePrice]);
 
   const hasVoiceAgentSelected = selectedFeatureIds.has('voiceAgent');
-  const animatedTotal = useAnimatedCount(oneTimeTotal, shouldReduceMotion);
-  const animatedMonthlyTotal = useAnimatedCount(monthlyTotal, shouldReduceMotion);
 
   // "TRY A PACKAGE" LIVE RECOMMENDATION IN ESTIMATE CARD (dynamic set-up & monthly comparison)
   const packageComparison = useMemo(() => {
@@ -467,27 +731,15 @@ export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
   ]);
 
   // ----------------------------------------------------
-  // "TALK TO SALES" ACCESSIBLE MODAL FORM STATE
+  // "TALK TO SALES" LAZY MODAL TRIGGER STATE
   // ----------------------------------------------------
   const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
-  const [salesName, setSalesName] = useState('');
-  const [salesEmail, setSalesEmail] = useState('');
-  const [salesPhone, setSalesPhone] = useState('');
-  const [salesMessage, setSalesMessage] = useState('');
-  const [salesConsent, setSalesConsent] = useState(false);
-  const [salesHoneypot, setSalesHoneypot] = useState('');
-  const [salesErrors, setSalesErrors] = useState<Record<string, string>>({});
-  const [salesSubmitting, setSalesSubmitting] = useState(false);
-  const [salesSubmitted, setSalesSubmitted] = useState(false);
-  const [salesStatus, setSalesStatus] = useState<string | null>(null);
+  const [initialSummaryMessage, setInitialSummaryMessage] = useState('');
 
   const desktopSalesButtonRef = useRef<HTMLButtonElement>(null);
   const mobileSalesButtonRef = useRef<HTMLButtonElement>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
-  const firstInputRef = useRef<HTMLInputElement>(null);
 
-  // Generate plain-text summary message
   const generateSummaryText = () => {
     const pkgName =
       selectedPackage === 'scratch' ? 'Started from scratch' : selectedTierName;
@@ -519,162 +771,18 @@ export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
     return lines.join('\n\n');
   };
 
-  // Open Sales Modal
   const handleOpenSalesModal = () => {
     lastFocusedRef.current = document.activeElement as HTMLElement;
-    setSalesMessage(generateSummaryText());
-    setSalesErrors({});
-    setSalesStatus(null);
-    setSalesSubmitted(false);
+    setInitialSummaryMessage(generateSummaryText());
     setIsSalesModalOpen(true);
   };
 
-  // Close Sales Modal (returns focus with preventScroll)
-  const handleCloseSalesModal = () => {
+  const handleCloseSalesModal = useCallback(() => {
     setIsSalesModalOpen(false);
     window.requestAnimationFrame(() => {
       lastFocusedRef.current?.focus({ preventScroll: true });
     });
-  };
-
-  // Scroll lock and Esc to close
-  useEffect(() => {
-    if (!isSalesModalOpen) return;
-
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    // Focus first input on open
-    const timer = setTimeout(() => {
-      firstInputRef.current?.focus();
-    }, 50);
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleCloseSalesModal();
-        return;
-      }
-
-      // Focus trap
-      if (e.key === 'Tab' && modalRef.current) {
-        const focusableEls = modalRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusableEls.length === 0) return;
-
-        const firstEl = focusableEls[0];
-        const lastEl = focusableEls[focusableEls.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === firstEl) {
-            e.preventDefault();
-            lastEl.focus();
-          }
-        } else {
-          if (document.activeElement === lastEl) {
-            e.preventDefault();
-            firstEl.focus();
-          }
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      clearTimeout(timer);
-      document.body.style.overflow = originalOverflow;
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isSalesModalOpen]);
-
-  // Handle Sales Modal Submit
-  const handleSalesSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Honeypot check
-    if (salesHoneypot) return;
-
-    const newErrors: Record<string, string> = {};
-    if (!salesName.trim()) {
-      newErrors.name = 'Please provide your name.';
-    }
-    if (!salesEmail.trim() || !/^\S+@\S+\.\S+$/.test(salesEmail.trim())) {
-      newErrors.email = 'Please provide a valid email address.';
-    }
-    if (!salesConsent) {
-      newErrors.consent = 'Please confirm consent to be contacted.';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setSalesErrors(newErrors);
-      return;
-    }
-
-    setSalesSubmitting(true);
-    setSalesStatus(null);
-
-    const payload = {
-      tag: 'Custom build',
-      name: salesName.trim(),
-      email: salesEmail.trim(),
-      phone: salesPhone.trim(),
-      startingPackage: selectedPackage,
-      pages,
-      oneTimeTotal,
-      monthlyTotal,
-      selectedFeatures: selectedVisibleFeatures.map((f) => ({
-        id: f.id,
-        name: f.name,
-        price: f.price,
-        billing: f.billing,
-      })),
-      message: salesMessage.trim(),
-      submittedAt: new Date().toISOString(),
-    };
-
-    // If formEndpoint is empty, use mailto fallback and never show a fake success message
-    const activeEndpoint = FORM_ENDPOINT && !FORM_ENDPOINT.startsWith('[') ? FORM_ENDPOINT : '';
-
-    if (!activeEndpoint || !activeEndpoint.trim()) {
-      setSalesSubmitting(false);
-      const fallbackEmail =
-        CONTACT.email && !CONTACT.email.startsWith('[')
-          ? CONTACT.email
-          : 'hello@openhours.studio';
-      const mailSubject = `Custom build quote request from ${salesName.trim()}`;
-      const mailBody = `Name: ${salesName.trim()}\nEmail: ${salesEmail.trim()}\nPhone: ${salesPhone.trim()}\nTag: Custom build\n\n${salesMessage.trim()}`;
-
-      window.location.href = `mailto:${encodeURIComponent(fallbackEmail)}?subject=${encodeURIComponent(
-        mailSubject
-      )}&body=${encodeURIComponent(mailBody)}`;
-
-      setSalesStatus(
-        `Form endpoint is pending setup. Your enquiry was prepared in your email client. If it did not open automatically, please send your email directly to ${fallbackEmail}.`
-      );
-      return;
-    }
-
-    try {
-      const res = await fetch(activeEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Server returned ${res.status}`);
-      }
-
-      setSalesSubmitted(true);
-    } catch {
-      setSalesStatus(
-        'Could not deliver your enquiry right now. Please try again or reach out directly.'
-      );
-    } finally {
-      setSalesSubmitting(false);
-    }
-  };
+  }, []);
 
   return (
     <section
@@ -702,183 +810,9 @@ export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
 
         {/* Three Package Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch mb-8 overflow-visible">
-          {tiers.map((tier, idx) => {
-            const isStandard = tier.id === 'standard' || Boolean(tier.highlighted);
-            const featuresMap = config.features as unknown as Record<string, boolean | number | undefined>;
-            const visibleSetupItems = (tier.setupItems || []).filter(
-              (item) => !item.flag || Boolean(featuresMap[item.flag])
-            );
-            const visibleMonthlyItems = (tier.monthlyItems || []).filter(
-              (item) => !item.flag || Boolean(featuresMap[item.flag])
-            );
-            const showsAiAgent =
-              visibleSetupItems.some((item) => item.aiDisclosure) ||
-              visibleMonthlyItems.some((item) => item.aiDisclosure);
-            const deliveryDays =
-              typeof tier.deliveryDays === 'number' && tier.deliveryDays > 0
-                ? tier.deliveryDays
-                : null;
-
-            return (
-              <motion.article
-                key={tier.id}
-                data-tier-id={tier.id}
-                initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-8%' }}
-                whileHover={
-                  shouldReduceMotion
-                    ? {}
-                    : {
-                        y: -4,
-                        transition: { duration: OH_DUR.fast, ease: OH_EASE },
-                      }
-                }
-                transition={{
-                  duration: OH_DUR.slow,
-                  delay: shouldReduceMotion ? 0 : idx * 0.08,
-                  ease: OH_EASE,
-                }}
-                className={`relative rounded-[28px] p-7 sm:p-8 flex flex-col justify-between overflow-visible transition-shadow duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] bg-white ${
-                  isStandard
-                    ? 'order-first lg:order-none border-2 border-[#6FD6B0] ring-1 ring-[#14624F]/20 shadow-[0_20px_48px_-14px_rgba(20,98,79,0.18)]'
-                    : 'border border-[rgba(11,27,34,0.09)] shadow-[0_12px_32px_rgba(11,27,34,0.06)]'
-                }`}
-              >
-                {/* Recommended Pill */}
-                {isStandard && (
-                  <div className="absolute -top-3.5 right-6 z-20 bg-[#DDF4EA] text-[#0F4A3E] border border-[#14624F]/25 text-[12px] font-semibold px-3.5 py-1 rounded-full shadow-sm whitespace-nowrap">
-                    <span>{tier.tag || 'Recommended'}</span>
-                  </div>
-                )}
-
-                <div>
-                  {/* Package Name */}
-                  <div className="flex items-center mb-2">
-                    <h3 className="text-[24px] sm:text-[26px] font-semibold tracking-[-0.02em] text-[#0B1B22]">
-                      {tier.name}
-                    </h3>
-                  </div>
-
-                  {/* Plain-language Outcome */}
-                  {(tier.outcome || tier.description) && (
-                    <p className="text-[15px] leading-[1.55] text-[#475754] mb-5 min-h-[68px]">
-                      {tier.outcome || tier.description}
-                    </p>
-                  )}
-
-                  {/* Price block: "from" + large "€X" + "set-up" & "+ €Y / month" */}
-                  <div className="mb-5">
-                    <span className="text-[13px] text-[#475754] block mb-0.5 font-normal">
-                      from
-                    </span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[38px] sm:text-[42px] font-semibold tabular-nums text-[#0B1B22] leading-none">
-                        {formatEuro(tier.price)}
-                      </span>
-                      <span className="text-[14.5px] font-medium text-[#475754]">
-                        set-up
-                      </span>
-                    </div>
-                    {typeof tier.monthlyPrice === 'number' && tier.monthlyPrice > 0 && (
-                      <div className="mt-1.5 text-[16px] font-semibold tabular-nums text-[#14624F]">
-                        + {formatEuro(tier.monthlyPrice)} / month
-                      </div>
-                    )}
-                    {tier.priceNote && (
-                      <p className="mt-1.5 text-[12.5px] text-[#475754] leading-snug">
-                        {tier.priceNote}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Delivery time (only if deliveryDays is explicitly configured) */}
-                  {deliveryDays !== null && (
-                    <div className="flex items-center gap-2 mb-6 text-[14px] font-medium text-[#0B1B22]">
-                      <Clock className="w-4 h-4 text-[#14624F] shrink-0" strokeWidth={1.5} />
-                      <span className="tabular-nums">About {deliveryDays} working days</span>
-                    </div>
-                  )}
-
-                  {/* Choose {Package} Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleSelectPackage(tier)}
-                    className={`w-full h-[50px] rounded-full text-[15px] font-semibold flex items-center justify-center gap-2 transition-[transform,background-color,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer px-4 ${
-                      isStandard
-                        ? 'oh-btn-primary text-white'
-                        : 'bg-[#050E0D] hover:bg-[#0F4A3E] text-white shadow-sm'
-                    }`}
-                  >
-                    <span className="truncate">Choose {tier.name}</span>
-                    <ArrowRight className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-                  </button>
-                </div>
-
-                {/* Two Labelled Feature Lists: Set-up & Every month */}
-                {(visibleSetupItems.length > 0 || visibleMonthlyItems.length > 0) && (
-                  <div className="mt-7 pt-6 border-t border-[rgba(11,27,34,0.08)] flex-1 flex flex-col justify-between gap-5">
-                    <div className="space-y-5">
-                      {tier.everythingInLabel && (
-                        <p className="text-[13.5px] font-semibold text-[#14624F]">
-                          {tier.everythingInLabel}
-                        </p>
-                      )}
-
-                      {visibleSetupItems.length > 0 && (
-                        <div>
-                          <div className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-[#475754] mb-2.5">
-                            Set-up
-                          </div>
-                          <ul className="space-y-2.5">
-                            {visibleSetupItems.map((item, fIdx) => (
-                              <li
-                                key={fIdx}
-                                className="flex items-start gap-2.5 text-[14px] leading-[1.45] text-[#0B1B22]"
-                              >
-                                <div className="w-[18px] h-[18px] rounded-full bg-[#DDF4EA] flex items-center justify-center shrink-0 mt-0.5">
-                                  <Check className="w-3 h-3 text-[#14624F]" strokeWidth={2.5} />
-                                </div>
-                                <span>{item.label}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {visibleMonthlyItems.length > 0 && (
-                        <div>
-                          <div className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-[#475754] mb-2.5">
-                            Every month
-                          </div>
-                          <ul className="space-y-2.5">
-                            {visibleMonthlyItems.map((item, mIdx) => (
-                              <li
-                                key={mIdx}
-                                className="flex items-start gap-2.5 text-[14px] leading-[1.45] text-[#0B1B22]"
-                              >
-                                <div className="w-[18px] h-[18px] rounded-full bg-[#DDF4EA] flex items-center justify-center shrink-0 mt-0.5">
-                                  <Check className="w-3 h-3 text-[#14624F]" strokeWidth={2.5} />
-                                </div>
-                                <span>{item.label}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-
-                    {showsAiAgent && (
-                      <p className="pt-3 border-t border-[rgba(11,27,34,0.06)] text-[12px] text-[#475754] flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5 text-[#14624F] shrink-0" strokeWidth={1.75} />
-                        <span>The assistant always says it is an AI.</span>
-                      </p>
-                    )}
-                  </div>
-                )}
-              </motion.article>
-            );
-          })}
+          {tiers.map((tier) => (
+            <PricingTierCard key={tier.id} tier={tier} onSelect={handleSelectPackage} />
+          ))}
         </div>
 
         {/* Estimate and optional notes below the three cards */}
@@ -1086,84 +1020,15 @@ export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
                                   selectedPackage !== 'scratch' &&
                                   Boolean(feat.includedInTiers?.includes(selectedPackage));
 
-                                const priceLabel =
-                                  (feat.price || 0) > 0
-                                    ? feat.billing === 'monthly'
-                                      ? `+${formatEuro(feat.price)}/month`
-                                      : `+${formatEuro(feat.price)}`
-                                    : 'Included in package';
-
                                 return (
-                                  <label
+                                  <BuilderFeatureRow
                                     key={feat.id}
-                                    htmlFor={`feat-checkbox-${feat.id}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                    }}
-                                    className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-150 flex items-start justify-between gap-4 cursor-pointer select-none ${
-                                      isSelected
-                                        ? 'bg-white border-[#14624F]/35 shadow-xs ring-1 ring-[#6FD6B0]/35'
-                                        : 'bg-[#F9FAF9] hover:bg-white border-[rgba(11,27,34,0.07)] hover:border-[rgba(11,27,34,0.16)]'
-                                    }`}
-                                  >
-                                    <div className="flex items-start gap-3 min-w-0">
-                                      {/* Accessible Checkbox input */}
-                                      <input
-                                        type="checkbox"
-                                        id={`feat-checkbox-${feat.id}`}
-                                        checked={isSelected}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          toggleFeature(feat.id);
-                                        }}
-                                        aria-label={feat.name}
-                                        className="mt-1 w-4 h-4 rounded border-[rgba(11,27,34,0.28)] accent-[#14624F] cursor-pointer"
-                                      />
-
-                                      {/* Icon */}
-                                      <div
-                                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors mt-0.5 ${
-                                          isSelected
-                                            ? 'bg-[#14624F] text-white shadow-xs'
-                                            : 'bg-[#F3F5F3] text-[#475754]'
-                                        }`}
-                                      >
-                                        <FeatureIcon
-                                          name={feat.icon}
-                                          className="w-4 h-4"
-                                        />
-                                      </div>
-
-                                      {/* Name, Description, In Package Tag */}
-                                      <div className="min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                          <span className="font-semibold text-[14.5px] sm:text-[15px] text-[#0B1B22] leading-snug">
-                                            {feat.name}
-                                          </span>
-                                          {isInCurrentPackage && (
-                                            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#DDF4EA] text-[#0F4A3E] whitespace-nowrap">
-                                              In {selectedTierName}
-                                            </span>
-                                          )}
-                                        </div>
-                                        {feat.description && (
-                                          <p className="text-[12.5px] text-[#475754] mt-0.5 leading-relaxed">
-                                            {feat.description}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* Price & Billing */}
-                                    <div className="text-right shrink-0 pt-0.5 pl-2">
-                                      <span className="font-semibold text-[13px] sm:text-[13.5px] text-[#0B1B22] block tabular-nums">
-                                        {priceLabel}
-                                      </span>
-                                      <span className="text-[11px] text-[#475754]">
-                                        {feat.billing === 'monthly' ? 'monthly' : 'one-time'}
-                                      </span>
-                                    </div>
-                                  </label>
+                                    feat={feat}
+                                    isSelected={isSelected}
+                                    isInCurrentPackage={isInCurrentPackage}
+                                    selectedTierName={selectedTierName}
+                                    onToggle={toggleFeature}
+                                  />
                                 );
                               })}
                             </div>
@@ -1203,17 +1068,21 @@ export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
                         <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#475754] block mb-1">
                           One-time
                         </span>
-                        <span className="text-[34px] sm:text-[40px] font-bold tabular-nums text-[#0B1B22] leading-none tracking-tight block">
-                          {formatEuro(animatedTotal)}
-                        </span>
+                        <AnimatedEuro
+                          value={oneTimeTotal}
+                          shouldReduceMotion={shouldReduceMotion}
+                          className="text-[34px] sm:text-[40px] font-bold tabular-nums text-[#0B1B22] leading-none tracking-tight block"
+                        />
                       </div>
                       <div className="pl-4 border-l border-[rgba(11,27,34,0.08)]">
                         <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#475754] block mb-1">
                           Per month
                         </span>
-                        <span className="text-[26px] sm:text-[30px] font-bold tabular-nums text-[#14624F] leading-none tracking-tight block">
-                          {formatEuro(animatedMonthlyTotal)}
-                        </span>
+                        <AnimatedEuro
+                          value={monthlyTotal}
+                          shouldReduceMotion={shouldReduceMotion}
+                          className="text-[26px] sm:text-[30px] font-bold tabular-nums text-[#14624F] leading-none tracking-tight block"
+                        />
                       </div>
                     </div>
 
@@ -1297,7 +1166,7 @@ export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
                         e.stopPropagation();
                         handleOpenSalesModal();
                       }}
-                      className="oh-btn-primary w-full h-[52px] rounded-full text-[16px] font-semibold flex items-center justify-center gap-2 text-white transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer active:scale-[0.98] disabled:opacity-45 disabled:cursor-not-allowed"
+                      className="oh-btn-primary w-full h-[52px] rounded-full text-[16px] font-semibold flex items-center justify-center gap-2 text-white transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer active:scale-[0.98] disabled:opacity-45 disabled:cursor-not-allowed"
                     >
                       <span>Talk to Sales</span>
                       <ArrowRight className="w-4 h-4" />
@@ -1373,305 +1242,22 @@ export default function Pricing({ onOpenAudit: _onOpenAudit }: PricingProps) {
             </div>
 
             {/* Accessible "Talk to Sales" Modal Dialog */}
-            <AnimatePresence>
-              {isSalesModalOpen && (
-                <motion.div
-                  initial={shouldReduceMotion ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={shouldReduceMotion ? undefined : { opacity: 0 }}
-                  transition={{ duration: shouldReduceMotion ? 0 : OH_DUR.base, ease: OH_EASE }}
-                  className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs overflow-y-auto"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="sales-modal-title"
-                  ref={modalRef}
-                  onClick={(e) => {
-                    if (e.target === e.currentTarget) {
-                      handleCloseSalesModal();
-                    }
-                  }}
-                >
-                  <motion.div
-                    initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: 12 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.96, y: 12 }}
-                    transition={{ duration: shouldReduceMotion ? 0 : OH_DUR.base, ease: OH_EASE }}
-                    className="relative w-full max-w-lg bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl border border-[rgba(11,27,34,0.1)] my-8"
-                  >
-                    {/* Close button */}
-                    <button
-                      type="button"
-                      onClick={handleCloseSalesModal}
-                      aria-label="Close modal"
-                      className="absolute top-5 right-5 w-9 h-9 rounded-full bg-[#F3F5F3] hover:bg-[#DDF4EA] active:scale-[0.98] text-[#0B1B22] flex items-center justify-center transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-
-                    <h3
-                      id="sales-modal-title"
-                      className="text-2xl font-bold text-[#0B1B22] mb-2 pr-10"
-                    >
-                      Talk to Sales
-                    </h3>
-                    <p className="text-sm text-[#475754] mb-5">
-                      Review your custom estimate and tell us about your project.
-                    </p>
-
-                    {/* Top of Modal: Read-only "Your custom package" summary */}
-                    <div className="bg-[#F3F5F3] rounded-2xl p-4 sm:p-5 border border-[rgba(11,27,34,0.08)] mb-6 text-xs text-[#0B1B22]">
-                      <div className="flex items-center justify-between pb-3 border-b border-[rgba(11,27,34,0.08)] mb-3 gap-2">
-                        <span className="font-bold text-sm text-[#0B1B22]">Your custom package</span>
-                        <span className="font-semibold text-xs text-[#475754] bg-white px-2.5 py-1 rounded-full border border-[rgba(11,27,34,0.08)]">
-                          {selectedPackage === 'scratch'
-                            ? 'Started from scratch'
-                            : `Starting package: ${selectedTierName}`}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2 mb-3">
-                        <div className="flex justify-between text-[#475754]">
-                          <span>Pages:</span>
-                          <span className="font-medium text-[#0B1B22] tabular-nums">{pages} page{pages > 1 ? 's' : ''}</span>
-                        </div>
-
-                        {/* Selected Features List */}
-                        <div className="pt-2 border-t border-[rgba(11,27,34,0.08)]">
-                          <span className="font-semibold text-[#475754] uppercase text-[10.5px] tracking-wider block mb-1.5">
-                            Selected features ({selectedVisibleFeatures.length}):
-                          </span>
-                          {selectedVisibleFeatures.length === 0 ? (
-                            <span className="text-[#475754] italic">No features selected</span>
-                          ) : (
-                            <ul className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                              {selectedVisibleFeatures.map((f) => (
-                                <li key={f.id} className="flex items-baseline justify-between gap-2 text-[11.5px]">
-                                  <span className="truncate text-[#0B1B22]">• {f.name}</span>
-                                  <span className="shrink-0 font-medium text-[#475754] tabular-nums">
-                                    {f.price > 0 ? formatEuro(f.price) : 'Included in package'}{' '}
-                                    <span className="text-[10px] text-[#475754]">
-                                      ({f.billing === 'monthly' ? '/month' : 'one-time'})
-                                    </span>
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Totals */}
-                      <div className="pt-2.5 border-t border-[rgba(11,27,34,0.08)] flex items-baseline justify-between font-bold text-sm">
-                        <span>One-time:</span>
-                        <span className="text-base text-[#0B1B22] tabular-nums">{formatEuro(oneTimeTotal)}</span>
-                      </div>
-                      <div className="flex items-baseline justify-between text-xs font-semibold text-[#14624F] mt-1">
-                        <span>Per month:</span>
-                        <span className="tabular-nums">{formatEuro(monthlyTotal)}</span>
-                      </div>
-                      {hasVoiceAgentSelected && (
-                        <p className="text-[11px] text-[#475754] mt-2">
-                          Voice call costs are charged separately.
-                        </p>
-                      )}
-
-                      {/* Estimate note */}
-                      {builderConfig?.estimateNote && (
-                        <p className="text-[11px] text-[#475754] mt-3 pt-2.5 border-t border-[rgba(11,27,34,0.08)] leading-relaxed italic">
-                          {builderConfig.estimateNote}
-                        </p>
-                      )}
-                    </div>
-
-                    {salesSubmitted ? (
-                      <motion.div
-                        initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: OH_DUR.base, ease: OH_EASE }}
-                        className="text-center py-8"
-                      >
-                        <div className="w-12 h-12 rounded-full bg-[#DDF4EA] text-[#14624F] flex items-center justify-center mx-auto mb-4">
-                          <Check className="w-6 h-6" />
-                        </div>
-                        <h4 className="text-xl font-bold text-[#0B1B22] mb-2">
-                          Enquiry received
-                        </h4>
-                        <p className="text-sm text-[#475754] mb-6">
-                          Thank you, {salesName}. We&apos;ll review your custom build requirements and reply with a fixed quote.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handleCloseSalesModal}
-                          className="oh-btn-primary px-6 h-11 rounded-full text-white text-sm font-semibold active:scale-[0.98] transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer"
-                        >
-                          Close
-                        </button>
-                      </motion.div>
-                    ) : (
-                      <form onSubmit={handleSalesSubmit} noValidate className="space-y-4">
-                        {/* Honeypot field */}
-                        <input
-                          type="text"
-                          name="_builder_hp"
-                          value={salesHoneypot}
-                          onChange={(e) => setSalesHoneypot(e.target.value)}
-                          tabIndex={-1}
-                          autoComplete="off"
-                          className="hidden"
-                          aria-hidden="true"
-                        />
-
-                        {/* Name */}
-                        <div>
-                          <label
-                            htmlFor="sales-name"
-                            className="block text-xs font-semibold text-[#0B1B22] uppercase tracking-wider mb-1.5"
-                          >
-                            Full name <span className="text-[#14624F]">*</span>
-                          </label>
-                          <input
-                            id="sales-name"
-                            name="fullName"
-                            autoComplete="name"
-                            ref={firstInputRef}
-                            type="text"
-                            value={salesName}
-                            onChange={(e) => {
-                              setSalesName(e.target.value);
-                              if (salesErrors.name) setSalesErrors((prev) => ({ ...prev, name: '' }));
-                            }}
-                            onBlur={() => {
-                              if (!salesName.trim()) {
-                                setSalesErrors((prev) => ({ ...prev, name: 'Please provide your name.' }));
-                              }
-                            }}
-                            placeholder="Your full name"
-                            aria-invalid={Boolean(salesErrors.name)}
-                            className="w-full h-11 px-3.5 rounded-xl border border-[rgba(11,27,34,0.16)] focus:border-[#14624F] focus:ring-1 focus:ring-[#14624F] text-sm text-[#0B1B22] outline-none"
-                          />
-                          {salesErrors.name && (
-                            <p role="alert" className="text-xs text-[#9E2F16] mt-1 font-medium">{salesErrors.name}</p>
-                          )}
-                        </div>
-
-                        {/* Email */}
-                        <div>
-                          <label
-                            htmlFor="sales-email"
-                            className="block text-xs font-semibold text-[#0B1B22] uppercase tracking-wider mb-1.5"
-                          >
-                            Email address <span className="text-[#14624F]">*</span>
-                          </label>
-                          <input
-                            id="sales-email"
-                            name="email"
-                            type="email"
-                            autoComplete="email"
-                            inputMode="email"
-                            value={salesEmail}
-                            onChange={(e) => {
-                              setSalesEmail(e.target.value);
-                              if (salesErrors.email) setSalesErrors((prev) => ({ ...prev, email: '' }));
-                            }}
-                            onBlur={() => {
-                              if (salesEmail.trim() && !/^\S+@\S+\.\S+$/.test(salesEmail.trim())) {
-                                setSalesErrors((prev) => ({ ...prev, email: 'Please provide a valid email address.' }));
-                              }
-                            }}
-                            placeholder="you@yourtrade.ie"
-                            aria-invalid={Boolean(salesErrors.email)}
-                            className="w-full h-11 px-3.5 rounded-xl border border-[rgba(11,27,34,0.16)] focus:border-[#14624F] focus:ring-1 focus:ring-[#14624F] text-sm text-[#0B1B22] outline-none"
-                          />
-                          {salesErrors.email && (
-                            <p role="alert" className="text-xs text-[#9E2F16] mt-1 font-medium">{salesErrors.email}</p>
-                          )}
-                        </div>
-
-                        {/* Phone (optional) */}
-                        <div>
-                          <label
-                            htmlFor="sales-phone"
-                            className="block text-xs font-semibold text-[#0B1B22] uppercase tracking-wider mb-1.5"
-                          >
-                            Phone or WhatsApp <span className="text-[#475754] font-normal lowercase">(optional)</span>
-                          </label>
-                          <input
-                            id="sales-phone"
-                            name="phone"
-                            type="tel"
-                            autoComplete="tel"
-                            inputMode="tel"
-                            value={salesPhone}
-                            onChange={(e) => setSalesPhone(e.target.value)}
-                            placeholder="087 123 4567"
-                            className="w-full h-11 px-3.5 rounded-xl border border-[rgba(11,27,34,0.16)] focus:border-[#14624F] focus:ring-1 focus:ring-[#14624F] text-sm text-[#0B1B22] outline-none"
-                          />
-                        </div>
-
-                        {/* Prefilled editable message */}
-                        <div>
-                          <label
-                            htmlFor="sales-message"
-                            className="block text-xs font-semibold text-[#0B1B22] uppercase tracking-wider mb-1.5"
-                          >
-                            Estimate summary &amp; notes <span className="text-[#475754] font-normal lowercase">(editable)</span>
-                          </label>
-                          <textarea
-                            id="sales-message"
-                            name="message"
-                            rows={4}
-                            value={salesMessage}
-                            onChange={(e) => setSalesMessage(e.target.value)}
-                            className="w-full p-3 rounded-xl border border-[rgba(11,27,34,0.16)] focus:border-[#14624F] focus:ring-1 focus:ring-[#14624F] text-xs font-mono text-[#0B1B22] leading-relaxed resize-y outline-none"
-                          />
-                        </div>
-
-                        {/* Consent checkbox */}
-                        <div>
-                          <label className="flex items-start gap-2.5 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={salesConsent}
-                              onChange={(e) => {
-                                setSalesConsent(e.target.checked);
-                                if (salesErrors.consent) setSalesErrors((prev) => ({ ...prev, consent: '' }));
-                              }}
-                              className="mt-0.5 w-4 h-4 rounded border-[rgba(11,27,34,0.3)] accent-[#14624F] cursor-pointer"
-                            />
-                            <span className="text-xs text-[#475754] leading-relaxed">
-                              I agree to be contacted about this estimate. Details will never be shared or spammed.
-                            </span>
-                          </label>
-                          {salesErrors.consent && (
-                            <p role="alert" className="text-xs text-[#9E2F16] mt-1 font-medium">{salesErrors.consent}</p>
-                          )}
-                        </div>
-
-                        {/* Status / Fallback Banner */}
-                        {salesStatus && (
-                          <div role="status" className="p-3 rounded-xl bg-[#DDF4EA] border border-[#14624F]/25 text-xs text-[#0F4A3E] leading-relaxed">
-                            {salesStatus}
-                          </div>
-                        )}
-
-                        {/* Submit Button */}
-                        <div className="pt-2">
-                          <button
-                            type="submit"
-                            disabled={salesSubmitting}
-                            className="oh-btn-primary w-full h-12 rounded-full text-white text-sm font-semibold active:scale-[0.98] transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                          >
-                            {salesSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                            <span>{salesSubmitting ? 'Sending...' : 'Request Custom Package'}</span>
-                            {!salesSubmitting && <ArrowRight className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {isSalesModalOpen && (
+              <Suspense fallback={null}>
+                <PricingSalesModal
+                  selectedPackage={selectedPackage}
+                  selectedTierName={selectedTierName}
+                  pages={pages}
+                  oneTimeTotal={oneTimeTotal}
+                  monthlyTotal={monthlyTotal}
+                  hasVoiceAgentSelected={hasVoiceAgentSelected}
+                  estimateNote={builderConfig?.estimateNote}
+                  selectedVisibleFeatures={selectedVisibleFeatures}
+                  initialSummaryMessage={initialSummaryMessage}
+                  onClose={handleCloseSalesModal}
+                />
+              </Suspense>
+            )}
           </div>
         )}
       </div>

@@ -1,8 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { Suspense, lazy, memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
   Play,
-  X,
   Award,
   Star,
   ExternalLink,
@@ -10,7 +8,10 @@ import {
 import { ShimmerImage, Tilt3D } from '../components/PremiumPrimitives';
 import { config } from '../config';
 import { VIDEO_REVIEW } from '../content';
-import { OH_DUR, OH_EASE } from '../lib/motion';
+import { useAnimationInView } from '../hooks/useAnimationInView';
+import { getSmallAvatarSrc, optimizeImageUrl } from '../lib/images';
+
+const ClientsVideoModal = lazy(() => import('../components/ClientsVideoModal'));
 
 interface ProofCardItem {
   id: string;
@@ -42,8 +43,7 @@ interface ProofCardItem {
 }
 
 const AARON_FREEDMAN_STREAMABLE_EMBED = 'https://streamable.com/e/36ovtq?';
-const AARON_FREEDMAN_THUMBNAIL =
-  'https://i.ibb.co.com/VcbcTXH9/ac6245a6-13a2-4716-bdfa-79220b85865b.png';
+const AARON_FREEDMAN_THUMBNAIL = '/assets/aistudio/image_9075c9cc.png';
 
 function buildEmbedUrl(baseUrl: string, params: Record<string, string>): string {
   const query = new URLSearchParams(params).toString();
@@ -217,38 +217,28 @@ interface ClientsLoveUsProps {
 
 export default function ClientsLoveUs({ onOpenAudit: _onOpenAudit }: ClientsLoveUsProps) {
   const [activeVideoModal, setActiveVideoModal] = useState<ProofCardItem | null>(null);
-  const lastTriggerRef = React.useRef<HTMLElement | null>(null);
+  const lastTriggerRef = useRef<HTMLElement | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  useAnimationInView(sectionRef, false);
 
   const cards = useMemo(() => buildSectionCards(), []);
   const desktopColumns = useMemo(() => distributeMasonryColumns(cards, 3), [cards]);
 
-  useEffect(() => {
-    if (!activeVideoModal) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setActiveVideoModal(null);
-        window.requestAnimationFrame(() => lastTriggerRef.current?.focus());
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeVideoModal]);
-
-  const handlePlay = (item: ProofCardItem, trigger: HTMLElement | null) => {
+  const handlePlay = useCallback((item: ProofCardItem, trigger: HTMLElement | null) => {
     lastTriggerRef.current = trigger;
     setActiveVideoModal(item);
-  };
+  }, []);
 
-  const modalRoleLocation = activeVideoModal
-    ? [activeVideoModal.role, activeVideoModal.location]
-        .filter((v) => Boolean(v && v.trim()))
-        .join(' · ')
-    : '';
+  const handleCloseModal = useCallback(() => {
+    setActiveVideoModal(null);
+    window.requestAnimationFrame(() => lastTriggerRef.current?.focus());
+  }, []);
 
   return (
     <section
+      ref={sectionRef}
       id="proof"
-      className="oh-cv-auto py-[var(--section-py)] bg-[#E9ECEA] text-[#0B1B22] overflow-x-clip"
+      className="oh-cv-auto oh-anim-paused py-[var(--section-py)] bg-[#E9ECEA] text-[#0B1B22] overflow-x-clip"
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Heading */}
@@ -293,131 +283,17 @@ export default function ClientsLoveUs({ onOpenAudit: _onOpenAudit }: ClientsLove
         </div>
       </div>
 
-      {/* Video Testimonial Modal Popup */}
-      <AnimatePresence>
-        {activeVideoModal && (
-          <div
-            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#050E0D]/80 backdrop-blur-sm"
-            onClick={() => setActiveVideoModal(null)}
-          >
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-label={`Client review from ${activeVideoModal.name}`}
-              initial={{ opacity: 0, scale: 0.96, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 12 }}
-              transition={{ duration: OH_DUR.base, ease: OH_EASE }}
-              onClick={(e) => e.stopPropagation()}
-              className="oh-dark-card relative w-full max-w-[460px] max-h-[90vh] overflow-y-auto text-white rounded-[28px] shadow-2xl"
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveVideoModal(null);
-                  window.requestAnimationFrame(() => lastTriggerRef.current?.focus());
-                }}
-                className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-[#050E0D]/80 text-white flex items-center justify-center hover:bg-[#14624F] active:scale-[0.98] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer"
-                aria-label="Close modal"
-              >
-                <X className="w-5 h-5" strokeWidth={1.5} />
-              </button>
-
-              {(activeVideoModal.videoEmbedUrl || activeVideoModal.videoSrc) && (
-                <div className="bg-[#050E0D]">
-                  {activeVideoModal.videoEmbedUrl ? (
-                    <div className="relative w-full h-0 pb-[125%] max-h-[60vh] bg-black overflow-hidden">
-                      <iframe
-                        title={`Client video review from ${activeVideoModal.name}`}
-                        src={buildEmbedUrl(activeVideoModal.videoEmbedUrl, { autoplay: '1' })}
-                        allow="autoplay; fullscreen"
-                        allowFullScreen
-                        className="absolute inset-0 w-full h-full border-0 overflow-hidden"
-                      />
-                    </div>
-                  ) : (
-                    <div className="relative bg-black flex items-center justify-center">
-                      <video
-                        src={activeVideoModal.videoSrc}
-                        poster={activeVideoModal.poster || activeVideoModal.image}
-                        controls
-                        autoPlay
-                        playsInline
-                        className="w-full max-h-[50vh] aspect-[4/5] object-contain bg-black"
-                      />
-                    </div>
-                  )}
-                  <div className="p-5 sm:p-6 text-left border-t border-white/10">
-                    <h3 className="font-heading text-xl font-bold text-white mb-1">
-                      {activeVideoModal.name}
-                    </h3>
-                    {modalRoleLocation && (
-                      <div className="text-xs text-[#A8EBD3] mb-2">
-                        {modalRoleLocation}
-                      </div>
-                    )}
-                    {activeVideoModal.quote && (
-                      <p className="text-white/85 text-xs sm:text-[13px] leading-relaxed whitespace-pre-line max-h-[140px] overflow-y-auto mb-3">
-                        {activeVideoModal.quote}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-white/75 pt-2.5 border-t border-white/10">
-                      {typeof activeVideoModal.rating === 'number' &&
-                        activeVideoModal.rating > 0 && (
-                          <div
-                            className="flex items-center gap-0.5 tabular-nums"
-                            role="img"
-                            aria-label={`Rated ${activeVideoModal.rating} out of 5`}
-                          >
-                            {Array.from({ length: 5 }).map((_, starIdx) => (
-                              <Star
-                                key={starIdx}
-                                aria-hidden="true"
-                                strokeWidth={1.5}
-                                className={`w-3.5 h-3.5 ${
-                                  starIdx < (activeVideoModal.rating || 0)
-                                    ? 'text-[#D99B26] fill-[#D99B26]'
-                                    : 'text-white/25'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      <div className="flex items-center gap-2 ml-auto">
-                        {activeVideoModal.sourceUrl ? (
-                          <a
-                            href={activeVideoModal.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 font-medium text-[#A8EBD3] hover:underline"
-                          >
-                            <span>{activeVideoModal.sourceLabel || 'Source'}</span>
-                            <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
-                          </a>
-                        ) : (
-                          activeVideoModal.sourceLabel && (
-                            <span>{activeVideoModal.sourceLabel}</span>
-                          )
-                        )}
-                        {activeVideoModal.date && (
-                          <span className="tabular-nums text-white/60">
-                            {activeVideoModal.date}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Lazy Video Testimonial Modal Popup */}
+      {activeVideoModal && (
+        <Suspense fallback={null}>
+          <ClientsVideoModal item={activeVideoModal} onClose={handleCloseModal} />
+        </Suspense>
+      )}
     </section>
   );
 }
 
-function TestimonialCard({
+const TestimonialCard = memo(function TestimonialCard({
   item,
   onPlay,
 }: {
@@ -461,7 +337,12 @@ function TestimonialCard({
     );
   }
 
-  const avatarSrc = item.avatar || (item.isConfigReview ? undefined : item.image);
+  const rawAvatarSrc = item.avatar || (item.isConfigReview ? undefined : item.image);
+  const avatarSrc = useMemo(() => getSmallAvatarSrc(rawAvatarSrc), [rawAvatarSrc]);
+  const posterSrc = useMemo(
+    () => optimizeImageUrl(item.poster || item.image || '', 480, 'good'),
+    [item.poster, item.image]
+  );
   const showAvatarImg = Boolean(avatarSrc && avatarSrc.trim() && !avatarFailed);
   const roleLocationLine = [item.role, item.location]
     .filter((v) => Boolean(v && v.trim()))
@@ -509,11 +390,12 @@ function TestimonialCard({
             >
               {(item.poster || item.image) && (
                 <ShimmerImage
-                  src={item.poster || item.image || ''}
+                  src={posterSrc}
                   alt={`${item.name} video review`}
                   width={480}
                   height={600}
                   loading="lazy"
+                  decoding="async"
                   referrerPolicy="no-referrer"
                   wrapperClassName="relative w-full h-full"
                   className="w-full h-full object-cover object-top group-hover:scale-[1.03] transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
@@ -526,10 +408,10 @@ function TestimonialCard({
                 className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_32%,rgba(0,0,0,0.45)_52%,rgba(0,0,0,0.88)_74%,#000000_92%)]"
               />
 
-              {/* Centered Translucent Play Circle */}
+              {/* Centered Play Circle */}
               <div
                 aria-hidden="true"
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/45 backdrop-blur-xs border border-white/25 text-white flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.38)] group-hover:scale-110 transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] z-10"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/60 border border-white/25 text-white flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.38)] group-hover:scale-110 transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] z-10"
               >
                 <Play className="w-5 h-5 fill-white text-white translate-x-[1.5px]" strokeWidth={1.5} />
               </div>
@@ -546,6 +428,7 @@ function TestimonialCard({
                           width={28}
                           height={28}
                           loading="lazy"
+                          decoding="async"
                           referrerPolicy="no-referrer"
                           onError={() => setAvatarFailed(true)}
                           wrapperClassName="relative w-full h-full"
@@ -605,6 +488,7 @@ function TestimonialCard({
                 width={48}
                 height={48}
                 loading="lazy"
+                decoding="async"
                 referrerPolicy="no-referrer"
                 onError={() => setAvatarFailed(true)}
                 wrapperClassName="relative w-full h-full"
@@ -696,13 +580,14 @@ function TestimonialCard({
                 aria-label={`Play client video review from ${item.name}`}
                 className="absolute inset-0 w-full h-full block text-left group cursor-pointer active:scale-[0.99] transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] bg-[#050E0D]"
               >
-                {item.poster || item.image ? (
+                {posterSrc ? (
                   <ShimmerImage
-                    src={item.poster || item.image || ''}
+                    src={posterSrc}
                     alt={`${item.name} video review`}
                     width={400}
                     height={500}
                     loading="lazy"
+                    decoding="async"
                     referrerPolicy="no-referrer"
                     wrapperClassName="relative w-full h-full"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
@@ -787,4 +672,4 @@ function TestimonialCard({
       </div>
     </Tilt3D>
   );
-}
+});

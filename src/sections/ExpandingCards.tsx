@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { config } from '../config';
 import { CTA } from '../content';
+import { useAnimationInView } from '../hooks/useAnimationInView';
+import { getResponsiveImageProps } from '../lib/images';
 
 interface ExpandingCardsProps {
   onOpenAudit?: () => void;
@@ -208,6 +210,13 @@ const CardBottomVisual = memo(function CardBottomVisual({
   const [tileFailed, setTileFailed] = useState(false);
   const f = config.features;
   const portfolioImage = config.portfolio[0]?.image || '';
+  const portfolioImgProps = useMemo(
+    () =>
+      portfolioImage
+        ? getResponsiveImageProps(portfolioImage, [320, 640], '140px', 'good')
+        : null,
+    [portfolioImage]
+  );
   const missedCallCopy =
     config.missedCallText ||
     "Sorry we missed you. We're on a job. Send your details and we'll reply today.";
@@ -378,13 +387,16 @@ const CardBottomVisual = memo(function CardBottomVisual({
                 {/* Card A (-6deg left): Recent project tile */}
                 <div className="absolute left-[0.2em] bottom-[0.6em] w-[9.2em] -rotate-6 rounded-[0.95em] bg-white border border-[rgba(11,27,34,0.1)] shadow-[0_8px_18px_-8px_rgba(10,58,48,0.2)] p-[0.5em]">
                   <div className="relative w-full aspect-[4/3] rounded-[0.6em] overflow-hidden bg-gradient-to-br from-[#DDF4EA] to-[#6FD6B0] flex items-center justify-center">
-                    {portfolioImage && !tileFailed ? (
+                    {portfolioImgProps && !tileFailed ? (
                       <img
-                        src={portfolioImage}
+                        src={portfolioImgProps.src}
+                        srcSet={portfolioImgProps.srcSet}
+                        sizes={portfolioImgProps.sizes}
                         alt=""
                         width={120}
                         height={90}
                         loading="lazy"
+                        decoding="async"
                         referrerPolicy="no-referrer"
                         onError={() => setTileFailed(true)}
                         className="w-full h-full object-cover object-top"
@@ -827,7 +839,13 @@ const DesktopCard = memo(function DesktopCard({
   );
 });
 
-const DesktopCardsRow = memo(function DesktopCardsRow({ cards }: { cards: CardItem[] }) {
+const DesktopCardsRow = memo(function DesktopCardsRow({
+  cards,
+  animActive,
+}: {
+  cards: CardItem[];
+  animActive: boolean;
+}) {
   const defaultId = cards[1]?.id || cards[0]?.id || 'get-found';
   const rowRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -837,7 +855,7 @@ const DesktopCardsRow = memo(function DesktopCardsRow({ cards }: { cards: CardIt
   const intentTimerRef = useRef<number>(0);
   const safetyTimerRef = useRef<number>(0);
 
-  // Measure row container once + on debounced resize to set pixel widths & artboard scale factors
+  // Measure row container via ResizeObserver to set pixel widths & artboard scale factors
   useLayoutEffect(() => {
     const rowEl = rowRef.current;
     if (!rowEl || cards.length === 0) return;
@@ -860,6 +878,12 @@ const DesktopCardsRow = memo(function DesktopCardsRow({ cards }: { cards: CardIt
     };
 
     syncGeometry();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(syncGeometry);
+      ro.observe(rowEl);
+      return () => ro.disconnect();
+    }
 
     let resizeTimer = 0;
     const onResize = () => {
@@ -914,9 +938,9 @@ const DesktopCardsRow = memo(function DesktopCardsRow({ cards }: { cards: CardIt
     safetyTimerRef.current = window.setTimeout(clearAllWillChange, 650);
   };
 
-  // Auto-advance timer mutates DOM attributes directly without re-rendering React
+  // Auto-advance timer runs only while section is active & visible, mutating DOM attributes directly
   useEffect(() => {
-    if (cards.length < 2) return;
+    if (!animActive || cards.length < 2) return;
     const reducedMq = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (reducedMq.matches) return;
 
@@ -932,7 +956,7 @@ const DesktopCardsRow = memo(function DesktopCardsRow({ cards }: { cards: CardIt
       window.clearTimeout(intentTimerRef.current);
       window.clearTimeout(safetyTimerRef.current);
     };
-  }, [cards]);
+  }, [cards, animActive]);
 
   const handleIntentEnter = (id: CardItem['id']) => {
     window.clearTimeout(intentTimerRef.current);
@@ -996,13 +1020,22 @@ const MobileAccordion = memo(function MobileAccordion({ cards }: { cards: CardIt
   const stageHostRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
+    const el = stageHostRef.current;
+    if (!el) return;
+
     const syncMobileScale = () => {
-      const el = stageHostRef.current;
-      if (!el || !el.clientWidth) return;
+      if (!el.clientWidth) return;
       const next = Math.min(1, Math.max(0.55, (el.clientWidth - 16) / 348));
       setMobileScale(Number(next.toFixed(4)));
     };
     syncMobileScale();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(syncMobileScale);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+
     window.addEventListener('resize', syncMobileScale, { passive: true });
     return () => window.removeEventListener('resize', syncMobileScale);
   }, [activeId]);
@@ -1018,7 +1051,7 @@ const MobileAccordion = memo(function MobileAccordion({ cards }: { cards: CardIt
             type="button"
             aria-expanded={isActive}
             onClick={() => setActiveId(card.id)}
-            className="relative w-full text-left bg-white rounded-[20px] p-5 sm:p-6 border border-[rgba(11,27,34,0.08)] shadow-[var(--e1)] hover:shadow-[var(--e2)] hover:-translate-y-0.5 active:scale-[0.99] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden cursor-pointer"
+            className="relative w-full text-left bg-white rounded-[20px] p-5 sm:p-6 border border-[rgba(11,27,34,0.08)] shadow-[var(--e1)] hover:shadow-[var(--e2)] hover:-translate-y-0.5 active:scale-[0.99] transition-[transform,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden cursor-pointer"
           >
             <div className="relative z-10">
               <div className="flex items-center justify-between gap-3">
@@ -1081,13 +1114,16 @@ const MobileAccordion = memo(function MobileAccordion({ cards }: { cards: CardIt
 
 export default function ExpandingCards({ onOpenAudit }: ExpandingCardsProps) {
   const cards = useMemo(() => buildCards(), []);
+  const sectionRef = useRef<HTMLElement>(null);
+  const isAnimActive = useAnimationInView(sectionRef, false);
 
   if (cards.length === 0) return null;
 
   return (
     <section
+      ref={sectionRef}
       id="services"
-      className="relative bg-[#F3F5F3] text-[#0B1B22] py-[var(--section-py)] overflow-x-clip"
+      className="oh-anim-paused relative bg-[#F3F5F3] text-[#0B1B22] py-[var(--section-py)] overflow-x-clip"
     >
       {/* Subtle Silk Wave Layer (light alternating background) */}
       <div aria-hidden="true" className="oh-silk-waves-subtle" />
@@ -1116,7 +1152,7 @@ export default function ExpandingCards({ onOpenAudit }: ExpandingCardsProps) {
         </div>
 
         {/* Desktop Connected Sheet Card Row (>= 900px) */}
-        <DesktopCardsRow cards={cards} />
+        <DesktopCardsRow cards={cards} animActive={isAnimActive} />
 
         {/* Mobile / Tablet Vertical Accordion Stack (< 900px) */}
         <MobileAccordion cards={cards} />

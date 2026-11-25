@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useReducedMotion } from 'motion/react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
   Video,
@@ -27,6 +26,7 @@ import {
 import Container from '../components/Container';
 import { CTA } from '../content';
 import { config } from '../config';
+import { useAnimationInView } from '../hooks/useAnimationInView';
 
 // =============================================================================
 // DATA: Background Marquee Tools
@@ -143,15 +143,16 @@ interface BuiltFastProps {
 }
 
 export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
-  const shouldReduceMotion = useReducedMotion();
-  const [isTabHidden, setIsTabHidden] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const isAnimActive = useAnimationInView(sectionRef, false);
+  const [shouldReduceMotion, setShouldReduceMotion] = useState(false);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsTabHidden(document.hidden);
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setShouldReduceMotion(mq.matches);
+    const handleChange = (e: MediaQueryListEvent) => setShouldReduceMotion(e.matches);
+    mq.addEventListener('change', handleChange);
+    return () => mq.removeEventListener('change', handleChange);
   }, []);
 
   const tierDays = (config.pricing?.tiers || [])
@@ -172,8 +173,9 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
   return (
     <section
       id="built-fast"
+      ref={sectionRef}
       aria-labelledby="built-fast-heading"
-      className="oh-cv-auto oh-grain-dark relative w-full bg-[#050E0D] py-20 sm:py-24 overflow-x-clip"
+      className="oh-cv-auto oh-anim-paused oh-grain-dark relative w-full bg-[#050E0D] py-20 sm:py-24 overflow-x-clip"
       style={{
         background:
           'radial-gradient(ellipse 75% 42% at 50% 18%, rgba(20, 98, 79, 0.22) 0%, transparent 72%), #050E0D',
@@ -268,14 +270,14 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
             {/* Row 1 (desktop & tablet, moves left) */}
             <div
               className="flex gap-4 w-max marquee-left mb-3"
-              style={{ animationPlayState: isTabHidden ? 'paused' : 'running' }}
+              style={{ animationPlayState: isAnimActive ? 'running' : 'paused' }}
             >
               {marqueeRowA.map((t, idx) => {
                 const Icon = t.icon;
                 return (
                   <div
                     key={`row1-${t.id}-${idx}`}
-                    className="oh-dark-glass w-[84px] h-[84px] rounded-[20px] backdrop-blur-md flex flex-col items-center justify-center p-2 text-center"
+                    className="oh-dark-glass w-[84px] h-[84px] rounded-[20px] flex flex-col items-center justify-center p-2 text-center"
                   >
                     <div className="relative z-[3] w-8 h-8 rounded-[12px] bg-white/[0.05] border border-white/10 flex items-center justify-center text-white/80 mb-1.5">
                       <Icon className="w-4 h-4 text-[#6FD6B0] stroke-[1.5]" />
@@ -291,14 +293,14 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
             {/* Row 2 (moves right, hidden on mobile for clean single-row look) */}
             <div
               className="hidden sm:flex gap-4 w-max marquee-right"
-              style={{ animationPlayState: isTabHidden ? 'paused' : 'running' }}
+              style={{ animationPlayState: isAnimActive ? 'running' : 'paused' }}
             >
               {marqueeRowB.map((t, idx) => {
                 const Icon = t.icon;
                 return (
                   <div
                     key={`row2-${t.id}-${idx}`}
-                    className="oh-dark-glass w-[84px] h-[84px] rounded-[20px] backdrop-blur-md flex flex-col items-center justify-center p-2 text-center"
+                    className="oh-dark-glass w-[84px] h-[84px] rounded-[20px] flex flex-col items-center justify-center p-2 text-center"
                   >
                     <div className="relative z-[3] w-8 h-8 rounded-[12px] bg-white/[0.05] border border-white/10 flex items-center justify-center text-white/80 mb-1.5">
                       <Icon className="w-4 h-4 text-[#A8EBD3] stroke-[1.5]" />
@@ -332,7 +334,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
                 viewBox="0 0 32 32"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="shrink-0 drop-shadow-md"
+                className="shrink-0"
                 aria-hidden="true"
               >
                 <rect width="32" height="32" rx="8" fill="#14624F" />
@@ -412,7 +414,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
                     style={{
                       animation: 'light-travel 2.8s linear infinite',
                       animationDelay: '-0.56s',
-                      animationPlayState: isTabHidden ? 'paused' : 'running',
+                      animationPlayState: isAnimActive ? 'running' : 'paused',
                     }}
                   />
                   <path
@@ -421,7 +423,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
                     style={{
                       animation: 'light-travel 2.8s linear infinite',
                       animationDelay: '-1.68s',
-                      animationPlayState: isTabHidden ? 'paused' : 'running',
+                      animationPlayState: isAnimActive ? 'running' : 'paused',
                     }}
                   />
                   <path
@@ -430,7 +432,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
                     style={{
                       animation: 'light-travel 2.8s linear infinite',
                       animationDelay: '-1.12s',
-                      animationPlayState: isTabHidden ? 'paused' : 'running',
+                      animationPlayState: isAnimActive ? 'running' : 'paused',
                     }}
                   />
                   <path
@@ -439,7 +441,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
                     style={{
                       animation: 'light-travel 2.8s linear infinite',
                       animationDelay: '-2.24s',
-                      animationPlayState: isTabHidden ? 'paused' : 'running',
+                      animationPlayState: isAnimActive ? 'running' : 'paused',
                     }}
                   />
                   <path
@@ -448,7 +450,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
                     style={{
                       animation: 'light-travel 2.8s linear infinite',
                       animationDelay: '-0.28s',
-                      animationPlayState: isTabHidden ? 'paused' : 'running',
+                      animationPlayState: isAnimActive ? 'running' : 'paused',
                     }}
                   />
                 </g>
@@ -466,7 +468,7 @@ export default function BuiltFast({ onOpenAudit }: BuiltFastProps) {
                 <li
                   key={c.stepNumber}
                   data-spotlight=""
-                  className={`group oh-dark-card relative rounded-[20px] p-5 transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex flex-col justify-between overflow-hidden ${
+                  className={`group oh-dark-card relative rounded-[20px] p-5 transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex flex-col justify-between overflow-hidden ${
                     isFifthCard ? 'sm:col-span-2 sm:max-w-md sm:mx-auto lg:col-span-1 lg:max-w-none' : ''
                   } hover:-translate-y-1 hover:shadow-[0_18px_38px_rgba(63,209,165,0.2)]`}
                 >

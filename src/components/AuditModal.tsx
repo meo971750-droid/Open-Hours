@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { X, Check, MessageCircle, AlertCircle, Loader2 } from 'lucide-react';
 import {
   FORM_ENDPOINT,
@@ -7,7 +6,6 @@ import {
   CTA,
   DELIVERY,
 } from '../content';
-import { OH_DUR, OH_EASE } from '../lib/motion';
 
 interface AuditModalProps {
   isOpen: boolean;
@@ -230,47 +228,39 @@ export default function AuditModal({
   );
 
   return (
-    <AnimatePresence>
+    <div
+      className="oh-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      style={{ backgroundColor: 'rgba(11, 27, 34, 0.58)', backdropFilter: 'blur(8px)' }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      aria-modal="true"
+      role="dialog"
+    >
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
-        style={{ backgroundColor: 'rgba(11, 27, 34, 0.58)', backdropFilter: 'blur(8px)' }}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
-        }}
-        aria-modal="true"
-        role="dialog"
+        ref={modalRef}
+        className="oh-scale-in relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto bg-white rounded-[28px] p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,27,34,0.24)] border border-[rgba(11,27,34,0.09)]"
       >
-        <motion.div
-          ref={modalRef}
-          initial={{ opacity: 0, scale: 0.95, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 16 }}
-          transition={{ duration: OH_DUR.base, ease: OH_EASE }}
-          className="relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto bg-white rounded-[28px] p-6 sm:p-8 shadow-[0_20px_50px_rgba(11,27,34,0.24)] border border-[rgba(11,27,34,0.09)]"
+        {/* Close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close dialog"
+          className="absolute top-5 right-5 w-10 h-10 rounded-full bg-[#F3F5F3] hover:bg-[#DDF4EA] text-[#0B1B22] flex items-center justify-center transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-[0.98] cursor-pointer z-10"
         >
-          {/* Close button */}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close dialog"
-            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-[#F3F5F3] hover:bg-[#DDF4EA] text-[#0B1B22] flex items-center justify-center transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-[0.98] cursor-pointer z-10"
-          >
-            <X className="w-5 h-5" strokeWidth={1.5} />
-          </button>
+          <X className="w-5 h-5" strokeWidth={1.5} />
+        </button>
 
-          {/* SUCCESS STATE */}
-          {status === 'success' ? (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: OH_DUR.base, ease: OH_EASE }}
-              className="py-6 text-center"
-              role="status"
-              aria-live="polite"
-            >
-              <div className="w-14 h-14 rounded-full bg-[#DDF4EA] text-[#14624F] flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8" strokeWidth={2.5} />
-              </div>
+        {/* SUCCESS STATE */}
+        {status === 'success' ? (
+          <div
+            className="oh-slide-up-in py-6 text-center"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="w-14 h-14 rounded-full bg-[#DDF4EA] text-[#14624F] flex items-center justify-center mx-auto mb-4">
+              <Check className="w-8 h-8" strokeWidth={2.5} />
+            </div>
               {variant === 'feature' ? (
                 <>
                   <h3 className="text-[24px] sm:text-[26px] font-semibold text-[#0B1B22] mb-2">
@@ -293,11 +283,11 @@ export default function AuditModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="oh-btn-primary h-12 px-8 rounded-full text-white text-[15px] font-semibold active:scale-[0.98] transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer"
+                className="oh-btn-primary h-12 px-8 rounded-full text-white text-[15px] font-semibold active:scale-[0.98] transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer"
               >
                 Close
               </button>
-            </motion.div>
+            </div>
           ) : (
             /* FORM VIEW (when idle, loading, or failure) */
             <div>
@@ -544,7 +534,7 @@ export default function AuditModal({
                   <button
                     type="submit"
                     disabled={status === 'loading'}
-                    className="oh-btn-primary w-full h-12 rounded-xl text-white text-[15px] font-semibold active:scale-[0.98] transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="oh-btn-primary w-full h-12 rounded-xl text-white text-[15px] font-semibold active:scale-[0.98] transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {status === 'loading' ? (
                       <>
@@ -577,8 +567,7 @@ export default function AuditModal({
               )}
             </div>
           )}
-        </motion.div>
       </div>
-    </AnimatePresence>
+    </div>
   );
 }

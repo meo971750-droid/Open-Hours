@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Calendar,
   ClipboardList,
@@ -17,6 +17,8 @@ import { CTA } from '../content';
 import { LogoMark } from '../components/Logo';
 import { ShimmerImage } from '../components/PremiumPrimitives';
 import DemoTag from '../components/DemoTag';
+import { useAnimationInView } from '../hooks/useAnimationInView';
+import { getResponsiveImageProps } from '../lib/images';
 
 interface BestInBentoProps {
   onOpenAudit: () => void;
@@ -83,6 +85,8 @@ interface IntegrationTile {
 }
 
 export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const isAnimActive = useAnimationInView(sectionRef, false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [searchTermIdx, setSearchTermIdx] = useState(0);
   const [typedLen, setTypedLen] = useState(SAMPLE_SEARCHES[0].length);
@@ -96,11 +100,14 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Looping typing animation across 3 sample trade searches
+  // Looping typing animation across 3 sample trade searches (paused offscreen & hidden tab)
   useEffect(() => {
     if (prefersReducedMotion) {
       setSearchTermIdx(0);
       setTypedLen(SAMPLE_SEARCHES[0].length);
+      return;
+    }
+    if (!isAnimActive) {
       return;
     }
 
@@ -137,7 +144,7 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
     }, 85);
 
     return () => window.clearInterval(timer);
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, isAnimActive]);
 
   // Service chips from config, filtered by enabled feature flags
   const enabledServices = useMemo(() => {
@@ -271,8 +278,9 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
 
   return (
     <section
+      ref={sectionRef}
       id="best-in"
-      className="oh-cv-auto relative bg-[#E9ECEA] text-[#0B1B22] py-[var(--section-py)] overflow-x-clip"
+      className="oh-cv-auto oh-anim-paused relative bg-[#E9ECEA] text-[#0B1B22] py-[var(--section-py)] overflow-x-clip"
     >
       <style>{`
         @keyframes bentoMarqueeSlow {
@@ -387,7 +395,7 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
           {/* =================================================================
               CARD 1: TALL LEFT CARD — Local SEO
               ================================================================= */}
-          <article className="md:col-span-1 md:row-span-2 lg:col-span-4 lg:row-span-2 bg-white rounded-[32px] border border-[rgba(11,27,34,0.08)] shadow-[0_2px_6px_rgba(11,27,34,0.04),0_12px_30px_-14px_rgba(11,27,34,0.09)] hover:-translate-y-1 hover:shadow-[0_18px_38px_-14px_rgba(11,27,34,0.16)] hover:border-[rgba(20,98,79,0.22)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden flex flex-col justify-between">
+          <article className="md:col-span-1 md:row-span-2 lg:col-span-4 lg:row-span-2 bg-white rounded-[32px] border border-[rgba(11,27,34,0.08)] shadow-[0_2px_6px_rgba(11,27,34,0.04),0_12px_30px_-14px_rgba(11,27,34,0.09)] hover:-translate-y-1 hover:shadow-[0_18px_38px_-14px_rgba(11,27,34,0.16)] hover:border-[rgba(20,98,79,0.22)] transition-[transform,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden flex flex-col justify-between">
             <div className="p-6 sm:p-7 pb-0 flex flex-col items-center">
               {/* Top Browser URL Pill (radius 14px, 1px border) */}
               <div className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-[14px] bg-[#FAFBFB] border border-[rgba(11,27,34,0.09)] mb-7">
@@ -517,10 +525,10 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
               <div className="relative z-10 flex flex-col items-center mb-6">
                 <div
                   aria-hidden="true"
-                  className="relative rounded-full px-8 py-3 backdrop-blur-md border border-white/65"
+                  className="relative rounded-full px-8 py-3 border border-white/65"
                   style={{
                     background:
-                      'linear-gradient(180deg, rgba(255,255,255,0.44) 0%, rgba(168,235,211,0.28) 100%)',
+                      'linear-gradient(180deg, rgba(255,255,255,0.68) 0%, rgba(168,235,211,0.48) 100%)',
                     boxShadow:
                       'inset 0 1px 2px rgba(255, 255, 255, 0.85), inset 0 -6px 14px rgba(15, 74, 62, 0.22), 0 16px 34px -8px rgba(10, 58, 48, 0.45)',
                   }}
@@ -542,7 +550,6 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
                       style={{
                         backgroundImage:
                           'linear-gradient(180deg, #FFFFFF 0%, #DDF4EA 38%, #6FD6B0 74%, #14735A 100%)',
-                        filter: 'drop-shadow(0 -1px 0 rgba(255,255,255,0.7))',
                       }}
                     >
                       LOCAL
@@ -559,7 +566,7 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
 
                 {/* Glossy Cursor Arrow Drifting Up to Click Search Every 6s */}
                 <div className="bento-cursor-drift pointer-events-none absolute -right-5 -bottom-1 z-30">
-                  <GlossyCursorArrow className="w-7 h-7 drop-shadow-[0_6px_12px_rgba(5,14,13,0.45)]" />
+                  <GlossyCursorArrow className="w-7 h-7" />
                 </div>
               </div>
 
@@ -587,7 +594,7 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
           <article
             className={`md:col-span-1 ${
               hasAiIntegrationFeature ? 'lg:col-span-4' : 'md:row-span-2 lg:row-span-2 lg:col-span-8'
-            } bg-white rounded-[32px] border border-[rgba(11,27,34,0.08)] shadow-[0_2px_6px_rgba(11,27,34,0.04),0_12px_30px_-14px_rgba(11,27,34,0.09)] hover:-translate-y-1 hover:shadow-[0_18px_38px_-14px_rgba(11,27,34,0.16)] hover:border-[rgba(20,98,79,0.22)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden flex flex-col justify-between min-h-[340px]`}
+            } bg-white rounded-[32px] border border-[rgba(11,27,34,0.08)] shadow-[0_2px_6px_rgba(11,27,34,0.04),0_12px_30px_-14px_rgba(11,27,34,0.09)] hover:-translate-y-1 hover:shadow-[0_18px_38px_-14px_rgba(11,27,34,0.16)] hover:border-[rgba(20,98,79,0.22)] transition-[transform,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden flex flex-col justify-between min-h-[340px]`}
           >
             <div className="p-6 sm:p-7 pb-3">
               <h3 className="font-heading text-[26px] sm:text-[28px] font-medium leading-[1.15] tracking-[-0.025em] text-[#0B1B22] mb-2.5">
@@ -638,7 +645,7 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
                 >
                   <span className="bento-eye-blink w-2 h-4 rounded-full bg-white shadow-xs" />
                   <span className="bento-eye-blink w-2 h-4 rounded-full bg-white shadow-xs" />
-                  <GlossyCursorArrow className="w-6 h-6 absolute -right-5 -bottom-1 drop-shadow-md" />
+                  <GlossyCursorArrow className="w-6 h-6 absolute -right-5 -bottom-1" />
                 </div>
               </div>
 
@@ -650,7 +657,7 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
                       {enabledServices.slice(0, 4).map((srv) => (
                         <span
                           key={srv}
-                          className="px-3.5 py-1.5 rounded-full bg-[#0A3A30]/85 border border-[#A8EBD3]/40 text-[11.5px] font-medium text-white backdrop-blur-xs whitespace-nowrap"
+                          className="px-3.5 py-1.5 rounded-full bg-[#0A3A30]/92 border border-[#A8EBD3]/40 text-[11.5px] font-medium text-white whitespace-nowrap"
                         >
                           {srv}
                         </span>
@@ -661,7 +668,7 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
                       {[...enabledServices, ...enabledServices].map((srv, idx) => (
                         <span
                           key={`${srv}-${idx}`}
-                          className="px-3.5 py-1.5 rounded-full bg-[#0A3A30]/85 border border-[#A8EBD3]/40 text-[11.5px] font-medium text-white backdrop-blur-xs whitespace-nowrap shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
+                          className="px-3.5 py-1.5 rounded-full bg-[#0A3A30]/92 border border-[#A8EBD3]/40 text-[11.5px] font-medium text-white whitespace-nowrap shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
                         >
                           {srv}
                         </span>
@@ -677,7 +684,7 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
               CARD 3: TOP-RIGHT CARD — Advanced AI Integration
               ================================================================= */}
           {hasAiIntegrationFeature && (
-            <article className="md:col-span-1 lg:col-span-4 bg-white rounded-[32px] border border-[rgba(11,27,34,0.08)] shadow-[0_2px_6px_rgba(11,27,34,0.04),0_12px_30px_-14px_rgba(11,27,34,0.09)] hover:-translate-y-1 hover:shadow-[0_18px_38px_-14px_rgba(11,27,34,0.16)] hover:border-[rgba(20,98,79,0.22)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden flex flex-col justify-between min-h-[340px]">
+            <article className="md:col-span-1 lg:col-span-4 bg-white rounded-[32px] border border-[rgba(11,27,34,0.08)] shadow-[0_2px_6px_rgba(11,27,34,0.04),0_12px_30px_-14px_rgba(11,27,34,0.09)] hover:-translate-y-1 hover:shadow-[0_18px_38px_-14px_rgba(11,27,34,0.16)] hover:border-[rgba(20,98,79,0.22)] transition-[transform,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden flex flex-col justify-between min-h-[340px]">
               <div className="p-6 sm:p-7 pb-1">
                 <div className="flex items-center justify-between gap-2 mb-2.5">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#DDF4EA] text-[#0F4A3E] border border-[#6FD6B0]/60">
@@ -779,7 +786,7 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
           {/* =================================================================
               CARD 4: WIDE BOTTOM CARD — Websites that look like your work
               ================================================================= */}
-          <article className="md:col-span-2 lg:col-span-8 bg-white rounded-[32px] border border-[rgba(11,27,34,0.08)] shadow-[0_2px_6px_rgba(11,27,34,0.04),0_12px_30px_-14px_rgba(11,27,34,0.09)] hover:-translate-y-1 hover:shadow-[0_18px_38px_-14px_rgba(11,27,34,0.16)] hover:border-[rgba(20,98,79,0.22)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden relative flex flex-col md:flex-row items-stretch min-h-[330px]">
+          <article className="md:col-span-2 lg:col-span-8 bg-white rounded-[32px] border border-[rgba(11,27,34,0.08)] shadow-[0_2px_6px_rgba(11,27,34,0.04),0_12px_30px_-14px_rgba(11,27,34,0.09)] hover:-translate-y-1 hover:shadow-[0_18px_38px_-14px_rgba(11,27,34,0.16)] hover:border-[rgba(20,98,79,0.22)] transition-[transform,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden relative flex flex-col md:flex-row items-stretch min-h-[330px]">
             {/* Left Copy, Two Pill Buttons & Caption */}
             <div className="relative z-10 w-full md:w-[54%] p-7 sm:p-9 lg:p-10 flex flex-col justify-center items-start text-left">
               <h3 className="font-heading text-[30px] sm:text-[38px] lg:text-[42px] font-medium leading-[1.08] tracking-[-0.025em] text-[#0B1B22] mb-3.5 max-w-[14ch]">
@@ -826,11 +833,12 @@ export default function BestInBento({ onOpenAudit }: BestInBentoProps) {
                       className="relative aspect-[16/10] rounded-[18px] overflow-hidden bg-[#DDF4EA] border-2 border-white shadow-[0_14px_30px_-10px_rgba(11,27,34,0.28)]"
                     >
                       <ShimmerImage
-                        src={thumb.image}
+                        {...getResponsiveImageProps(thumb.image, [320, 640], '280px', 'good')}
                         alt=""
                         width={260}
                         height={162}
                         loading="lazy"
+                        decoding="async"
                         referrerPolicy="no-referrer"
                         onError={() =>
                           setFailedThumbIds((prev) => new Set(prev).add(thumb.id))

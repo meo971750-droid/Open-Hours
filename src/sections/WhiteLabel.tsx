@@ -1,16 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import {
-  ArrowRight,
-  Check,
-  CheckCircle2,
-  Handshake,
-  ListChecks,
-  X,
-} from 'lucide-react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { Handshake, ListChecks } from 'lucide-react';
 import Container from '../components/Container';
 import { config } from '../config';
-import { OH_DUR, OH_EASE } from '../lib/motion';
+import { useAnimationInView } from '../hooks/useAnimationInView';
+import { getResponsiveImageProps } from '../lib/images';
+import { preloadSectionAndNext } from '../components/LazySection';
+
+const WhiteLabelModal = lazy(() => import('../components/WhiteLabelModal'));
 
 interface WhiteLabelProps {
   onOpenAudit?: () => void;
@@ -19,6 +15,8 @@ interface WhiteLabelProps {
 function WhiteLabelIllustration() {
   const thumbOne = config.portfolio?.[0]?.image || '/roofing-sites/1-xyz-roofing.png';
   const thumbTwo = config.portfolio?.[1]?.image || '/roofing-sites/3-alex-roofing.png';
+  const thumbOneProps = getResponsiveImageProps(thumbOne, [320, 640], '260px', 'good');
+  const thumbTwoProps = getResponsiveImageProps(thumbTwo, [320, 640], '260px', 'good');
 
   return (
     <div className="relative w-full h-full min-h-[235px] sm:min-h-[265px] lg:min-h-[380px] flex items-center justify-center px-4 py-5 sm:p-7 select-none overflow-hidden">
@@ -64,11 +62,12 @@ function WhiteLabelIllustration() {
             </div>
             <div className="relative w-full h-[calc(100%-16px)] bg-[#0A3A30]">
               <img
-                src={thumbOne}
+                {...thumbOneProps}
                 alt=""
                 width={360}
                 height={240}
                 loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover object-top opacity-75 saturate-50"
               />
               <div className="absolute inset-0 bg-[#0F4A3E]/45 mix-blend-multiply" />
@@ -87,11 +86,12 @@ function WhiteLabelIllustration() {
             </div>
             <div className="relative w-full h-[calc(100%-16px)] bg-[#0A3A30]">
               <img
-                src={thumbTwo}
+                {...thumbTwoProps}
                 alt=""
                 width={360}
                 height={240}
                 loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover object-top opacity-75 saturate-50"
               />
               <div className="absolute inset-0 bg-[#0F4A3E]/45 mix-blend-multiply" />
@@ -179,67 +179,22 @@ function WhiteLabelIllustration() {
 
 export default function WhiteLabel({ onOpenAudit }: WhiteLabelProps) {
   const wl = config.whiteLabel;
+  const sectionRef = useRef<HTMLElement>(null);
+  useAnimationInView(sectionRef, false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
-  const shouldReduceMotion = useReducedMotion() ?? false;
+  const [shouldReduceMotion, setShouldReduceMotion] = useState(false);
 
   const ctaTriggerRef = useRef<HTMLButtonElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const modalPanelRef = useRef<HTMLDivElement>(null);
-
   const customImage = wl.image?.trim() || '';
 
-  // Esc, Focus Trap, Scroll Lock & Focus Return on Modal Close
   useEffect(() => {
-    if (!isModalOpen) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const focusTimer = window.setTimeout(() => {
-      closeButtonRef.current?.focus();
-    }, 30);
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setIsModalOpen(false);
-        window.requestAnimationFrame(() => {
-          ctaTriggerRef.current?.focus({ preventScroll: true });
-        });
-        return;
-      }
-
-      if (e.key === 'Tab' && modalPanelRef.current) {
-        const focusable = modalPanelRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusable.length === 0) return;
-
-        const firstEl = focusable[0];
-        const lastEl = focusable[focusable.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === firstEl || !modalPanelRef.current.contains(document.activeElement)) {
-            e.preventDefault();
-            lastEl.focus();
-          }
-        } else {
-          if (document.activeElement === lastEl || !modalPanelRef.current.contains(document.activeElement)) {
-            e.preventDefault();
-            firstEl.focus();
-          }
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isModalOpen]);
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setShouldReduceMotion(mq.matches);
+    const handleChange = (e: MediaQueryListEvent) => setShouldReduceMotion(e.matches);
+    mq.addEventListener('change', handleChange);
+    return () => mq.removeEventListener('change', handleChange);
+  }, []);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -252,15 +207,14 @@ export default function WhiteLabel({ onOpenAudit }: WhiteLabelProps) {
     setIsModalOpen(false);
     const contactEl = document.getElementById('contact');
     if (contactEl) {
-      window.dispatchEvent(
-        new CustomEvent('openhours:prefill-contact', {
-          detail: {
-            option: 'White label',
-            message:
-              "We're an agency interested in talking about a white-label website project. Here's a bit about our agency and typical client builds:",
-          },
-        })
-      );
+      const detail = {
+        option: 'White label',
+        message:
+          "We're an agency interested in talking about a white-label website project. Here's a bit about our agency and typical client builds:",
+      };
+      (window as Window & { __ohPendingContactPrefill?: unknown }).__ohPendingContactPrefill = detail;
+      preloadSectionAndNext('contact', 'faq');
+      window.dispatchEvent(new CustomEvent('openhours:prefill-contact', { detail }));
       contactEl.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' });
       return;
     }
@@ -270,8 +224,9 @@ export default function WhiteLabel({ onOpenAudit }: WhiteLabelProps) {
   return (
     <section
       id="white-label"
+      ref={sectionRef}
       aria-labelledby="white-label-heading"
-      className="oh-cv-auto w-full bg-[#F3F5F3] py-16 sm:py-24 overflow-x-clip"
+      className="oh-cv-auto oh-anim-paused w-full bg-[#F3F5F3] py-16 sm:py-24 overflow-x-clip"
     >
       <Container className="max-w-[1160px]">
         {/* Top Centered Brand-Green Emblem & Two-Tone Heading */}
@@ -337,6 +292,7 @@ export default function WhiteLabel({ onOpenAudit }: WhiteLabelProps) {
                   width={560}
                   height={420}
                   loading="lazy"
+                  decoding="async"
                   referrerPolicy="no-referrer"
                   onError={() => setImageFailed(true)}
                   className="w-full h-full max-h-[260px] sm:max-h-[320px] lg:max-h-[430px] object-cover select-none"
@@ -392,294 +348,15 @@ export default function WhiteLabel({ onOpenAudit }: WhiteLabelProps) {
       </Container>
 
       {/* Accessible White-Label Partnership Swimlane Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={shouldReduceMotion ? undefined : { opacity: 0 }}
-            transition={{ duration: shouldReduceMotion ? 0 : OH_DUR.base, ease: OH_EASE }}
-            className="fixed inset-0 z-50 bg-[#040B0A]/80 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4"
-            onClick={handleCloseModal}
-          >
-            <motion.div
-              ref={modalPanelRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="whitelabel-modal-title"
-              aria-describedby="whitelabel-modal-subtitle"
-              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.96 }}
-              transition={{ duration: shouldReduceMotion ? 0 : OH_DUR.base, ease: OH_EASE }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full h-[100dvh] sm:h-auto sm:w-[min(1080px,94vw)] sm:max-h-[90vh] sm:rounded-[28px] bg-[#061310]/95 backdrop-blur-xl border-0 sm:border sm:border-white/15 text-white shadow-[0_32px_90px_-16px_rgba(4,11,10,0.85)] flex flex-col overflow-hidden"
-              style={{
-                backgroundImage:
-                  'radial-gradient(ellipse 65% 45% at 80% 0%, rgba(30, 158, 106, 0.2) 0%, rgba(15, 74, 62, 0.12) 48%, transparent 78%), linear-gradient(165deg, #061310 0%, #050E0D 100%)',
-              }}
-            >
-              {/* Modal Header */}
-              <div className="px-5 sm:px-8 py-5 sm:py-6 border-b border-white/12 flex items-start justify-between gap-4 shrink-0 bg-[#050E0D]/55">
-                <div className="flex items-start gap-3.5 min-w-0">
-                  <div
-                    aria-hidden="true"
-                    className="w-10 h-10 rounded-2xl bg-[#14624F]/45 border border-[#6FD6B0]/40 text-[#A8EBD3] flex items-center justify-center shrink-0 mt-0.5"
-                  >
-                    <Handshake className="w-5 h-5" strokeWidth={1.75} />
-                  </div>
-                  <div className="min-w-0">
-                    <h3
-                      id="whitelabel-modal-title"
-                      className="font-heading text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] text-white leading-tight"
-                    >
-                      {wl.modalTitle}
-                    </h3>
-                    <p
-                      id="whitelabel-modal-subtitle"
-                      className="mt-1.5 text-[13.5px] sm:text-[14.5px] text-white/80 leading-relaxed max-w-2xl"
-                    >
-                      {wl.modalSubtitle}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  ref={closeButtonRef}
-                  type="button"
-                  onClick={handleCloseModal}
-                  aria-label="Close modal"
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 active:scale-[0.98] border border-white/15 text-white flex items-center justify-center transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#6FD6B0]"
-                >
-                  <X className="w-4 h-4" strokeWidth={1.85} />
-                </button>
-              </div>
-
-              {/* Scrollable Modal Body */}
-              <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-6 space-y-8">
-                {/* Desktop Swimlane Visual (>= md) */}
-                <div className="hidden md:block">
-                  {/* Lane Column Headers */}
-                  <div className="grid grid-cols-[1fr_112px_1fr] items-center mb-5">
-                    <div className="pr-4 flex justify-end">
-                      <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-[12.5px] font-semibold text-white">
-                        You (the agency)
-                      </span>
-                    </div>
-                    <div className="text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[#A8EBD3]">
-                      7 Steps
-                    </div>
-                    <div className="pl-4 flex justify-start">
-                      <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-[#14624F]/45 border border-[#6FD6B0]/45 text-[12.5px] font-semibold text-[#DDF4EA]">
-                        Open Hours
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Swimlane Rows with Central Animated Vertical Progress Line */}
-                  <div className="relative space-y-4">
-                    {/* Base Central Track */}
-                    <div
-                      aria-hidden="true"
-                      className="absolute left-1/2 -translate-x-1/2 top-4 bottom-4 w-[2px] bg-white/12 rounded-full overflow-hidden"
-                    >
-                      <motion.div
-                        initial={shouldReduceMotion ? { scaleY: 1 } : { scaleY: 0 }}
-                        animate={{ scaleY: 1 }}
-                        transition={{ duration: shouldReduceMotion ? 0 : OH_DUR.slow, ease: OH_EASE }}
-                        className="w-full h-full origin-top rounded-full bg-gradient-to-b from-[#A8EBD3] via-[#6FD6B0] to-[#1E9E6A]"
-                      />
-                    </div>
-
-                    {wl.steps.map((step) => (
-                      <div
-                        key={step.step}
-                        className="relative grid grid-cols-[1fr_112px_1fr] items-center"
-                      >
-                        {/* Left Lane: You (the agency) */}
-                        <div className="relative pr-7 flex items-center">
-                          <div
-                            className={`w-full rounded-[16px] p-4 border text-[13px] leading-relaxed ${
-                              step.leadLane === 'you'
-                                ? 'bg-white/[0.08] border-[#6FD6B0]/35 text-white'
-                                : 'bg-white/[0.04] border-white/12 text-white/90'
-                            }`}
-                          >
-                            {step.you}
-                          </div>
-                          {/* Curved SVG Connector: Left Card -> Center Node */}
-                          <svg
-                            aria-hidden="true"
-                            className="absolute right-0 top-1/2 -translate-y-1/2 w-7 h-6 text-[#6FD6B0]/65 pointer-events-none"
-                            viewBox="0 0 28 24"
-                            fill="none"
-                          >
-                            <path
-                              d="M0 12C10 12 16 12 28 12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              strokeDasharray={step.leadLane === 'you' ? undefined : '3 3'}
-                            />
-                          </svg>
-                        </div>
-
-                        {/* Center Node & Step Title */}
-                        <div className="relative z-10 flex flex-col items-center text-center px-1">
-                          <span className="w-8 h-8 rounded-full bg-[#0A3A30] border-2 border-[#6FD6B0] text-[#DDF4EA] text-[12px] font-bold tabular-nums flex items-center justify-center shadow-[0_0_16px_rgba(63,209,165,0.35)]">
-                            {step.step}
-                          </span>
-                          <span className="mt-1.5 px-2 py-0.5 rounded-md bg-[#050E0D] border border-white/12 text-[10.5px] font-semibold text-white leading-tight">
-                            {step.title}
-                          </span>
-                        </div>
-
-                        {/* Right Lane: Open Hours */}
-                        <div className="relative pl-7 flex items-center">
-                          {/* Curved SVG Connector: Center Node -> Right Card */}
-                          <svg
-                            aria-hidden="true"
-                            className="absolute left-0 top-1/2 -translate-y-1/2 w-7 h-6 text-[#6FD6B0]/65 pointer-events-none"
-                            viewBox="0 0 28 24"
-                            fill="none"
-                          >
-                            <path
-                              d="M0 12C12 12 18 12 28 12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              strokeDasharray={step.leadLane === 'openHours' ? undefined : '3 3'}
-                            />
-                          </svg>
-                          <div
-                            className={`w-full rounded-[16px] p-4 border text-[13px] leading-relaxed ${
-                              step.leadLane === 'openHours'
-                                ? 'bg-[#0F4A3E]/55 border-[#6FD6B0]/40 text-white'
-                                : 'bg-[#0A3A30]/35 border-white/12 text-white/90'
-                            }`}
-                          >
-                            {step.openHours}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Mobile Single-Column Step Cards (< md) */}
-                <div className="md:hidden space-y-3.5">
-                  {wl.steps.map((step) => {
-                    const rows =
-                      step.leadLane === 'you'
-                        ? [
-                            { tag: 'You', text: step.you, isOpenHours: false },
-                            { tag: 'Open Hours', text: step.openHours, isOpenHours: true },
-                          ]
-                        : [
-                            { tag: 'Open Hours', text: step.openHours, isOpenHours: true },
-                            { tag: 'You', text: step.you, isOpenHours: false },
-                          ];
-
-                    return (
-                      <div
-                        key={step.step}
-                        className="rounded-[18px] bg-white/[0.04] border border-white/12 p-4 space-y-2.5"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-6 h-6 rounded-full bg-[#0A3A30] border border-[#6FD6B0] text-[#DDF4EA] text-[11px] font-bold tabular-nums flex items-center justify-center shrink-0">
-                            {step.step}
-                          </span>
-                          <h4 className="font-heading text-[15px] font-semibold text-white">
-                            {step.title}
-                          </h4>
-                        </div>
-
-                        <div className="space-y-2">
-                          {rows.map((row) => (
-                            <div
-                              key={row.tag}
-                              className={`rounded-xl p-3 border text-[12.5px] leading-relaxed ${
-                                row.isOpenHours
-                                  ? 'bg-[#0F4A3E]/45 border-[#6FD6B0]/30 text-white'
-                                  : 'bg-white/[0.05] border-white/10 text-white/90'
-                              }`}
-                            >
-                              <span
-                                className={`inline-block text-[10px] font-bold uppercase tracking-wider mb-1 ${
-                                  row.isOpenHours ? 'text-[#A8EBD3]' : 'text-white/75'
-                                }`}
-                              >
-                                {row.tag}
-                              </span>
-                              <p>{row.text}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Summary Cards Below Lanes */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div className="rounded-[18px] bg-[#0F4A3E]/35 border border-[#6FD6B0]/30 p-4 sm:p-5">
-                    <h4 className="font-heading text-[15px] font-semibold text-[#DDF4EA] mb-3">
-                      What you get
-                    </h4>
-                    <ul className="space-y-2">
-                      {wl.whatYouGet.map((item) => (
-                        <li
-                          key={item}
-                          className="flex items-center gap-2.5 text-[13.5px] text-white"
-                        >
-                          <CheckCircle2 className="w-4 h-4 text-[#6FD6B0] shrink-0" strokeWidth={2} />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="rounded-[18px] bg-white/[0.05] border border-white/15 p-4 sm:p-5">
-                    <h4 className="font-heading text-[15px] font-semibold text-white mb-3">
-                      What we ask of you
-                    </h4>
-                    <ul className="space-y-2">
-                      {wl.whatWeAsk.map((item) => (
-                        <li
-                          key={item}
-                          className="flex items-center gap-2.5 text-[13.5px] text-white/90"
-                        >
-                          <Check className="w-4 h-4 text-[#A8EBD3] shrink-0" strokeWidth={2} />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sticky Modal Footer CTA */}
-              <div className="px-5 sm:px-8 py-4 border-t border-white/12 bg-[#050E0D]/80 flex flex-col-reverse sm:flex-row items-center justify-between gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="w-full sm:w-auto px-5 h-11 rounded-full border border-white/20 text-[13.5px] font-medium text-white hover:bg-white/10 active:scale-[0.98] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRequestPartnership}
-                  className="oh-btn-pill oh-magnetic oh-btn-primary w-full sm:w-auto pl-6 pr-3.5 h-12 text-[14.5px] font-semibold cursor-pointer"
-                >
-                  <span>{wl.modalCtaLabel}</span>
-                  <span className="oh-btn-arrow-circle bg-white/15 text-white">
-                    <ArrowRight className="w-4 h-4" strokeWidth={1.75} />
-                  </span>
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isModalOpen && (
+        <Suspense fallback={null}>
+          <WhiteLabelModal
+            wl={wl}
+            onClose={handleCloseModal}
+            onRequestPartnership={handleRequestPartnership}
+          />
+        </Suspense>
+      )}
     </section>
   );
 }

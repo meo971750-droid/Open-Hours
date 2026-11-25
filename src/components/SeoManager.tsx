@@ -38,13 +38,13 @@ export default function SeoManager({ currentPage }: SeoManagerProps) {
 
     const routeMap: Record<SeoPageKey, { title: string; description: string; path: string }> = {
       home: {
-        title: `${config.studioName} | Websites for builders and trades in Ireland and Malta`,
-        description: `${config.studioName} builds enquiry-focused websites, local SEO and AI lead handling for builders and trades in Ireland and Malta. ${startingPriceCopy}`.trim(),
+        title: `${config.studioName} | Websites built to catch inquiries`,
+        description: `${config.studioName} builds websites built to catch inquiries, local SEO and AI lead handling. ${startingPriceCopy}`.trim(),
         path: '/',
       },
       privacy: {
         title: `Privacy Policy | ${config.studioName}`,
-        description: `How ${config.legalName || config.studioName} handles enquiry details, contact forms, and website privacy across Ireland and Malta.`,
+        description: `How ${config.legalName || config.studioName} handles enquiry details, contact forms, and website privacy.`,
         path: '/#privacy',
       },
       cookies: {
@@ -73,7 +73,7 @@ export default function SeoManager({ currentPage }: SeoManagerProps) {
     upsertMetaTag('property', 'og:url', canonicalUrl);
     upsertMetaTag('property', 'og:site_name', config.studioName);
     upsertMetaTag('property', 'og:image', socialImageUrl);
-    upsertMetaTag('property', 'og:image:alt', `${config.studioName} website showcase for builders and trades`);
+    upsertMetaTag('property', 'og:image:alt', `${config.studioName} website showcase`);
     upsertMetaTag('name', 'twitter:card', 'summary_large_image');
     upsertMetaTag('name', 'twitter:title', meta.title);
     upsertMetaTag('name', 'twitter:description', meta.description);

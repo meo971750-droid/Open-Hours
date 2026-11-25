@@ -14,6 +14,7 @@ import { config, WayOfWorkingSceneItem } from '../config';
 import Scene1Searches from '../components/process/Scene1Searches';
 import { ScenePalette, SceneProps } from '../components/process/types';
 import DemoTag from '../components/DemoTag';
+import { subscribeScroll } from '../lib/scrollHub';
 
 const TIER_B_SCENES = new Set(['build', 'findable', 'alwaysOn', 'always-on']);
 
@@ -168,11 +169,10 @@ export default function DeliverScroll({ onOpenAudit }: DeliverScrollProps) {
   const wwdConfig = config.wayOfWorking;
   const wrapperRef = useRef<HTMLDivElement>(null);
   const mobileListRef = useRef<HTMLDivElement>(null);
+  const progressFillRef = useRef<HTMLDivElement>(null);
   const lastIdxRef = useRef<number>(0);
-  const lastProgressRef = useRef<number>(0);
 
   const [activeSceneIndex, setActiveSceneIndex] = useState(0);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [mobileVisibleIndices, setMobileVisibleIndices] = useState<Set<number>>(() => new Set([0, 1]));
   const [mobileAnimatedIndices, setMobileAnimatedIndices] = useState<Set<number>>(() => new Set());
@@ -250,28 +250,47 @@ export default function DeliverScroll({ onOpenAudit }: DeliverScrollProps) {
     }
   }, [safeIndex, totalScenes, visibleScenes]);
 
-  // Single passive scroll listener with requestAnimationFrame (no resize/loop churn)
+  // Shared scroll hub subscription + ResizeObserver cached geometry (zero per-frame getBoundingClientRect or progress state ticks)
   useEffect(() => {
     if (prefersReducedMotion || totalScenes === 0) {
       return;
     }
 
-    let rafId: number | null = null;
+    const el = wrapperRef.current;
+    if (!el) return;
 
-    const updateFromScroll = () => {
-      rafId = null;
-      const el = wrapperRef.current;
-      if (!el) return;
+    const stickyOffset = 96;
+    let cachedTop = 0;
+    let cachedTotalScrollable = 0;
 
+    const measureWrapper = () => {
       const rect = el.getBoundingClientRect();
-      const stickyOffset = 96;
-      const totalScrollable = rect.height - (window.innerHeight - stickyOffset);
-      if (totalScrollable <= 0) return;
+      cachedTop = rect.top + window.scrollY;
+      cachedTotalScrollable = rect.height - (window.innerHeight - stickyOffset);
+    };
 
-      const progress = Math.min(1, Math.max(0, (stickyOffset - rect.top) / totalScrollable));
-      if (Math.abs(progress - lastProgressRef.current) >= 0.008) {
-        lastProgressRef.current = progress;
-        setScrollProgress(progress);
+    measureWrapper();
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(measureWrapper);
+      ro.observe(el);
+    }
+    window.addEventListener('resize', measureWrapper, { passive: true });
+
+    const unsubscribe = subscribeScroll(({ scrollY }) => {
+      if (cachedTotalScrollable <= 0) {
+        measureWrapper();
+        if (cachedTotalScrollable <= 0) return;
+      }
+
+      const progress = Math.min(
+        1,
+        Math.max(0, (scrollY + stickyOffset - cachedTop) / cachedTotalScrollable)
+      );
+
+      if (progressFillRef.current) {
+        progressFillRef.current.style.transform = `scaleY(${Math.max(0.06, progress).toFixed(4)})`;
       }
 
       const nextIndex = Math.min(totalScenes - 1, Math.max(0, Math.floor(progress * totalScenes)));
@@ -279,21 +298,12 @@ export default function DeliverScroll({ onOpenAudit }: DeliverScrollProps) {
         lastIdxRef.current = nextIndex;
         setActiveSceneIndex(nextIndex);
       }
-    };
-
-    const onScroll = () => {
-      if (rafId !== null) return;
-      rafId = window.requestAnimationFrame(updateFromScroll);
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    updateFromScroll();
+    });
 
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (rafId !== null) {
-        window.cancelAnimationFrame(rafId);
-      }
+      unsubscribe();
+      ro?.disconnect();
+      window.removeEventListener('resize', measureWrapper);
     };
   }, [prefersReducedMotion, totalScenes]);
 
@@ -440,12 +450,11 @@ export default function DeliverScroll({ onOpenAudit }: DeliverScrollProps) {
                   className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-[rgba(11,27,34,0.12)] overflow-hidden"
                 >
                   <div
+                    ref={progressFillRef}
                     className="w-full h-full bg-[#14624F] origin-top rounded-full"
                     style={{
                       transform: `scaleY(${
-                        prefersReducedMotion
-                          ? (safeIndex + 1) / totalScenes
-                          : Math.max(0.06, scrollProgress)
+                        prefersReducedMotion ? (safeIndex + 1) / totalScenes : 0.06
                       })`,
                     }}
                   />

@@ -42,27 +42,27 @@
 
   /* Typography: Clean Sans for Headings & Body, Italic Serif for Accent Words */
   --font-serif: 'Instrument Serif', 'Instrument Serif Fallback', Georgia, serif;
-  --font-heading: 'Bricolage Grotesque', 'Bricolage Fallback', 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-body: 'Bricolage Grotesque', 'Bricolage Fallback', 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-sans: 'Bricolage Grotesque', 'Bricolage Fallback', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-heading: 'Bricolage Grotesque', 'Bricolage Fallback', system-ui, sans-serif;
+  --font-body: 'Bricolage Grotesque', 'Bricolage Fallback', system-ui, sans-serif;
+  --font-sans: 'Bricolage Grotesque', 'Bricolage Fallback', system-ui, sans-serif;
 }
 
 @font-face {
   font-family: 'Bricolage Fallback';
   src: local('Arial'), local('Helvetica Neue'), local('Liberation Sans');
-  ascent-override: 95%;
-  descent-override: 22%;
+  ascent-override: 99%;
+  descent-override: 23%;
   line-gap-override: 0%;
-  size-adjust: 101%;
+  size-adjust: 96.4%;
 }
 
 @font-face {
   font-family: 'Instrument Serif Fallback';
   src: local('Georgia'), local('Times New Roman');
-  ascent-override: 96%;
-  descent-override: 24%;
+  ascent-override: 109%;
+  descent-override: 27%;
   line-gap-override: 0%;
-  size-adjust: 98%;
+  size-adjust: 86.2%;
 }
 
 @theme {
@@ -70,6 +70,12 @@
   --font-body: var(--font-body);
   --font-serif: var(--font-serif);
   --font-sans: var(--font-sans);
+}
+
+html,
+body,
+#root {
+  background-color: #EEF3F0;
 }
 
 html {
@@ -109,7 +115,7 @@ body {
   font-size: clamp(17px, 1.1vw, 18px);
   line-height: 1.6;
   color: var(--ink);
-  background-color: var(--surface-page);
+  background-color: #EEF3F0;
   overflow-x: clip;
 }
 
@@ -194,7 +200,7 @@ p {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  transition: transform var(--dur-fast) var(--ease-oh), background-color var(--dur-fast) var(--ease-oh), box-shadow var(--dur-fast) var(--ease-oh), border-color var(--dur-fast) var(--ease-oh);
+  transition: transform var(--dur-fast) var(--ease-oh), background-color var(--dur-fast) var(--ease-oh), border-color var(--dur-fast) var(--ease-oh);
 }
 
 .oh-btn-pill:active {
@@ -238,7 +244,7 @@ p {
 @media (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .oh-magnetic {
     transform: translate3d(var(--mag-x, 0px), var(--mag-y, 0px), 0);
-    transition: transform var(--dur-fast) var(--ease-oh), background-color var(--dur-fast) var(--ease-oh), box-shadow var(--dur-fast) var(--ease-oh), border-color var(--dur-fast) var(--ease-oh);
+    transition: transform var(--dur-fast) var(--ease-oh), background-color var(--dur-fast) var(--ease-oh), border-color var(--dur-fast) var(--ease-oh);
     will-change: transform;
   }
 }
@@ -285,7 +291,8 @@ a:hover > .oh-arrow-45 {
   border: 1px solid var(--line);
   border-radius: var(--radius-20);
   box-shadow: var(--e1);
-  transition: transform var(--dur-base) var(--ease-oh), box-shadow var(--dur-base) var(--ease-oh), border-color var(--dur-base) var(--ease-oh);
+  contain: layout paint;
+  transition: transform var(--dur-base) var(--ease-oh), border-color var(--dur-base) var(--ease-oh);
 }
 
 .oh-card:hover {
@@ -300,6 +307,7 @@ a:hover > .oh-arrow-45 {
 .oh-dark-card,
 .oh-dark-glass {
   position: relative;
+  contain: layout paint;
   background-color: #050E0D;
   background-image:
     radial-gradient(ellipse 68% 58% at 14% 94%, rgba(63, 209, 165, 0.22) 0%, rgba(20, 98, 79, 0.26) 42%, transparent 74%),
@@ -436,13 +444,14 @@ footer::before {
 }
 
 /* ============================================================================
-   HERO CSS ANIMATIONS (First-Frame Start, Transform & Opacity Only)
+   HERO CSS FALLBACK & ENTRANCE ANIMATIONS (Transform & Opacity Only)
    ============================================================================ */
-.oh-silk-noise {
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect x='3' y='4' width='1' height='1' fill='%230B1B22' fill-opacity='0.55'/%3E%3Crect x='14' y='9' width='1' height='1' fill='%230B1B22' fill-opacity='0.4'/%3E%3Crect x='27' y='3' width='1' height='1' fill='%230B1B22' fill-opacity='0.5'/%3E%3Crect x='39' y='11' width='1' height='1' fill='%230B1B22' fill-opacity='0.45'/%3E%3Crect x='8' y='18' width='1' height='1' fill='%230B1B22' fill-opacity='0.6'/%3E%3Crect x='21' y='22' width='1' height='1' fill='%230B1B22' fill-opacity='0.35'/%3E%3Crect x='33' y='19' width='1' height='1' fill='%230B1B22' fill-opacity='0.55'/%3E%3Crect x='44' y='25' width='1' height='1' fill='%230B1B22' fill-opacity='0.4'/%3E%3Crect x='5' y='31' width='1' height='1' fill='%230B1B22' fill-opacity='0.45'/%3E%3Crect x='17' y='36' width='1' height='1' fill='%230B1B22' fill-opacity='0.55'/%3E%3Crect x='29' y='33' width='1' height='1' fill='%230B1B22' fill-opacity='0.4'/%3E%3Crect x='41' y='39' width='1' height='1' fill='%230B1B22' fill-opacity='0.5'/%3E%3Crect x='11' y='44' width='1' height='1' fill='%230B1B22' fill-opacity='0.45'/%3E%3Crect x='24' y='46' width='1' height='1' fill='%230B1B22' fill-opacity='0.55'/%3E%3Crect x='36' y='45' width='1' height='1' fill='%230B1B22' fill-opacity='0.35'/%3E%3Crect x='1' y='26' width='1' height='1' fill='%23FFFFFF' fill-opacity='0.6'/%3E%3Crect x='19' y='14' width='1' height='1' fill='%23FFFFFF' fill-opacity='0.55'/%3E%3Crect x='31' y='28' width='1' height='1' fill='%23FFFFFF' fill-opacity='0.5'/%3E%3Crect x='46' y='7' width='1' height='1' fill='%23FFFFFF' fill-opacity='0.55'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 48px 48px;
+.oh-hero-silk-fallback {
+  background-color: #EEF3F0;
+  background-image:
+    radial-gradient(ellipse 70% 60% at 14% 12%, rgba(238, 243, 240, 0.92) 0%, rgba(203, 232, 219, 0.42) 52%, transparent 80%),
+    radial-gradient(ellipse 68% 64% at 92% 88%, rgba(63, 174, 138, 0.34) 0%, rgba(127, 205, 174, 0.28) 50%, transparent 78%),
+    linear-gradient(138deg, #EEF3F0 0%, #DFEFE8 26%, #CBE8DB 54%, #9FD6C1 78%, #7FCDAE 100%);
 }
 
 @keyframes ohHeroFadeRise {
@@ -471,46 +480,6 @@ footer::before {
 .oh-hero-delay-card-3 { animation-delay: 570ms; }
 .oh-hero-delay-card-4 { animation-delay: 620ms; }
 .oh-hero-delay-card-5 { animation-delay: 670ms; }
-
-@keyframes ohSilkDriftA {
-  0% { transform: rotate(-25deg) translate3d(-18px, -12px, 0); }
-  100% { transform: rotate(-25deg) translate3d(18px, 16px, 0); }
-}
-
-@keyframes ohSilkDriftB {
-  0% { transform: rotate(24deg) translate3d(16px, -14px, 0); }
-  100% { transform: rotate(24deg) translate3d(-18px, 18px, 0); }
-}
-
-@keyframes ohSilkDriftC {
-  0% { transform: rotate(-22deg) translate3d(14px, 14px, 0); }
-  100% { transform: rotate(-22deg) translate3d(-16px, -16px, 0); }
-}
-
-@keyframes ohSilkDriftD {
-  0% { transform: rotate(25deg) translate3d(-14px, 12px, 0); }
-  100% { transform: rotate(25deg) translate3d(20px, -14px, 0); }
-}
-
-.oh-silk-drift-a {
-  animation: ohSilkDriftA 54s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-.oh-silk-drift-b {
-  animation: ohSilkDriftB 58s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-.oh-silk-drift-c {
-  animation: ohSilkDriftC 52s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-.oh-silk-drift-d {
-  animation: ohSilkDriftD 60s ease-in-out infinite alternate;
-  will-change: transform;
-}
 
 @keyframes ohPortraitDriftUp {
   0%, 100% { transform: translate3d(0, 0, 0); }
@@ -571,8 +540,66 @@ footer::before {
 @supports (content-visibility: auto) {
   .oh-cv-auto {
     content-visibility: auto;
-    contain-intrinsic-size: 1px 760px;
+    contain-intrinsic-size: auto 920px;
   }
+}
+
+/* Shared animation controller: pause continuous keyframes when >300px offscreen or tab hidden */
+.oh-anim-paused,
+.oh-anim-paused *,
+.oh-anim-paused *::before,
+.oh-anim-paused *::after,
+.oh-anim-paused [data-active="true"] .oh-exp-anim {
+  animation-play-state: paused !important;
+}
+
+/* Lightweight compositor enter/accordion animations replacing motion/react */
+@keyframes ohFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ohScaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ohScaleYIn {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes ohSlideUpIn {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes ohSlideDownIn {
+  from { opacity: 0; transform: translate3d(0, -14px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.oh-fade-in { animation: ohFadeIn var(--dur-base) var(--ease-oh) both; }
+.oh-scale-in { animation: ohScaleIn var(--dur-base) var(--ease-oh) both; }
+.oh-scale-y-in { animation: ohScaleYIn var(--dur-slow) var(--ease-oh) both; }
+.oh-slide-up-in { animation: ohSlideUpIn var(--dur-base) var(--ease-oh) both; }
+.oh-slide-down-in { animation: ohSlideDownIn var(--dur-base) var(--ease-oh) both; }
+
+.oh-accordion-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows var(--dur-base) var(--ease-oh), opacity var(--dur-base) var(--ease-oh);
+}
+
+.oh-accordion-grid[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.oh-accordion-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 @keyframes ohWhiteLabelFloat {
@@ -902,10 +929,6 @@ footer::before {
   .oh-deliver-anim-rise,
   .oh-deliver-anim-slide,
   .oh-whitelabel-float,
-  .oh-silk-drift-a,
-  .oh-silk-drift-b,
-  .oh-silk-drift-c,
-  .oh-silk-drift-d,
   .oh-portrait-drift-0,
   .oh-portrait-drift-1,
   .oh-portrait-drift-2,

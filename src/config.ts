@@ -386,24 +386,27 @@ export interface WorkItemConfig {
   id: string;
   title: string;
   trade?: string;
-  category: string;
-  image?: string;
-  videoUrl?: string;
-  liveUrl?: string;
+  embedCode?: string;
+  embedUrl?: string;
+  poster?: string;
+  aspectPaddingBottom?: string;
   isClient?: boolean;
+  clientName?: string;
+  clientPermission?: boolean;
+  liveUrl?: string;
 }
 
-export interface WorkCategoryConfig {
+export interface WorkRowConfig {
   id: string;
   title: string;
   direction: 'rtl' | 'ltr';
+  items: WorkItemConfig[];
 }
 
 export interface WorkConfig {
   subtitle: string;
-  conceptFooterNote: string;
-  categories: WorkCategoryConfig[];
-  items: WorkItemConfig[];
+  conceptFooterNote?: string;
+  rows: WorkRowConfig[];
 }
 
 export interface ProcessStepConfig {
@@ -585,70 +588,68 @@ export const config: AppConfig = {
     subtitle:
       'Local trade websites and search layouts designed for builders and home-improvement trades across Ireland and Malta.',
     conceptFooterNote: '',
-    categories: [
+    rows: [
       {
         id: 'trade-websites',
         title: 'Websites built to catch inquiries',
         direction: 'rtl',
+        items: [
+          {
+            id: 'work-video-1',
+            title: 'Project video 1',
+            poster: 'https://cdn-cf-east.streamable.com/image/f71s1j.jpg',
+            aspectPaddingBottom: '52.812%',
+            embedUrl: 'https://streamable.com/e/f71s1j?',
+            isClient: false,
+          },
+          {
+            id: 'work-video-2',
+            title: 'Project video 2',
+            poster: 'https://cdn-cf-east.streamable.com/image/m3d1tv.jpg',
+            aspectPaddingBottom: '52.812%',
+            embedUrl: 'https://streamable.com/e/m3d1tv?',
+            isClient: false,
+          },
+          {
+            id: 'work-video-3',
+            title: 'Project video 3',
+            poster: 'https://cdn-cf-east.streamable.com/image/bgicak.jpg',
+            aspectPaddingBottom: '52.812%',
+            embedUrl: 'https://streamable.com/e/bgicak?',
+            isClient: false,
+          },
+        ],
       },
       {
         id: 'trade-websites-row-2',
         title: '',
         direction: 'ltr',
-      },
-    ],
-    items: [
-      {
-        id: 'work-video-1',
-        title: 'XYZ Roofing',
-        trade: 'Roofers',
-        category: 'trade-websites',
-        image: '/roofing-sites/1-xyz-roofing.png',
-        videoUrl: 'https://streamable.com/e/f71s1j?',
-        isClient: false,
-      },
-      {
-        id: 'work-video-2',
-        title: 'Alex Roofing',
-        trade: 'Roofers',
-        category: 'trade-websites',
-        image: '/roofing-sites/3-alex-roofing.png',
-        videoUrl: 'https://streamable.com/e/m3d1tv?',
-        isClient: false,
-      },
-      {
-        id: 'work-video-3',
-        title: 'Roofen',
-        trade: 'Roofers',
-        category: 'trade-websites',
-        image: '/roofing-sites/4-roofen.png',
-        videoUrl: 'https://streamable.com/e/bgicak?',
-        isClient: false,
-      },
-      {
-        id: 'work-video-4',
-        title: 'Atlantic Slate Roofing',
-        trade: 'Roofers',
-        category: 'trade-websites-row-2',
-        image: '/roofing-sites/5-atlantic-slate-roofing.png',
-        videoUrl: 'https://streamable.com/e/jtrirj?',
-        isClient: false,
-      },
-      {
-        id: 'work-video-5',
-        title: 'Trade Showcase',
-        trade: 'Roofers',
-        category: 'trade-websites-row-2',
-        videoUrl: 'https://streamable.com/e/kpc5l8?',
-        isClient: false,
-      },
-      {
-        id: 'work-video-6',
-        title: 'Local Trade Spotlight',
-        trade: 'Roofers',
-        category: 'trade-websites-row-2',
-        videoUrl: 'https://streamable.com/e/mk8ej8?',
-        isClient: false,
+        items: [
+          {
+            id: 'work-video-4',
+            title: 'Project video 4',
+            poster: 'https://cdn-cf-east.streamable.com/image/jtrirj.jpg',
+            aspectPaddingBottom: '52.812%',
+            embedUrl: 'https://streamable.com/e/jtrirj?',
+            isClient: false,
+          },
+          {
+            id: 'work-video-5',
+            title: 'Project video 5',
+            poster: 'https://cdn-cf-east.streamable.com/image/kpc5l8.jpg',
+            aspectPaddingBottom: '52.812%',
+            embedUrl: 'https://streamable.com/e/kpc5l8?',
+            isClient: false,
+          },
+          {
+            id: 'work-video-6',
+            title: 'Project video 6',
+            poster: 'https://cdn-cf-east.streamable.com/image/mk8ej8.jpg',
+            aspectPaddingBottom: '52.828%',
+            embedUrl: 'https://streamable.com/e/mk8ej8?',
+            isClient: false,
+          },
+        ],
       },
     ],
   },

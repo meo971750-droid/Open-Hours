@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { config, TestimonialItem } from '../config';
 import { ShimmerImage, Tilt3D } from '../components/PremiumPrimitives';
-import { getResponsiveImageProps } from '../lib/images';
+import { getResponsiveImageProps, getSmallAvatarSrc } from '../lib/images';
 import { mountHeroCloth } from '../lib/heroClothShader';
+import { useAnimationInView } from '../hooks/useAnimationInView';
 
 interface HeroGrewProps {
   onOpenAudit: (email?: string, trade?: string) => void;
@@ -159,7 +160,10 @@ export default function HeroGrew({ onOpenAudit }: HeroGrewProps) {
   const [failedPhotos, setFailedPhotos] = useState<Record<string, boolean>>({});
   const [failedTrustAvatars, setFailedTrustAvatars] = useState<Record<string, boolean>>({});
 
-  // Initialize raw WebGL cloth shader after first paint
+  // Pause CSS portrait drift animations when Hero is >300px off-screen or tab is hidden
+  useAnimationInView(heroRef, true);
+
+  // Initialize raw WebGL cloth shader right after first paint without blocking content
   useEffect(() => {
     const section = heroRef.current;
     const canvas = canvasRef.current;
@@ -167,42 +171,22 @@ export default function HeroGrew({ onOpenAudit }: HeroGrewProps) {
 
     let cancelled = false;
     let cleanupCloth = () => {};
-    let idleKind: 'idle' | 'raf' | null = null;
-    let idleId = 0;
 
     const rafId = window.requestAnimationFrame(() => {
       if (cancelled) return;
-      const start = () => {
-        if (cancelled) return;
-        cleanupCloth = mountHeroCloth({
-          section,
-          canvas,
-          reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-          onFirstFrame: () => {
-            if (!cancelled) setClothReady(true);
-          },
-        });
-      };
-
-      const w = window as Window & {
-        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-        cancelIdleCallback?: (id: number) => void;
-      };
-      if (w.requestIdleCallback) {
-        idleKind = 'idle';
-        idleId = w.requestIdleCallback(start, { timeout: 300 });
-      } else {
-        idleKind = 'raf';
-        idleId = window.requestAnimationFrame(start);
-      }
+      cleanupCloth = mountHeroCloth({
+        section,
+        canvas,
+        reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        onFirstFrame: () => {
+          if (!cancelled) setClothReady(true);
+        },
+      });
     });
 
     return () => {
       cancelled = true;
       window.cancelAnimationFrame(rafId);
-      const w = window as Window & { cancelIdleCallback?: (id: number) => void };
-      if (idleKind === 'idle' && w.cancelIdleCallback) w.cancelIdleCallback(idleId);
-      if (idleKind === 'raf') window.cancelAnimationFrame(idleId);
       cleanupCloth();
     };
   }, []);
@@ -308,64 +292,10 @@ export default function HeroGrew({ onOpenAudit }: HeroGrewProps) {
       ref={heroRef}
       id="hero"
       aria-label="Introduction"
-      className="relative w-full min-h-[100svh] flex flex-col items-center justify-center overflow-hidden bg-[#EDF3F0] text-[#0B1B22]"
+      className="oh-hero-silk-fallback relative w-full min-h-[100svh] flex flex-col items-center justify-center overflow-hidden text-[#0B1B22]"
       style={{ '--hx': '0px', '--hy': '0px' } as React.CSSProperties}
     >
-      {/* 1. SILK BACKGROUND: Base #EDF3F0 + 6 Pre-Softened Elongated Radial Silk Waves + 5% Tiled SVG Grain */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0" aria-hidden="true">
-        {/* Wave 1: Top-left mint fold (-25deg) */}
-        <div
-          className="oh-silk-drift-a absolute -top-[28%] -left-[18%] w-[82vw] max-w-[1300px] h-[52vh] min-h-[420px] opacity-[0.75]"
-          style={{
-            background:
-              'radial-gradient(ellipse 68% 48% at 50% 50%, #DDF4EA 0%, rgba(168, 235, 211, 0.52) 48%, rgba(237, 243, 240, 0) 76%)',
-          }}
-        />
-        {/* Wave 2: Top-right sage-teal fold (+24deg) */}
-        <div
-          className="oh-silk-drift-b absolute -top-[22%] -right-[16%] w-[78vw] max-w-[1250px] h-[58vh] min-h-[460px] opacity-[0.72]"
-          style={{
-            background:
-              'radial-gradient(ellipse 70% 45% at 50% 50%, #A8EBD3 0%, rgba(221, 244, 234, 0.56) 52%, rgba(237, 243, 240, 0) 78%)',
-          }}
-        />
-        {/* Wave 3: Mid-left diagonal silk fold (-22deg) */}
-        <div
-          className="oh-silk-drift-c absolute top-[20%] -left-[22%] w-[74vw] max-w-[1150px] h-[48vh] min-h-[380px] opacity-[0.62]"
-          style={{
-            background:
-              'radial-gradient(ellipse 72% 42% at 50% 50%, #DDF4EA 0%, rgba(168, 235, 211, 0.42) 55%, rgba(237, 243, 240, 0) 78%)',
-          }}
-        />
-        {/* Wave 4: Mid-right diagonal silk fold (+25deg) */}
-        <div
-          className="oh-silk-drift-d absolute top-[28%] -right-[20%] w-[76vw] max-w-[1200px] h-[54vh] min-h-[420px] opacity-[0.65]"
-          style={{
-            background:
-              'radial-gradient(ellipse 66% 44% at 50% 50%, #A8EBD3 0%, rgba(221, 244, 234, 0.48) 54%, rgba(237, 243, 240, 0) 78%)',
-          }}
-        />
-        {/* Wave 5: Lower diagonal mint-sage fold (-25deg) */}
-        <div
-          className="oh-silk-drift-a absolute -bottom-[26%] left-[4%] w-[86vw] max-w-[1380px] h-[50vh] min-h-[400px] opacity-[0.68]"
-          style={{
-            background:
-              'radial-gradient(ellipse 70% 48% at 50% 50%, rgba(111, 214, 176, 0.32) 0%, rgba(168, 235, 211, 0.54) 46%, rgba(237, 243, 240, 0) 78%)',
-          }}
-        />
-        {/* Wave 6: Bottom deep green soft ambient glow */}
-        <div
-          className="oh-silk-drift-b absolute -bottom-[18%] left-1/2 -translate-x-1/2 w-[115vw] max-w-[1800px] h-[44vh] min-h-[340px] opacity-[0.8]"
-          style={{
-            background:
-              'radial-gradient(ellipse 64% 62% at 50% 88%, rgba(63, 209, 165, 0.32) 0%, rgba(168, 235, 211, 0.38) 46%, rgba(237, 243, 240, 0) 78%)',
-          }}
-        />
-        {/* Tiny Tiled SVG Noise Grain Layer (~5% opacity, no SVG <filter>) */}
-        <div className="absolute inset-0 oh-silk-noise" />
-      </div>
-
-      {/* Interactive WebGL Satin Cloth Shader (fades in 400ms after first frame, CSS placeholder underneath) */}
+      {/* Interactive WebGL Satin Cloth Shader (fades in 400ms on opacity only over identical plain-CSS fallback) */}
       <canvas
         ref={canvasRef}
         aria-hidden="true"
@@ -413,9 +343,8 @@ export default function HeroGrew({ onOpenAudit }: HeroGrewProps) {
                           alt={client.fullName}
                           width={150}
                           height={150}
-                          loading="eager"
-                          decoding="sync"
-                          fetchPriority="high"
+                          loading={slot.positionClass.includes('hidden') ? 'lazy' : 'eager'}
+                          decoding="async"
                           referrerPolicy="no-referrer"
                           onError={() =>
                             setFailedPhotos((prev) => ({ ...prev, [client.id]: true }))
@@ -468,13 +397,12 @@ export default function HeroGrew({ onOpenAudit }: HeroGrewProps) {
               {trustAvatars.map((avatar) => (
                 <img
                   key={avatar.id}
-                  {...getResponsiveImageProps(avatar.photo, [72, 144], '36px')}
+                  src={getSmallAvatarSrc(avatar.photo, (avatar as { localSrc?: string }).localSrc)}
                   alt={avatar.fullName}
                   width={36}
                   height={36}
                   loading="eager"
-                  decoding="sync"
-                  fetchPriority="high"
+                  decoding="async"
                   referrerPolicy="no-referrer"
                   onError={() =>
                     setFailedTrustAvatars((prev) => ({ ...prev, [avatar.id]: true }))
@@ -528,21 +456,24 @@ export default function HeroGrew({ onOpenAudit }: HeroGrewProps) {
           <button
             type="button"
             onClick={scrollToContact}
-            className="group min-w-[266px] sm:min-w-[278px] p-[8px] pr-[28px] bg-white rounded-full shadow-[0_16px_38px_-12px_rgba(11,27,34,0.16)] border border-white inline-flex items-center justify-between gap-3.5 active:scale-[0.98] transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:shadow-[0_20px_44px_-12px_rgba(11,27,34,0.22)] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1E9E6A] focus-visible:outline-offset-[3px]"
+            className="group min-w-[266px] sm:min-w-[278px] p-[8px] pr-[28px] bg-white rounded-full shadow-[0_16px_38px_-12px_rgba(11,27,34,0.16)] border border-white inline-flex items-center justify-between gap-3.5 active:scale-[0.98] transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:shadow-[0_20px_44px_-12px_rgba(11,27,34,0.22)] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1E9E6A] focus-visible:outline-offset-[3px]"
           >
             <span
-              className="w-[120px] sm:w-[132px] group-hover:w-[136px] sm:group-hover:w-[148px] h-[56px] rounded-full shrink-0 flex items-center justify-center transition-[width,box-shadow] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-              style={{
-                background: 'linear-gradient(135deg, #0F4A3E 0%, #14735A 65%, #1E9E6A 100%)',
-                boxShadow:
-                  'inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 24px -6px rgba(63, 209, 165, 0.45)',
-              }}
+              className="relative w-[120px] sm:w-[132px] h-[56px] rounded-full shrink-0 flex items-center justify-center"
               aria-hidden="true"
             >
+              <span
+                className="absolute inset-0 rounded-full origin-left transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-x-[1.12]"
+                style={{
+                  background: 'linear-gradient(135deg, #0F4A3E 0%, #14735A 65%, #1E9E6A 100%)',
+                  boxShadow:
+                    'inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 24px -6px rgba(63, 209, 165, 0.45)',
+                }}
+              />
               <svg
                 viewBox="0 0 28 16"
                 fill="none"
-                className="w-7 h-4 text-white transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:translate-x-[6px]"
+                className="relative z-10 w-7 h-4 text-white transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:translate-x-[6px]"
               >
                 <path
                   d="M2 8h22M18 2l6 6-6 6"

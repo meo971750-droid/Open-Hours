@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { ArrowUp } from 'lucide-react';
-import { OH_DUR, OH_EASE } from '../lib/motion';
 import { useConsent } from '../lib/consent';
+import { subscribeScroll } from '../lib/scrollHub';
 
 export default function BackToTop() {
   const [visible, setVisible] = useState(false);
@@ -15,13 +14,14 @@ export default function BackToTop() {
     typeof window !== 'undefined' ? window.innerWidth < 640 : false
   );
   const consent = useConsent();
-  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setVisible(window.scrollY > 400);
-      setIsSmallMobile(window.innerWidth < 640);
-    };
+    const unsubScroll = subscribeScroll(({ scrollY, winWidth }) => {
+      const nextVis = scrollY > 400;
+      const nextMob = winWidth < 640;
+      setVisible((prev) => (prev === nextVis ? prev : nextVis));
+      setIsSmallMobile((prev) => (prev === nextMob ? prev : nextMob));
+    });
 
     const onBottomBar = (event: Event) => {
       const custom = event as CustomEvent<{ visible?: boolean }>;
@@ -39,28 +39,30 @@ export default function BackToTop() {
       });
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('openhours:bottombar', onBottomBar);
     window.addEventListener('openhours:widget-mode', onWidgetMode);
-    handleScroll();
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      unsubScroll();
       window.removeEventListener('openhours:bottombar', onBottomBar);
       window.removeEventListener('openhours:widget-mode', onWidgetMode);
     };
   }, []);
 
   const scrollToTop = () => {
+    const reducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({
       top: 0,
-      behavior: shouldReduceMotion ? 'auto' : 'smooth',
+      behavior: reducedMotion ? 'auto' : 'smooth',
     });
   };
 
-  // Never render behind/over expanded quick-question form or small-mobile cookie banner
   const hideWhileFormOpen = widgetState.visible && widgetState.mode === 'form';
   const showButton = visible && !hideWhileFormOpen && !(isSmallMobile && !consent.decided);
+
+  if (!showButton) return null;
 
   const mobileBottomClass = bottomBarVisible
     ? widgetState.visible
@@ -77,25 +79,17 @@ export default function BackToTop() {
     : 'md:bottom-6';
 
   return (
-    <AnimatePresence>
-      {showButton && (
-        <motion.button
-          type="button"
-          onClick={scrollToTop}
-          aria-label="Back to top"
-          title="Back to top"
-          initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10 }}
-          animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-          exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10 }}
-          transition={{ duration: OH_DUR.fast, ease: OH_EASE }}
-          className={`fixed ${mobileBottomClass} ${desktopBottomClass} right-4 md:right-6 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#0F4A3E] text-white hover:bg-[#14624F] active:scale-[0.98] transition-[bottom,background-color,transform,box-shadow] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[0_10px_28px_rgba(10,58,48,0.34)] border border-[#6FD6B0]/30 flex items-center justify-center cursor-pointer group`}
-        >
-          <ArrowUp
-            className="w-5 h-5 text-white transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:-translate-y-0.5"
-            strokeWidth={1.5}
-          />
-        </motion.button>
-      )}
-    </AnimatePresence>
+    <button
+      type="button"
+      onClick={scrollToTop}
+      aria-label="Back to top"
+      title="Back to top"
+      className={`oh-scale-in fixed ${mobileBottomClass} ${desktopBottomClass} right-4 md:right-6 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#0F4A3E] text-white hover:bg-[#14624F] active:scale-[0.98] transition-[bottom,background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[0_10px_28px_rgba(10,58,48,0.34)] border border-[#6FD6B0]/30 flex items-center justify-center cursor-pointer group`}
+    >
+      <ArrowUp
+        className="w-5 h-5 text-white transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:-translate-y-0.5"
+        strokeWidth={1.5}
+      />
+    </button>
   );
 }

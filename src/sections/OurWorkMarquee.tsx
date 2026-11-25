@@ -1,26 +1,69 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { ArrowUpRight, Play, X } from 'lucide-react';
+import React, { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Play } from 'lucide-react';
 import { config, WorkItemConfig } from '../config';
-import { ShimmerImage, Tilt3D } from '../components/PremiumPrimitives';
-import { OH_DUR, OH_EASE } from '../lib/motion';
+import { Tilt3D } from '../components/PremiumPrimitives';
+import { useAnimationInView } from '../hooks/useAnimationInView';
+import { getResponsiveImageProps } from '../lib/images';
+import {
+  buildHoverPlayEmbedSrc,
+  deriveStreamablePosterUrl,
+  deriveYouTubePosterUrls,
+  ParsedVideoEmbed,
+  parseVideoEmbed,
+  warmVideoOrigin,
+} from '../lib/videoEmbed';
 
-function isStreamableEmbed(url?: string): boolean {
-  return Boolean(url && /streamable\.com\/e\//i.test(url));
-}
-
-function buildMutedWorkEmbedUrl(rawUrl: string, restartFromStart = false): string {
-  const params = restartFromStart
-    ? 'autoplay=1&muted=1&loop=1&nocontrols=1&controls=0&t=0'
-    : 'autoplay=1&muted=1&loop=1&nocontrols=1&controls=0';
-  if (rawUrl.endsWith('?') || rawUrl.endsWith('&')) {
-    return `${rawUrl}${params}`;
-  }
-  return `${rawUrl}${rawUrl.includes('?') ? '&' : '?'}${params}`;
-}
+const OurWorkModal = lazy(() => import('../components/OurWorkModal'));
 
 interface OurWorkMarqueeProps {
   onOpenAudit?: () => void;
+}
+
+interface ResolvedWorkItem {
+  item: WorkItemConfig;
+  parsed: ParsedVideoEmbed;
+  posterUrl: string | null;
+  posterFallbackUrl: string | null;
+}
+
+function resolveWorkItem(item: WorkItemConfig): ResolvedWorkItem {
+  const parsed = parseVideoEmbed(item.embedCode, item.embedUrl);
+  const explicitPoster = item.poster?.trim() || null;
+
+  if (explicitPoster) {
+    return {
+      item,
+      parsed,
+      posterUrl: explicitPoster,
+      posterFallbackUrl: null,
+    };
+  }
+
+  if (parsed.allowed && parsed.hostKind === 'streamable' && parsed.streamableId) {
+    return {
+      item,
+      parsed,
+      posterUrl: deriveStreamablePosterUrl(parsed.streamableId),
+      posterFallbackUrl: null,
+    };
+  }
+
+  if (parsed.allowed && parsed.hostKind === 'youtube' && parsed.youtubeId) {
+    const ytPosters = deriveYouTubePosterUrls(parsed.youtubeId);
+    return {
+      item,
+      parsed,
+      posterUrl: ytPosters.primary,
+      posterFallbackUrl: ytPosters.fallback,
+    };
+  }
+
+  return {
+    item,
+    parsed,
+    posterUrl: null,
+    posterFallbackUrl: null,
+  };
 }
 
 function WorkShowcase3DIcon() {
@@ -29,9 +72,8 @@ function WorkShowcase3DIcon() {
       viewBox="0 0 44 44"
       fill="none"
       aria-hidden="true"
-      className="inline-block w-9 h-9 sm:w-11 sm:h-11 align-middle -mt-1 ml-1 shrink-0 drop-shadow-[0_6px_12px_rgba(11,27,34,0.16)]"
+      className="inline-block w-9 h-9 sm:w-11 sm:h-11 align-middle -mt-1 ml-1 shrink-0"
     >
-      {/* Back tilt card (Mint Accent) */}
       <rect
         x="8"
         y="6"
@@ -41,140 +83,166 @@ function WorkShowcase3DIcon() {
         transform="rotate(-8 22 17)"
         fill="#6FD6B0"
       />
-      {/* Main card body (Brand Green 3D block) */}
       <rect x="6" y="13" width="30" height="23" rx="6" fill="#0F4A3E" />
       <rect x="6" y="13" width="30" height="8" rx="4" fill="#14735A" />
-      {/* Clapper/Showcase stripes in mint-100 */}
       <path d="M12 13L15.5 21H19.5L16 13H12Z" fill="#DDF4EA" />
       <path d="M21.5 13L25 21H29L25.5 13H21.5Z" fill="#DDF4EA" />
-      {/* Center small glass accent dot */}
       <circle cx="21" cy="28" r="3.2" fill="#A8EBD3" fillOpacity="0.92" />
     </svg>
   );
 }
 
 interface WorkCardProps {
-  item: WorkItemConfig;
+  resolved: ResolvedWorkItem;
   isDuplicate?: boolean;
-  onOpenModal?: (item: WorkItemConfig, trigger: HTMLElement) => void;
+  onOpenModal?: (resolved: ResolvedWorkItem, trigger: HTMLElement) => void;
 }
 
-function WorkCard({ item, isDuplicate = false, onOpenModal }: WorkCardProps) {
-  const [imgFailed, setImgFailed] = useState(false);
+const WorkCard = memo(function WorkCard({ resolved, isDuplicate = false, onOpenModal }: WorkCardProps) {
+  const { item, parsed, posterUrl, posterFallbackUrl } = resolved;
+  const [activeSrc, setActiveSrc] = useState<string | null>(posterUrl);
+  const [triedFallback, setTriedFallback] = useState(false);
+  const [isHoverPlaying, setIsHoverPlaying] = useState(false);
 
-  const isEmbedVideo = isStreamableEmbed(item.videoUrl);
-  if (!isEmbedVideo && (imgFailed || !item.image)) return null;
+  useEffect(() => {
+    setActiveSrc(posterUrl);
+    setTriedFallback(false);
+  }, [posterUrl]);
 
-  const hasVideo = Boolean(item.videoUrl && item.videoUrl.trim());
-  const hasLive = Boolean(item.liveUrl && item.liveUrl.trim());
+  const responsiveImg = useMemo(() => {
+    if (!activeSrc) return null;
+    return getResponsiveImageProps(
+      activeSrc,
+      [640, 960, 1280],
+      '(max-width: 1023px) 80vw, 36vw',
+      'good'
+    );
+  }, [activeSrc]);
 
-  const renderCenterAction = () => {
-    const circleClass =
-      'w-14 h-14 rounded-full flex items-center justify-center text-white shadow-[0_12px_28px_rgba(63,209,165,0.45),inset_0_1px_0_rgba(255,255,255,0.3)] ring-[6px] ring-white/30 backdrop-blur-xs transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-[1.06] active:scale-[0.98]';
-    const circleStyle: React.CSSProperties = {
-      background: 'linear-gradient(135deg, #0F4A3E 0%, #14735A 65%, #1E9E6A 100%)',
-    };
+  const handleWarmOrigin = () => {
+    if (parsed.allowed && parsed.origin) {
+      warmVideoOrigin(parsed.origin);
+    }
+  };
 
-    if (hasVideo) {
-      return (
+  const handlePointerEnter = (e: React.PointerEvent<HTMLElement>) => {
+    handleWarmOrigin();
+    if (e.pointerType !== 'touch' && parsed.allowed && parsed.embedSrc) {
+      setIsHoverPlaying(true);
+    }
+  };
+
+  const handlePointerLeave = (e: React.PointerEvent<HTMLElement>) => {
+    if (e.pointerType !== 'touch') {
+      setIsHoverPlaying(false);
+    }
+  };
+
+  const handleImgError = () => {
+    if (!triedFallback && posterFallbackUrl && activeSrc !== posterFallbackUrl) {
+      setTriedFallback(true);
+      setActiveSrc(posterFallbackUrl);
+      return;
+    }
+    setActiveSrc(null);
+  };
+
+  const hoverPlaySrc = useMemo(() => {
+    if (!isHoverPlaying || !parsed.allowed || !parsed.embedSrc) return null;
+    return buildHoverPlayEmbedSrc(parsed.embedSrc, parsed.hostKind);
+  }, [isHoverPlaying, parsed]);
+
+  return (
+    <Tilt3D
+      maxDeg={4}
+      disabled={isDuplicate}
+      className="w-[clamp(260px,80vw,420px)] lg:w-[clamp(300px,36vw,560px)] shrink-0"
+    >
+      <article
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
+        onTouchStart={handleWarmOrigin}
+        style={{ paddingBottom: item.aspectPaddingBottom || '52.812%' }}
+        className="group relative w-full h-0 rounded-[20px] sm:rounded-[24px] overflow-hidden border border-[#0B1B22]/85 bg-black shadow-[0_18px_42px_-16px_rgba(11,27,34,0.28)] transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 hover:shadow-[var(--e2)]"
+      >
+        {/* Base Poster Thumbnail (always rendered underneath for instant first frame & zero flicker) */}
+        {responsiveImg ? (
+          <img
+            src={responsiveImg.src}
+            srcSet={responsiveImg.srcSet}
+            sizes={responsiveImg.sizes}
+            alt={isDuplicate ? '' : item.title}
+            width={1280}
+            height={676}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            onError={handleImgError}
+            className="absolute inset-0 w-full h-full object-cover block transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-[1.02]"
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#0B1B22] to-[#050E0D]"
+          />
+        )}
+
+        {/* Hover-to-play Streamable / embedded video (muted by default, no sound controls) */}
+        {hoverPlaySrc && (
+          <iframe
+            title={item.title}
+            src={hoverPlaySrc}
+            allow="autoplay; fullscreen"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="absolute inset-0 z-10 w-full h-full border-0 overflow-hidden pointer-events-none"
+          />
+        )}
+
+        {/* Subtle Dark Scrim matching the card style in attached image */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[15] bg-[linear-gradient(to_bottom,rgba(0,0,0,0)_40%,rgba(0,0,0,0.35)_100%)] transition-opacity duration-200"
+        />
+
+        {/* Clickable Play Button overlay — opens modal from beginning cleanly */}
         <button
           type="button"
           tabIndex={isDuplicate ? -1 : undefined}
-          onClick={(e) => onOpenModal?.(item, e.currentTarget)}
-          aria-label={`Play video for ${item.title}`}
-          className="w-full h-full flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6FD6B0] rounded-[16px]"
+          onFocus={handleWarmOrigin}
+          onClick={(e) => {
+            setIsHoverPlaying(false);
+            onOpenModal?.(resolved, e.currentTarget);
+          }}
+          aria-label={`Play ${item.title}`}
+          className="absolute inset-0 z-20 w-full h-full flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6FD6B0] rounded-[20px] sm:rounded-[24px]"
         >
-          <span className={circleClass} style={circleStyle} aria-hidden="true">
-            <Play className="w-6 h-6 fill-white text-white ml-0.5 pointer-events-none" strokeWidth={1.5} />
+          <span
+            aria-hidden="true"
+            className="w-14 h-14 rounded-full bg-black/60 border border-white/25 text-white flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.38)] transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-110 active:scale-[0.98]"
+          >
+            <Play
+              className="w-5 h-5 fill-white text-white translate-x-[1.5px] pointer-events-none"
+              strokeWidth={1.5}
+            />
           </span>
         </button>
-      );
-    }
-
-    if (hasLive) {
-      return (
-        <a
-          href={item.liveUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          tabIndex={isDuplicate ? -1 : undefined}
-          aria-label={`View ${item.title} in a new tab`}
-          className={`${circleClass} cursor-pointer`}
-          style={circleStyle}
-        >
-          <ArrowUpRight className="w-5 h-5 text-white oh-arrow-45" strokeWidth={1.5} aria-hidden="true" />
-        </a>
-      );
-    }
-
-    return (
-      <button
-        type="button"
-        tabIndex={isDuplicate ? -1 : undefined}
-        onClick={(e) => onOpenModal?.(item, e.currentTarget)}
-        aria-label={`View larger preview of ${item.title}`}
-        className={`${circleClass} cursor-pointer`}
-        style={circleStyle}
-      >
-        <ArrowUpRight className="w-5 h-5 text-white oh-arrow-45" strokeWidth={1.5} aria-hidden="true" />
-      </button>
-    );
-  };
-
-  return (
-    <Tilt3D maxDeg={4} disabled={isDuplicate} className="w-[clamp(280px,30vw,440px)] shrink-0">
-      <article className="group w-full bg-white p-[6px] rounded-[20px] border border-[rgba(11,27,34,0.08)] shadow-[var(--e1)] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 hover:shadow-[var(--e2)] hover:border-[rgba(20,98,79,0.22)]">
-        <div className="relative w-full h-0 pb-[52.812%] rounded-[16px] overflow-hidden bg-[#050E0D]">
-          {isEmbedVideo && item.videoUrl ? (
-            <iframe
-              title={isDuplicate ? '' : `${item.title}${item.trade ? ` — ${item.trade}` : ''}`}
-              src={buildMutedWorkEmbedUrl(item.videoUrl)}
-              allow="autoplay; fullscreen"
-              allowFullScreen
-              tabIndex={-1}
-              className="absolute inset-0 w-full h-full border-0 overflow-hidden pointer-events-none"
-            />
-          ) : (
-            <ShimmerImage
-              src={item.image || ''}
-              alt={isDuplicate ? '' : `${item.title}${item.trade ? ` — ${item.trade}` : ''}`}
-              width={440}
-              height={232}
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              onError={() => setImgFailed(true)}
-              wrapperClassName="relative w-full h-full"
-              className="w-full h-full object-cover object-top block"
-            />
-          )}
-
-          {/* Subtle centre scrim so the green glass action circle stays legible */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-          />
-
-          {/* Centred 56px Play / Action Button */}
-          <div className="absolute inset-0 z-10 flex items-center justify-center">
-            {renderCenterAction()}
-          </div>
-        </div>
       </article>
     </Tilt3D>
   );
-}
+});
 
 interface MarqueeRowProps {
-  categoryTitle: string;
+  rowTitle: string;
   direction: 'rtl' | 'ltr';
-  items: WorkItemConfig[];
+  items: ResolvedWorkItem[];
   prefersReducedMotion: boolean;
   isModalOpen: boolean;
-  onOpenModal: (item: WorkItemConfig, trigger: HTMLElement) => void;
+  onOpenModal: (resolved: ResolvedWorkItem, trigger: HTMLElement) => void;
 }
 
 function MarqueeCategoryRow({
-  categoryTitle,
+  rowTitle,
   direction,
   items,
   prefersReducedMotion,
@@ -182,28 +250,55 @@ function MarqueeCategoryRow({
   onOpenModal,
 }: MarqueeRowProps) {
   const [isTouching, setIsTouching] = useState(false);
+  const [durationSec, setDurationSec] = useState<number>(60);
+  const set1Ref = useRef<HTMLDivElement>(null);
 
   const animClass = direction === 'ltr' ? 'work-track-ltr' : 'work-track-rtl';
   const isPaused = prefersReducedMotion || isTouching || isModalOpen;
   const repeatCount = items.length <= 3 ? 2 : 1;
 
+  // Derive consistent marquee speed (px/sec) from actual rendered track width
+  useEffect(() => {
+    const el = set1Ref.current;
+    if (!el || prefersReducedMotion) return;
+
+    const updateDuration = () => {
+      const width = el.getBoundingClientRect().width;
+      if (width > 0) {
+        const pxPerSec = 42;
+        const computed = Math.max(20, Number((width / pxPerSec).toFixed(2)));
+        setDurationSec(computed);
+      }
+    };
+
+    updateDuration();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(updateDuration);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+
+    window.addEventListener('resize', updateDuration, { passive: true });
+    return () => window.removeEventListener('resize', updateDuration);
+  }, [items.length, repeatCount, prefersReducedMotion]);
+
   return (
-    <div className="space-y-6">
-      {/* Category Sub-heading (~40px regular with tight tracking) */}
-      {categoryTitle.trim().length > 0 && (
+    <div className="space-y-8 sm:space-y-9">
+      {rowTitle.trim().length > 0 && (
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h3 className="font-heading text-[clamp(26px,2.9vw,40px)] font-normal leading-[1.15] tracking-[-0.025em] text-[#0B1B22]">
-            {categoryTitle}
+            {rowTitle}
           </h3>
         </div>
       )}
 
       {prefersReducedMotion ? (
         <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 no-scrollbar">
-            {items.map((item) => (
-              <div key={item.id} className="snap-center shrink-0">
-                <WorkCard item={item} onOpenModal={onOpenModal} />
+          <div className="oh-marquee-fade flex gap-5 overflow-x-auto snap-x snap-mandatory pb-3 px-2 no-scrollbar">
+            {items.map((resolved) => (
+              <div key={resolved.item.id} className="snap-center shrink-0">
+                <WorkCard resolved={resolved} onOpenModal={onOpenModal} />
               </div>
             ))}
           </div>
@@ -217,37 +312,56 @@ function MarqueeCategoryRow({
         >
           <div
             className={`work-marquee-track ${animClass} flex w-max items-center`}
-            style={{
-              animationPlayState: isPaused ? 'paused' : 'running',
-            }}
+            style={
+              {
+                '--work-duration': `${durationSec}s`,
+                animationPlayState: isPaused ? 'paused' : 'running',
+              } as React.CSSProperties
+            }
           >
-            {/* Set 1 (Primary accessible cards + visual fill repetition if <=3 items) */}
-            <div className="flex items-center gap-4 pr-4 shrink-0">
-              {Array.from({ length: repeatCount }).map((_, repIdx) => (
-                <React.Fragment key={repIdx}>
-                  {items.map((item) => (
-                    <WorkCard
-                      key={`${item.id}-s1-${repIdx}`}
-                      item={item}
-                      isDuplicate={repIdx > 0}
-                      onOpenModal={onOpenModal}
-                    />
-                  ))}
-                </React.Fragment>
-              ))}
+            {/* Set 1 */}
+            <div ref={set1Ref} className="flex items-center gap-5 pr-5 shrink-0">
+              {Array.from({ length: repeatCount }).map((_, repIdx) =>
+                repIdx === 0 ? (
+                  <React.Fragment key={repIdx}>
+                    {items.map((resolved) => (
+                      <WorkCard
+                        key={`${resolved.item.id}-s1-${repIdx}`}
+                        resolved={resolved}
+                        onOpenModal={onOpenModal}
+                      />
+                    ))}
+                  </React.Fragment>
+                ) : (
+                  <div
+                    key={repIdx}
+                    aria-hidden="true"
+                    className="flex items-center gap-5 shrink-0"
+                  >
+                    {items.map((resolved) => (
+                      <WorkCard
+                        key={`${resolved.item.id}-s1-${repIdx}`}
+                        resolved={resolved}
+                        isDuplicate
+                        onOpenModal={onOpenModal}
+                      />
+                    ))}
+                  </div>
+                )
+              )}
             </div>
 
-            {/* Set 2 (Seamless Loop Duplicate — aria-hidden & non-tabbable, clickable for pointer users) */}
+            {/* Set 2: Seamless loop duplicate — hidden from screen readers & keyboard tab order */}
             <div
               aria-hidden="true"
-              className="flex items-center gap-4 pr-4 shrink-0"
+              className="flex items-center gap-5 pr-5 shrink-0"
             >
               {Array.from({ length: repeatCount }).map((_, repIdx) => (
                 <React.Fragment key={repIdx}>
-                  {items.map((item) => (
+                  {items.map((resolved) => (
                     <WorkCard
-                      key={`${item.id}-s2-${repIdx}`}
-                      item={item}
+                      key={`${resolved.item.id}-s2-${repIdx}`}
+                      resolved={resolved}
                       isDuplicate
                       onOpenModal={onOpenModal}
                     />
@@ -263,13 +377,13 @@ function MarqueeCategoryRow({
 }
 
 export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMarqueeProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  useAnimationInView(sectionRef, false);
+
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const motionReduce = useReducedMotion() ?? false;
-  const [activeModalItem, setActiveModalItem] = useState<WorkItemConfig | null>(null);
+  const [activeModal, setActiveModal] = useState<ResolvedWorkItem | null>(null);
   const [modalPlayKey, setModalPlayKey] = useState(0);
 
-  const modalRef = useRef<HTMLDivElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -280,83 +394,40 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Accessible Modal Dialog: Escape close, scroll lock, focus trap & focus restore
-  useEffect(() => {
-    if (!activeModalItem) return;
-
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const focusTimer = window.setTimeout(() => {
-      closeButtonRef.current?.focus();
-    }, 10);
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setActiveModalItem(null);
-        return;
-      }
-
-      if (e.key === 'Tab' && modalRef.current) {
-        const focusables = Array.from(
-          modalRef.current.querySelectorAll<HTMLElement>(
-            'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
-          )
-        );
-        if (focusables.length === 0) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = prevOverflow;
-      window.requestAnimationFrame(() => {
-        triggerRef.current?.focus({ preventScroll: true });
-      });
-    };
-  }, [activeModalItem]);
-
-  const populatedCategories = useMemo(() => {
-    const workItems = (config.work?.items || []).filter((item) =>
-      Boolean(item.videoUrl || item.image)
-    );
-    const cats = config.work?.categories || [];
-
-    return cats
-      .map((cat, idx) => ({
-        ...cat,
-        direction: (cat.direction || (idx % 2 === 0 ? 'rtl' : 'ltr')) as 'rtl' | 'ltr',
-        items: workItems.filter((item) => item.category === cat.id),
+  const rows = useMemo(() => {
+    const configuredRows = config.work?.rows || [];
+    return configuredRows
+      .map((row, idx) => ({
+        id: row.id,
+        title: row.title,
+        direction: (row.direction || (idx % 2 === 0 ? 'rtl' : 'ltr')) as 'rtl' | 'ltr',
+        items: (row.items || []).map(resolveWorkItem),
       }))
-      .filter((cat) => cat.items.length > 0);
+      .filter((row) => row.items.length > 0);
   }, []);
 
-  if (populatedCategories.length === 0) return null;
-
-  const handleOpenModal = (item: WorkItemConfig, trigger: HTMLElement) => {
+  const handleOpenModal = useCallback((resolved: ResolvedWorkItem, trigger: HTMLElement) => {
     triggerRef.current = trigger;
+    if (resolved.parsed.allowed && resolved.parsed.origin) {
+      warmVideoOrigin(resolved.parsed.origin);
+    }
     setModalPlayKey((k) => k + 1);
-    setActiveModalItem(item);
-  };
+    setActiveModal(resolved);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setActiveModal(null);
+    window.requestAnimationFrame(() => triggerRef.current?.focus({ preventScroll: true }));
+  }, []);
+
+  if (rows.length === 0) return null;
 
   return (
     <section
+      ref={sectionRef}
       id="work"
       aria-label="Our Work"
-      className="relative bg-[#E9ECEA] text-[#0B1B22] py-[var(--section-py)] overflow-x-clip"
+      className="oh-cv-auto oh-anim-paused relative bg-[#E9ECEA] text-[#0B1B22] py-[var(--section-py)] overflow-x-clip"
     >
       <style>{`
         @keyframes workMarqueeRtl {
@@ -368,11 +439,11 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
           100% { transform: translate3d(0, 0, 0); }
         }
         .work-track-rtl {
-          animation: workMarqueeRtl 60s linear infinite;
+          animation: workMarqueeRtl var(--work-duration, 60s) linear infinite;
           will-change: transform;
         }
         .work-track-ltr {
-          animation: workMarqueeLtr 60s linear infinite;
+          animation: workMarqueeLtr var(--work-duration, 60s) linear infinite;
           will-change: transform;
         }
         .work-marquee-wrap:hover .work-marquee-track,
@@ -407,105 +478,31 @@ export default function OurWorkMarquee({ onOpenAudit: _onOpenAudit }: OurWorkMar
         )}
       </div>
 
-      {/* Category Rows */}
-      <div className="space-y-6 sm:space-y-7">
-        {populatedCategories.map((cat) => (
+      {/* Marquee Rows */}
+      <div className="space-y-10 sm:space-y-12">
+        {rows.map((row) => (
           <MarqueeCategoryRow
-            key={cat.id}
-            categoryTitle={cat.title}
-            direction={cat.direction}
-            items={cat.items}
+            key={row.id}
+            rowTitle={row.title}
+            direction={row.direction}
+            items={row.items}
             prefersReducedMotion={prefersReducedMotion}
-            isModalOpen={Boolean(activeModalItem)}
+            isModalOpen={Boolean(activeModal)}
             onOpenModal={handleOpenModal}
           />
         ))}
       </div>
 
-      {/* Accessible Image / Muted Video Preview Modal Dialog */}
-      <AnimatePresence>
-        {activeModalItem && (
-          <motion.div
-            initial={motionReduce ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={motionReduce ? undefined : { opacity: 0 }}
-            transition={{ duration: motionReduce ? 0 : OH_DUR.base, ease: OH_EASE }}
-            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0B1B22]/78 backdrop-blur-xs"
-            onClick={() => setActiveModalItem(null)}
-          >
-            <motion.div
-              ref={modalRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="work-modal-title"
-              initial={motionReduce ? false : { opacity: 0, scale: 0.96, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={motionReduce ? undefined : { opacity: 0, scale: 0.96, y: 12 }}
-              transition={{ duration: motionReduce ? 0 : OH_DUR.base, ease: OH_EASE }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-[920px] max-h-[90vh] overflow-y-auto bg-white text-[#0B1B22] rounded-[28px] p-4 sm:p-6 shadow-[var(--e3)] border border-[rgba(11,27,34,0.12)]"
-            >
-              <div className="flex items-center justify-between gap-4 pb-3 mb-4 border-b border-[rgba(11,27,34,0.08)]">
-                <div className="flex flex-wrap items-center gap-2.5 min-w-0">
-                  <h3
-                    id="work-modal-title"
-                    className="font-heading text-[20px] sm:text-[22px] font-semibold text-[#0B1B22] truncate"
-                  >
-                    {activeModalItem.title}
-                  </h3>
-                  {activeModalItem.trade && (
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#F3F5F3] text-[#0B1B22] border border-[rgba(11,27,34,0.1)]">
-                      {activeModalItem.trade}
-                    </span>
-                  )}
-                </div>
-
-                <button
-                  ref={closeButtonRef}
-                  type="button"
-                  onClick={() => setActiveModalItem(null)}
-                  aria-label="Close preview"
-                  className="w-9 h-9 rounded-full bg-[#F3F5F3] hover:bg-[#DDF4EA] active:scale-[0.98] text-[#0B1B22] flex items-center justify-center transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer shrink-0"
-                >
-                  <X className="w-4 h-4" strokeWidth={1.5} />
-                </button>
-              </div>
-
-              <div className="relative w-full h-0 pb-[52.812%] rounded-[18px] overflow-hidden bg-[#0B1B22]">
-                {isStreamableEmbed(activeModalItem.videoUrl) && activeModalItem.videoUrl ? (
-                  <iframe
-                    key={`${activeModalItem.id}-${modalPlayKey}`}
-                    title={activeModalItem.title}
-                    src={buildMutedWorkEmbedUrl(activeModalItem.videoUrl, true)}
-                    allow="autoplay; fullscreen"
-                    allowFullScreen
-                    className="absolute inset-0 w-full h-full border-0 overflow-hidden pointer-events-none"
-                  />
-                ) : activeModalItem.videoUrl ? (
-                  <video
-                    src={activeModalItem.videoUrl}
-                    poster={activeModalItem.image}
-                    muted
-                    autoPlay
-                    loop
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-contain"
-                  />
-                ) : (
-                  <img
-                    src={activeModalItem.image}
-                    alt={activeModalItem.title}
-                    width={920}
-                    height={518}
-                    loading="lazy"
-                    className="w-full h-full object-cover object-top"
-                  />
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Lazy Click-to-Play Video Modal Dialog */}
+      {activeModal && (
+        <Suspense fallback={null}>
+          <OurWorkModal
+            data={activeModal}
+            playKey={modalPlayKey}
+            onClose={handleCloseModal}
+          />
+        </Suspense>
+      )}
     </section>
   );
 }

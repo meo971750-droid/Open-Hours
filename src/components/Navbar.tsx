@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'motion/react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Logo from './Logo';
 import { CTA } from '../content';
 import { CONFIG } from '../config';
-import { OH_DUR, OH_EASE } from '../lib/motion';
+import { subscribeScroll } from '../lib/scrollHub';
 
 const NAV_LINKS = [
   { id: 'services', label: 'Services', href: '#services' },
@@ -15,6 +14,14 @@ const NAV_LINKS = [
   { id: 'faq', label: 'FAQ', href: '#faq' },
 ];
 
+const SECTION_GROUPS: Array<{ navId: string; ids: string[] }> = [
+  { navId: 'services', ids: ['services'] },
+  { navId: 'proof', ids: ['proof'] },
+  { navId: 'deliver', ids: ['deliver', 'best-in', 'reviews'] },
+  { navId: 'work', ids: ['work', 'framework', 'built-fast', 'pricing'] },
+  { navId: 'faq', ids: ['faq', 'white-label', 'final-cta'] },
+];
+
 interface NavbarProps {
   onOpenAudit: () => void;
 }
@@ -22,72 +29,46 @@ interface NavbarProps {
 export default function Navbar({ onOpenAudit }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [pastHero, setPastHero] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { scrollY } = useScroll();
+  const progressBarRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  useMotionValueEvent(scrollY, 'change', (latest) => {
-    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    if (docHeight > 0) {
-      setScrollProgress(Math.min(1, Math.max(0, latest / docHeight)));
-    }
-
-    // After 40px, glass pill becomes slightly more opaque while staying fixed
-    setScrolled(latest > 40);
-
-    // Clear active nav indicator while in top hero zone
-    if (latest < 240) {
-      setActiveSection('');
-    }
-  });
-
-  // Track which section from NAV_LINKS is currently in view across the whole page
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const sectionGroups: Array<{ navId: string; ids: string[] }> = [
-      { navId: 'services', ids: ['services'] },
-      { navId: 'proof', ids: ['proof'] },
-      { navId: 'deliver', ids: ['deliver', 'best-in', 'reviews'] },
-      { navId: 'work', ids: ['work', 'framework', 'built-fast', 'pricing'] },
-      { navId: 'faq', ids: ['faq', 'white-label', 'final-cta'] },
-    ];
+    return subscribeScroll(({ scrollY, winHeight, scrollProgress, getBounds }) => {
+      if (progressBarRef.current) {
+        progressBarRef.current.style.transform = `scaleX(${scrollProgress.toFixed(4)})`;
+      }
 
-    let rafId = 0;
+      const nextScrolled = scrollY > 40;
+      setScrolled((prev) => (prev === nextScrolled ? prev : nextScrolled));
 
-    const computeActive = () => {
-      rafId = 0;
-      const heroEl = document.getElementById('hero');
-      setPastHero(heroEl ? heroEl.getBoundingClientRect().bottom <= 96 : true);
+      const heroBounds = getBounds('hero');
+      const nextPastHero = heroBounds
+        ? heroBounds.bottom - scrollY <= 96
+        : scrollY > 420;
+      setPastHero((prev) => (prev === nextPastHero ? prev : nextPastHero));
 
-      const y = window.scrollY;
-      if (y < 220) {
-        setActiveSection('');
+      if (scrollY < 220) {
+        setActiveSection((prev) => (prev === '' ? prev : ''));
         return;
       }
 
-      const anchorLine = Math.max(120, Math.round(window.innerHeight * 0.34));
-      let matched = '';
-
-      // Clear nav highlight while inside contact section
-      const contactEl = document.getElementById('contact');
-      if (contactEl) {
-        const rect = contactEl.getBoundingClientRect();
-        if (rect.top <= anchorLine && rect.bottom >= anchorLine) {
-          setActiveSection('');
-          return;
-        }
+      const anchorDocY = scrollY + Math.max(120, Math.round(winHeight * 0.34));
+      const contactBounds = getBounds('contact');
+      if (contactBounds && anchorDocY >= contactBounds.top && anchorDocY <= contactBounds.bottom) {
+        setActiveSection((prev) => (prev === '' ? prev : ''));
+        return;
       }
 
-      for (const group of sectionGroups) {
+      let matched = '';
+      for (const group of SECTION_GROUPS) {
         for (const id of group.ids) {
-          const el = document.getElementById(id);
-          if (!el) continue;
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= anchorLine && rect.bottom >= anchorLine) {
+          const b = getBounds(id);
+          if (b && anchorDocY >= b.top && anchorDocY <= b.bottom) {
             matched = group.navId;
             break;
           }
@@ -96,22 +77,9 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
       }
 
       if (matched) {
-        setActiveSection(matched);
+        setActiveSection((prev) => (prev === matched ? prev : matched));
       }
-    };
-
-    const onScroll = () => {
-      if (!rafId) rafId = window.requestAnimationFrame(computeActive);
-    };
-
-    computeActive();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (rafId) window.cancelAnimationFrame(rafId);
-    };
+    });
   }, [location.pathname]);
 
   useEffect(() => {
@@ -193,16 +161,17 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
 
   return (
     <>
-      {/* 2px Brand-Green Scroll-Progress Line at Very Top */}
+      {/* 2px Brand-Green Scroll-Progress Line at Very Top (DOM-ref scaleX, zero React re-renders) */}
       <div
         className="fixed top-0 left-0 right-0 h-[2px] z-50 pointer-events-none"
         aria-hidden="true"
       >
         <div
-          className="h-full w-full origin-left"
+          ref={progressBarRef}
+          className="h-full w-full origin-left will-change-transform"
           style={{
             background: 'linear-gradient(90deg, #0F4A3E 0%, #14735A 65%, #1E9E6A 100%)',
-            transform: `scaleX(${scrollProgress})`,
+            transform: 'scaleX(0)',
           }}
         />
       </div>
@@ -211,7 +180,7 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
       <header className="oh-hero-enter oh-hero-delay-nav fixed top-[14px] lg:top-[20px] left-0 right-0 z-40 px-3 sm:px-6 lg:px-0 flex justify-center pointer-events-none">
         <div
           className={
-            'pointer-events-auto w-full lg:w-[63vw] lg:min-w-[820px] lg:max-w-[1180px] h-[60px] lg:h-[75px] rounded-full flex items-center justify-between gap-3 lg:gap-5 px-4 sm:px-6 lg:pl-7 lg:pr-3 transition-[background-color,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ' +
+            'pointer-events-auto w-full lg:w-[63vw] lg:min-w-[820px] lg:max-w-[1180px] h-[60px] lg:h-[75px] rounded-full flex items-center justify-between gap-3 lg:gap-5 px-4 sm:px-6 lg:pl-7 lg:pr-3 transition-[background-color,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ' +
             (scrolled
               ? 'border border-white shadow-[0_14px_38px_-10px_rgba(11,27,34,0.16)]'
               : 'border border-white shadow-[0_12px_34px_-10px_rgba(11,27,34,0.10)]')
@@ -258,8 +227,8 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
                   <span
                     aria-hidden="true"
                     className={
-                      'absolute bottom-0 left-0 h-[2px] bg-[#14624F] transition-[width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ' +
-                      (isActive ? 'w-full' : 'w-0 group-hover:w-full')
+                      'absolute bottom-0 left-0 w-full h-[2px] bg-[#14624F] origin-left transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ' +
+                      (isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100')
                     }
                   />
                 </a>
@@ -301,58 +270,52 @@ export default function Navbar({ onOpenAudit }: NavbarProps) {
       </header>
 
       {/* Mobile Full-Width Dropdown Panel */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: OH_DUR.base, ease: OH_EASE }}
-            className="fixed inset-x-3 top-[82px] z-50 rounded-[24px] p-5 shadow-[0_24px_60px_-14px_rgba(11,27,34,0.22)] border border-white lg:hidden pointer-events-auto"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.98)',
-              backdropFilter: 'blur(18px)',
-              WebkitBackdropFilter: 'blur(18px)',
-            }}
-          >
-            <nav aria-label="Mobile navigation" className="flex flex-col gap-1.5">
-              {NAV_LINKS.map((link) => {
-                const isActive = activeSection === link.id;
-                return (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    aria-current={isActive ? 'location' : undefined}
-                    onClick={(e) => handleLinkClick(e, link.href, link.id)}
-                    className={
-                      'px-4 py-3 text-[17px] font-medium rounded-2xl transition-colors duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer ' +
-                      (isActive
-                        ? 'bg-[#DDF4EA] text-[#0F4A3E] font-semibold'
-                        : 'text-[#0B1B22] hover:bg-[#F3F5F3]')
-                    }
-                  >
-                    {link.label}
-                  </a>
-                );
-              })}
-              <div className="pt-3 mt-1 border-t border-[#0B1B22]/8">
-                <button
-                  type="button"
-                  onClick={handleCtaClick}
-                  className="w-full h-[50px] rounded-full text-white text-[16px] font-medium flex items-center justify-center cursor-pointer transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-[0.98]"
-                  style={{
-                    background: 'linear-gradient(135deg, #0F4A3E 0%, #14624F 65%, #14735A 100%)',
-                    boxShadow:
-                      'inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 24px -6px rgba(63, 209, 165, 0.45)',
-                  }}
+      {mobileMenuOpen && (
+        <div
+          className="oh-slide-down-in fixed inset-x-3 top-[82px] z-50 rounded-[24px] p-5 shadow-[0_24px_60px_-14px_rgba(11,27,34,0.22)] border border-white lg:hidden pointer-events-auto"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+          }}
+        >
+          <nav aria-label="Mobile navigation" className="flex flex-col gap-1.5">
+            {NAV_LINKS.map((link) => {
+              const isActive = activeSection === link.id;
+              return (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  aria-current={isActive ? 'location' : undefined}
+                  onClick={(e) => handleLinkClick(e, link.href, link.id)}
+                  className={
+                    'px-4 py-3 text-[17px] font-medium rounded-2xl transition-colors duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer ' +
+                    (isActive
+                      ? 'bg-[#DDF4EA] text-[#0F4A3E] font-semibold'
+                      : 'text-[#0B1B22] hover:bg-[#F3F5F3]')
+                  }
                 >
-                  {ctaLabel}
-                </button>
-              </div>
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  {link.label}
+                </a>
+              );
+            })}
+            <div className="pt-3 mt-1 border-t border-[#0B1B22]/8">
+              <button
+                type="button"
+                onClick={handleCtaClick}
+                className="w-full h-[50px] rounded-full text-white text-[16px] font-medium flex items-center justify-center cursor-pointer transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-[0.98]"
+                style={{
+                  background: 'linear-gradient(135deg, #0F4A3E 0%, #14624F 65%, #14735A 100%)',
+                  boxShadow:
+                    'inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 24px -6px rgba(63, 209, 165, 0.45)',
+                }}
+              >
+                {ctaLabel}
+              </button>
+            </div>
+          </nav>
+        </div>
+      )}
     </>
   );
 }

@@ -107,10 +107,10 @@ export const devPlaceholder = (val: string) => isDev ? val : val.replace(/\[|\]/
 export const FOUNDER = { name: "Zuhayer", photo: "https://i.ibb.co.com/6cJH7T24/Profile-Pic.png" };
 
 export const SITE_METADATA = {
-  title: "Open Hours | Websites for builders and trades in Ireland and Malta",
+  title: "Open Hours | Websites built to catch inquiries",
   tagline: "The website that answers while you're on the job",
   description:
-    `Open Hours builds fast, enquiry-focused websites and Google profiles for builders and home-improvement trades in Ireland and Malta. Live in about ${DELIVERY.liveWorkingDays} working days.`,
+    `Open Hours builds fast, websites built to catch inquiries and Google profiles for home-improvement trades. Live in about ${DELIVERY.liveWorkingDays} working days.`,
   founderName: FOUNDER.name,
   contactEmail: devPlaceholder("[CONTACT_EMAIL]"),
   linkedinUrl: devPlaceholder("[LINKEDIN_URL]"),

@@ -178,7 +178,7 @@ export default function Footer({ onNavigatePage }: FooterProps) {
   const studioName = config.studioName || 'Open Hours';
 
   return (
-    <footer className="oh-cv-auto relative w-full bg-[#050E0D] p-4 text-white overflow-x-clip">
+    <footer id="footer" className="oh-cv-auto relative w-full bg-[#050E0D] p-4 text-white overflow-x-clip">
       {/* Large 16px-Inset Rounded Container */}
       <div
         className="relative z-10 w-full rounded-[28px] overflow-hidden border border-white/[0.09] bg-[#050E0D]"

@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import Container from '../components/Container';
 import { config } from '../config';
 import { FAQ_CONTENT } from '../content';
-import { OH_DUR, OH_EASE } from '../lib/motion';
 
 export default function FAQ() {
   // First item open by default
@@ -38,7 +36,7 @@ export default function FAQ() {
             return (
               <div
                 key={index}
-                className="bg-white rounded-[20px] border border-[rgba(11,27,34,0.08)] hover:-translate-y-0.5 hover:border-[rgba(20,98,79,0.22)] hover:shadow-[var(--e2)] overflow-hidden transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[var(--e1)]"
+                className="bg-white rounded-[20px] border border-[rgba(11,27,34,0.08)] hover:-translate-y-0.5 hover:border-[rgba(20,98,79,0.22)] hover:shadow-[var(--e2)] overflow-hidden transition-[transform,border-color] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[var(--e1)]"
               >
                 <button
                   type="button"
@@ -60,23 +58,19 @@ export default function FAQ() {
                   />
                 </button>
 
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      id={'faq-answer-' + index}
-                      role="region"
-                      aria-labelledby={'faq-question-' + index}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: OH_DUR.base, ease: OH_EASE }}
-                    >
-                      <div className="px-6 pb-6 pt-1 text-[15px] sm:text-[16px] leading-[1.65] text-[#475754] border-t border-[rgba(11,27,34,0.06)]">
-                        {item.answer}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div
+                  id={'faq-answer-' + index}
+                  role="region"
+                  aria-labelledby={'faq-question-' + index}
+                  data-open={isOpen ? 'true' : 'false'}
+                  className="oh-accordion-grid"
+                >
+                  <div className="oh-accordion-inner">
+                    <div className="px-6 pb-6 pt-1 text-[15px] sm:text-[16px] leading-[1.65] text-[#475754] border-t border-[rgba(11,27,34,0.06)]">
+                      {item.answer}
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })}
