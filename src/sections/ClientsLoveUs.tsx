@@ -43,7 +43,8 @@ interface ProofCardItem {
 }
 
 const AARON_FREEDMAN_STREAMABLE_EMBED = 'https://streamable.com/e/36ovtq?';
-const AARON_FREEDMAN_THUMBNAIL = '/assets/aistudio/image_9075c9cc.png';
+const AARON_FREEDMAN_THUMBNAIL =
+  'https://i.ibb.co.com/VcbcTXH9/ac6245a6-13a2-4716-bdfa-79220b85865b.png';
 
 function buildEmbedUrl(baseUrl: string, params: Record<string, string>): string {
   const query = new URLSearchParams(params).toString();
@@ -397,7 +398,7 @@ const TestimonialCard = memo(function TestimonialCard({
                   loading="lazy"
                   decoding="async"
                   referrerPolicy="no-referrer"
-                  wrapperClassName="relative w-full h-full"
+                  wrapperClassName="absolute inset-0 w-full h-full"
                   className="w-full h-full object-cover object-top group-hover:scale-[1.03] transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
                 />
               )}
