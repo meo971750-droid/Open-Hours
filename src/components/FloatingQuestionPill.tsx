@@ -83,8 +83,12 @@ export default function FloatingQuestionPill({
       const footerInView = footerBounds
         ? footerBounds.top - scrollY <= winHeight && footerBounds.bottom - scrollY >= 0
         : false;
-      const nextInView = contactInView || footerInView;
-      setIsContactOrFooterInView((prev) => (prev === nextInView ? prev : nextInView));
+
+      if (footerInView && !contactInView) {
+        setMode((prev) => (prev === 'card' ? 'pill' : prev));
+      }
+
+      setIsContactOrFooterInView((prev) => (prev === contactInView ? prev : contactInView));
     });
   }, []);
 

@@ -15,9 +15,9 @@ const NAV_LINKS = [
 ];
 
 const SECTION_GROUPS: Array<{ navId: string; ids: string[] }> = [
-  { navId: 'services', ids: ['services'] },
+  { navId: 'services', ids: ['services', 'compare'] },
   { navId: 'proof', ids: ['proof'] },
-  { navId: 'deliver', ids: ['deliver', 'best-in', 'reviews'] },
+  { navId: 'deliver', ids: ['deliver', 'best-in', 'help', 'reviews'] },
   { navId: 'work', ids: ['work', 'framework', 'built-fast', 'pricing'] },
   { navId: 'faq', ids: ['faq', 'white-label', 'final-cta'] },
 ];

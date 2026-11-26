@@ -16,9 +16,11 @@ const LegalPage = React.lazy(() => import('./pages/LegalPage'));
 
 // Below-hero section loaders (preloaded 1200px ahead by LazySection)
 const loadServices = () => import('./sections/ExpandingCards');
+const loadCompare = () => import('./sections/CompareSection');
 const loadProof = () => import('./sections/ClientsLoveUs');
 const loadDeliver = () => import('./sections/DeliverScroll');
 const loadBestIn = () => import('./sections/BestInBento');
+const loadHelp = () => import('./sections/HelpSection');
 const loadReviews = () => import('./sections/CustomersResults');
 const loadWork = () => import('./sections/OurWorkMarquee');
 const loadFramework = () => import('./sections/FrameworkTimeline');
@@ -31,9 +33,11 @@ const loadFinalCta = () => import('./sections/FinalCTA');
 const loadFooter = () => import('./sections/Footer');
 
 const ExpandingCards = React.lazy(loadServices);
+const CompareSection = React.lazy(loadCompare);
 const ClientsLoveUs = React.lazy(loadProof);
 const DeliverScroll = React.lazy(loadDeliver);
 const BestInBento = React.lazy(loadBestIn);
+const HelpSection = React.lazy(loadHelp);
 const CustomersResults = React.lazy(loadReviews);
 const OurWorkMarquee = React.lazy(loadWork);
 const FrameworkTimeline = React.lazy(loadFramework);
@@ -100,7 +104,7 @@ export default function App() {
     };
     let idleId: number | undefined;
     let timerId: number | undefined;
-    const warm = () => preloadSectionAndNext('services', 'proof');
+    const warm = () => preloadSectionAndNext('services', 'compare');
 
     if (typeof win.requestIdleCallback === 'function') {
       idleId = win.requestIdleCallback(warm, { timeout: 1200 });
@@ -247,11 +251,20 @@ export default function App() {
 
             <LazySection
               id="services"
-              nextId="proof"
+              nextId="compare"
               loadChunk={loadServices}
               placeholderClassName="min-h-[1298px] lg:min-h-[1135px] bg-[#F3F5F3]"
             >
               <ExpandingCards onOpenAudit={() => handleOpenAudit()} />
+            </LazySection>
+
+            <LazySection
+              id="compare"
+              nextId="proof"
+              loadChunk={loadCompare}
+              placeholderClassName="min-h-[1108px] lg:min-h-[1129px] bg-white"
+            >
+              <CompareSection />
             </LazySection>
 
             <LazySection
@@ -275,7 +288,7 @@ export default function App() {
 
             <LazySection
               id="best-in"
-              nextId="reviews"
+              nextId="help"
               loadChunk={loadBestIn}
               firstImages={BEST_IN_FIRST_IMAGES}
               placeholderClassName="min-h-[2464px] lg:min-h-[1350px] bg-[#E9ECEA]"
@@ -284,10 +297,19 @@ export default function App() {
             </LazySection>
 
             <LazySection
+              id="help"
+              nextId="reviews"
+              loadChunk={loadHelp}
+              placeholderClassName="min-h-[1931px] md:min-h-[1573px] lg:min-h-[1207px] bg-white"
+            >
+              <HelpSection />
+            </LazySection>
+
+            <LazySection
               id="reviews"
               nextId="work"
               loadChunk={loadReviews}
-              placeholderClassName="min-h-[776px] lg:min-h-[922px] bg-[#050E0D]"
+              placeholderClassName="min-h-[1057px] lg:min-h-[1094px] bg-white"
             >
               <CustomersResults onOpenAudit={() => handleOpenAudit()} />
             </LazySection>
@@ -372,7 +394,7 @@ export default function App() {
             <LazySection
               id="footer"
               loadChunk={loadFooter}
-              placeholderClassName="min-h-[488px] lg:min-h-[648px] bg-[#050E0D]"
+              placeholderClassName="min-h-[1187px] md:min-h-[994px] lg:min-h-[786px] bg-[#CDEBDD]"
             >
               <Footer
                 onNavigatePage={handleNavigate}

@@ -247,6 +247,8 @@ export interface TestimonialItem {
   date: string;
   isTrade: boolean;
   highlight?: string;
+  featured?: boolean;
+  service?: string;
   logo?: string;
 }
 
@@ -258,8 +260,20 @@ export interface PortfolioItem {
   domain?: string;
 }
 
+export interface ProofBadgeConfig {
+  label?: string;
+  titleLine1?: string;
+  titleLine2?: string;
+  stars?: number;
+  sourceIcon?: 'g2' | 'google' | 'senja' | 'link';
+}
+
 export interface ProofConfig {
   note: string;
+  rating?: number | string;
+  sourceLabel?: string;
+  sourceUrl?: string;
+  badge?: ProofBadgeConfig;
 }
 
 export interface GrowthCardsConfig {
@@ -423,6 +437,7 @@ export interface SocialsConfig {
   instagram?: string;
   linkedin?: string;
   facebook?: string;
+  youtube?: string;
   x?: string;
 }
 
@@ -441,6 +456,7 @@ export interface AppConfig {
   studioName: string;
   legalName: string;
   registrationNumber?: string;
+  companyRegNumber?: string;
   email: string;
   phone: string;
   companyAddress: string;
@@ -484,7 +500,76 @@ export interface AppConfig {
     text?: string;
     signature?: string;
   };
+  compare?: CompareConfig;
+  help?: HelpConfig;
+  footer?: FooterConfig;
   whiteLabel: WhiteLabelConfig;
+}
+
+export interface FooterLinkConfig {
+  label: string;
+  href: string;
+  subTargetSelector?: string;
+  trade?: string;
+  requiresFlag?: keyof AppFeaturesConfig;
+  requiresAnyFlag?: Array<keyof AppFeaturesConfig>;
+}
+
+export interface FooterColumnConfig {
+  id: string;
+  title: string;
+  links: FooterLinkConfig[];
+}
+
+export interface FooterConfig {
+  columns: FooterColumnConfig[];
+}
+
+export interface HelpCardConfig {
+  id?: string;
+  title: string;
+  text: string;
+  optionalTag?: string;
+}
+
+export interface HelpConfig {
+  heading: {
+    line1: string;
+    line2: string;
+  };
+  cards: HelpCardConfig[];
+}
+
+export type CompareIconKind = 'website' | 'google' | 'enquiries' | 'care';
+
+export interface CompareTabConfig {
+  id: string;
+  label: string;
+  icon?: CompareIconKind;
+  typical: string;
+  highlight: string;
+  continuation: string;
+  fileTitle: string;
+  fileSubtitle: string;
+  fileIsDemo?: boolean;
+  requiresFlag?: keyof AppFeaturesConfig;
+  fallbackHighlight?: string;
+  fallbackContinuation?: string;
+  fallbackFileTitle?: string;
+  fallbackFileSubtitle?: string;
+  requiresAnyFlag?: Array<keyof AppFeaturesConfig>;
+  requiresMonthlyPackageData?: boolean;
+  aiDisclosure?: string;
+}
+
+export interface CompareConfig {
+  pill?: string;
+  headingLine1?: string;
+  headingLine2?: string;
+  subtitle?: string;
+  typicalLabel?: string;
+  footnote?: string;
+  tabs: CompareTabConfig[];
 }
 
 export interface WhiteLabelStepConfig {
@@ -537,6 +622,7 @@ export const config: AppConfig = {
     instagram: '',
     linkedin: '',
     facebook: '',
+    youtube: '',
     x: '',
   },
   legalLinks: {
@@ -694,6 +780,10 @@ export const config: AppConfig = {
   ],
   proof: {
     note: 'Reviews from past clients of the founder, shared via Senja with permission.',
+    rating: '',
+    sourceLabel: '',
+    sourceUrl: '',
+    badge: undefined,
   },
   cta: {
     text: "Let's see what customers find when they look for your trade.",
@@ -1648,6 +1738,186 @@ export const config: AppConfig = {
     ],
     whatWeAsk: ['A clear brief', 'Feedback sent in one go'],
     modalCtaLabel: 'Talk about a white-label project',
+  },
+  compare: {
+    pill: 'The difference',
+    headingLine1: 'Same trade.',
+    headingLine2: 'Different website.',
+    subtitle:
+      'Hand over the brief. We build it, set it up and make sure enquiries have somewhere to land.',
+    typicalLabel: 'A typical template site',
+    footnote: 'General comparison. Every website is different.',
+    tabs: [
+      {
+        id: 'website',
+        label: 'Website',
+        icon: 'website',
+        typical:
+          'A few pages and a contact form. Visitors often have to hunt for the call button.',
+        highlight: 'Built around one thing: a tap to call or ask for a quote.',
+        continuation: 'Hands you a site on your own domain.',
+        fileTitle: 'yourbusiness.ie',
+        fileSubtitle: 'Your domain, your code',
+        fileIsDemo: false,
+      },
+      {
+        id: 'google',
+        label: 'Get found on Google',
+        icon: 'google',
+        typical:
+          'A website on its own. Google Maps and local searches are left to chance.',
+        highlight: 'Sets up your Google Business Profile and local pages.',
+        continuation: 'Hands you matching details everywhere.',
+        fileTitle: 'Google Business Profile',
+        fileSubtitle: 'Set up and matched',
+        fileIsDemo: false,
+        requiresFlag: 'googleBusinessProfile',
+        fallbackHighlight: 'Sets up clear service and local-area pages.',
+        fallbackContinuation: 'Hands you matching details across your site.',
+        fallbackFileTitle: 'Local service pages',
+        fallbackFileSubtitle: 'Matched across your site',
+      },
+      {
+        id: 'enquiries',
+        label: 'Handle enquiries',
+        icon: 'enquiries',
+        typical: 'An enquiry waits in an inbox until you are off the job.',
+        highlight: 'Replies to enquiries on supported channels.',
+        continuation: 'Hands you the details in one place.',
+        fileTitle: 'New enquiry',
+        fileSubtitle: 'Roof repair, Cork',
+        fileIsDemo: true,
+        requiresAnyFlag: ['missedCallTextBack', 'afterHoursAutoReply', 'aiLeadCapture'],
+        aiDisclosure: 'The assistant always says it is an AI.',
+      },
+      {
+        id: 'care',
+        label: 'Ongoing care',
+        icon: 'care',
+        typical: 'The site goes live and then nobody looks at it.',
+        highlight: 'Keeps your profile and pages up to date each month.',
+        continuation: 'Hands you a short monthly report.',
+        fileTitle: 'Monthly report.pdf',
+        fileSubtitle: 'PDF',
+        fileIsDemo: true,
+        fallbackHighlight: 'Keeps your website pages up to date each month.',
+        requiresMonthlyPackageData: true,
+      },
+    ],
+  },
+  help: {
+    heading: {
+      line1: 'From a new website to',
+      line2: 'a system that handles enquiries.',
+    },
+    cards: [
+      {
+        id: 'build-website',
+        title: 'Build your website',
+        text: 'A fast, mobile-friendly website for your trade, set up with your Google Business Profile, at a fixed price in writing.',
+      },
+      {
+        id: 'get-found',
+        title: 'Get found and get enquiries',
+        text: 'Local pages, your Google profile and an easy way to ask for a quote help the right people find you and get in touch.',
+      },
+      {
+        id: 'ai-enquiry-system',
+        title: 'An AI-powered enquiry system',
+        text: 'Optional AI add-ons reply to enquiries, collect the job details and alert you, so follow-ups do not wait until you are off the job.',
+        optionalTag: 'Optional add-on',
+      },
+    ],
+  },
+  footer: {
+    columns: [
+      {
+        id: 'services',
+        title: 'Services',
+        links: [
+          { label: 'Website design', href: '#services' },
+          {
+            label: 'Google Business Profile',
+            href: '#services',
+            requiresFlag: 'googleBusinessProfile',
+          },
+          {
+            label: 'Local SEO',
+            href: '#best-in',
+            requiresFlag: 'localSeo',
+          },
+          {
+            label: 'Enquiry handling',
+            href: '#compare',
+            requiresAnyFlag: ['missedCallTextBack', 'afterHoursAutoReply', 'aiLeadCapture', 'enquiryInbox'],
+          },
+          {
+            label: 'Advanced AI integration',
+            href: '#best-in',
+            requiresAnyFlag: ['aiLeadCapture', 'voiceAgent', 'afterHoursAutoReply'],
+          },
+        ],
+      },
+      {
+        id: 'packages',
+        title: 'Packages',
+        links: [
+          {
+            label: 'Get Found & Get Called',
+            href: '#pricing',
+            subTargetSelector: 'article[data-tier-id="starter"]',
+          },
+          {
+            label: 'Fast Replies',
+            href: '#pricing',
+            subTargetSelector: 'article[data-tier-id="standard"]',
+          },
+          {
+            label: 'Full Growth Engine',
+            href: '#pricing',
+            subTargetSelector: 'article[data-tier-id="growth"]',
+          },
+          {
+            label: 'Build your own',
+            href: '#pricing',
+            subTargetSelector: '[role="tablist"][aria-label="Starting package selector"]',
+          },
+          { label: 'Pricing', href: '#pricing' },
+        ],
+      },
+      {
+        id: 'work',
+        title: 'Work',
+        links: [
+          { label: 'Our Work', href: '#work' },
+          { label: 'Concept designs', href: '#best-in' },
+          { label: 'Client feedback', href: '#reviews' },
+          { label: 'The Framework', href: '#framework' },
+        ],
+      },
+      {
+        id: 'trades',
+        title: 'Trades',
+        links: [
+          { label: 'Roofers', href: '#contact', trade: 'Roofers' },
+          { label: 'Kitchen fitters', href: '#contact', trade: 'Kitchen fitters' },
+          { label: 'Extension builders', href: '#contact', trade: 'Extension builders' },
+          { label: 'Windows & doors', href: '#contact', trade: 'Windows & doors' },
+          { label: 'Landscapers', href: '#contact', trade: 'Landscapers' },
+          { label: 'Heating installers', href: '#contact', trade: 'Heating installers' },
+        ],
+      },
+      {
+        id: 'company',
+        title: 'Company',
+        links: [
+          { label: 'How we deliver', href: '#deliver' },
+          { label: 'White label', href: '#white-label' },
+          { label: 'Contact', href: '#contact' },
+          { label: 'FAQ', href: '#faq' },
+        ],
+      },
+    ],
   },
 };
 

@@ -84,7 +84,7 @@ export default function BackToTop() {
       onClick={scrollToTop}
       aria-label="Back to top"
       title="Back to top"
-      className={`oh-scale-in fixed ${mobileBottomClass} ${desktopBottomClass} right-4 md:right-6 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#0F4A3E] text-white hover:bg-[#14624F] active:scale-[0.98] transition-[bottom,background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[0_10px_28px_rgba(10,58,48,0.34)] border border-[#6FD6B0]/30 flex items-center justify-center cursor-pointer group`}
+      className={`oh-scale-in fixed ${mobileBottomClass} ${desktopBottomClass} right-4 md:right-6 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#0F4A3E] text-white hover:bg-[#14624F] active:scale-[0.98] transition-[bottom,background-color,transform] duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-[0_12px_30px_rgba(0,0,0,0.4)] border border-[#A8EBD3]/50 ring-1 ring-white/20 flex items-center justify-center cursor-pointer group`}
     >
       <ArrowUp
         className="w-5 h-5 text-white transition-transform duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:-translate-y-0.5"
