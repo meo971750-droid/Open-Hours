@@ -344,8 +344,16 @@ export default function CustomersResults({ onOpenAudit: _onOpenAudit }: Customer
       : deduped;
 
     const explicitFeatured = textOnlyReviews.filter((item) => item.featured === true);
-    const chosenTextFeatured =
+    const baseFeatured =
       explicitFeatured.length > 0 ? explicitFeatured : textOnlyReviews.slice(0, 3);
+    const defaultReviewer =
+      textOnlyReviews.find((item) => item.fullName.trim().toLowerCase() === 'jeanne m');
+    const chosenTextFeatured = defaultReviewer
+      ? [
+          defaultReviewer,
+          ...baseFeatured.filter((item) => item.id !== defaultReviewer.id),
+        ].slice(0, Math.max(baseFeatured.length, 3))
+      : baseFeatured;
     const chosenIds = new Set(chosenTextFeatured.map((item) => item.id));
 
     const slides: ReviewEntry[] = [...chosenTextFeatured];

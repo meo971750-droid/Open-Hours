@@ -683,7 +683,7 @@ export const config: AppConfig = {
           {
             id: 'work-video-1',
             title: 'Project video 1',
-            poster: 'https://cdn-cf-east.streamable.com/image/f71s1j.jpg',
+            poster: '/work-posters/f71s1j-first.jpg',
             aspectPaddingBottom: '52.812%',
             embedUrl: 'https://streamable.com/e/f71s1j?',
             isClient: false,
@@ -691,7 +691,7 @@ export const config: AppConfig = {
           {
             id: 'work-video-2',
             title: 'Project video 2',
-            poster: 'https://cdn-cf-east.streamable.com/image/m3d1tv.jpg',
+            poster: '/work-posters/m3d1tv-first.jpg',
             aspectPaddingBottom: '52.812%',
             embedUrl: 'https://streamable.com/e/m3d1tv?',
             isClient: false,
@@ -699,7 +699,7 @@ export const config: AppConfig = {
           {
             id: 'work-video-3',
             title: 'Project video 3',
-            poster: 'https://cdn-cf-east.streamable.com/image/bgicak.jpg',
+            poster: '/work-posters/bgicak-first.jpg',
             aspectPaddingBottom: '52.812%',
             embedUrl: 'https://streamable.com/e/bgicak?',
             isClient: false,
@@ -714,7 +714,7 @@ export const config: AppConfig = {
           {
             id: 'work-video-4',
             title: 'Project video 4',
-            poster: 'https://cdn-cf-east.streamable.com/image/jtrirj.jpg',
+            poster: '/work-posters/jtrirj-first.jpg',
             aspectPaddingBottom: '52.812%',
             embedUrl: 'https://streamable.com/e/jtrirj?',
             isClient: false,
@@ -722,7 +722,7 @@ export const config: AppConfig = {
           {
             id: 'work-video-5',
             title: 'Project video 5',
-            poster: 'https://cdn-cf-east.streamable.com/image/kpc5l8.jpg',
+            poster: '/work-posters/kpc5l8-first.jpg',
             aspectPaddingBottom: '52.812%',
             embedUrl: 'https://streamable.com/e/kpc5l8?',
             isClient: false,
@@ -730,7 +730,7 @@ export const config: AppConfig = {
           {
             id: 'work-video-6',
             title: 'Project video 6',
-            poster: 'https://cdn-cf-east.streamable.com/image/mk8ej8.jpg',
+            poster: '/work-posters/mk8ej8-first.jpg',
             aspectPaddingBottom: '52.828%',
             embedUrl: 'https://streamable.com/e/mk8ej8?',
             isClient: false,
