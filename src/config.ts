@@ -542,33 +542,41 @@ export interface HelpConfig {
 
 export type CompareIconKind = 'website' | 'google' | 'enquiries' | 'care';
 
+export interface CompareSendItemConfig {
+  label: string;
+  detail: string;
+  tone?: 'green' | 'peach';
+  icon?: 'map' | 'photo' | 'phone' | 'details' | 'profile' | 'chat' | 'reply' | 'filter' | 'camera' | 'clock' | 'wrench';
+}
+
 export interface CompareTabConfig {
   id: string;
   label: string;
   icon?: CompareIconKind;
-  typical: string;
-  highlight: string;
-  continuation: string;
-  fileTitle: string;
-  fileSubtitle: string;
-  fileIsDemo?: boolean;
+  sendLead: string;
+  sendItems: [CompareSendItemConfig, CompareSendItemConfig, CompareSendItemConfig];
+  dropExample: string;
+  headline: string;
+  support: string;
+  proof: string;
+  demoMockup?: boolean;
   requiresFlag?: keyof AppFeaturesConfig;
-  fallbackHighlight?: string;
-  fallbackContinuation?: string;
-  fallbackFileTitle?: string;
-  fallbackFileSubtitle?: string;
   requiresAnyFlag?: Array<keyof AppFeaturesConfig>;
   requiresMonthlyPackageData?: boolean;
+  fallbackHeadline?: string;
+  fallbackSupport?: string;
+  fallbackProof?: string;
   aiDisclosure?: string;
 }
 
 export interface CompareConfig {
-  pill?: string;
-  headingLine1?: string;
-  headingLine2?: string;
+  title?:
+    | {
+        line1: string;
+        line2: string;
+      }
+    | string;
   subtitle?: string;
-  typicalLabel?: string;
-  footnote?: string;
   tabs: CompareTabConfig[];
 }
 
@@ -1740,68 +1748,142 @@ export const config: AppConfig = {
     modalCtaLabel: 'Talk about a white-label project',
   },
   compare: {
-    pill: 'The difference',
-    headingLine1: 'Same trade.',
-    headingLine2: 'Different website.',
-    subtitle:
-      'Hand over the brief. We build it, set it up and make sure enquiries have somewhere to land.',
-    typicalLabel: 'A typical template site',
-    footnote: 'General comparison. Every website is different.',
+    title: {
+      line1: 'You bring the trade.',
+      line2: 'We build the rest.',
+    },
+    subtitle: 'Four parts of the job. What you send us, and what you get back.',
     tabs: [
       {
         id: 'website',
         label: 'Website',
         icon: 'website',
-        typical:
-          'A few pages and a contact form. Visitors often have to hunt for the call button.',
-        highlight: 'Built around one thing: a tap to call or ask for a quote.',
-        continuation: 'Hands you a site on your own domain.',
-        fileTitle: 'yourbusiness.ie',
-        fileSubtitle: 'Your domain, your code',
-        fileIsDemo: false,
+        sendLead: 'A few details and some photos are enough to start.',
+        sendItems: [
+          {
+            label: 'Your trade and the towns you cover',
+            detail: 'So visitors see straight away what you do and where you work.',
+            tone: 'green',
+            icon: 'map',
+          },
+          {
+            label: 'Your logo and photos of your work',
+            detail: 'Phone photos of finished jobs work well.',
+            tone: 'peach',
+            icon: 'photo',
+          },
+          {
+            label: 'Your phone number and opening hours',
+            detail: 'Where calls and quote requests should land.',
+            tone: 'green',
+            icon: 'phone',
+          },
+        ],
+        dropExample: 'Photos of your work',
+        headline: 'A website built around one thing: a tap to call or ask for a quote.',
+        support: 'On your own domain, built for phones.',
+        proof: 'Your domain, your code',
+        demoMockup: false,
       },
       {
         id: 'google',
         label: 'Get found on Google',
         icon: 'google',
-        typical:
-          'A website on its own. Google Maps and local searches are left to chance.',
-        highlight: 'Sets up your Google Business Profile and local pages.',
-        continuation: 'Hands you matching details everywhere.',
-        fileTitle: 'Google Business Profile',
-        fileSubtitle: 'Set up and matched',
-        fileIsDemo: false,
-        requiresFlag: 'googleBusinessProfile',
-        fallbackHighlight: 'Sets up clear service and local-area pages.',
-        fallbackContinuation: 'Hands you matching details across your site.',
-        fallbackFileTitle: 'Local service pages',
-        fallbackFileSubtitle: 'Matched across your site',
+        sendLead: 'Tell us where you work and how customers reach you.',
+        sendItems: [
+          {
+            label: 'The towns you work in',
+            detail: 'Your main base and the areas around it.',
+            tone: 'peach',
+            icon: 'map',
+          },
+          {
+            label: 'Your business details',
+            detail: 'Exact trading name, number and hours.',
+            tone: 'green',
+            icon: 'details',
+          },
+          {
+            label: 'Access to your Google profile, if you have one',
+            detail: 'Or we set up a clean profile from scratch.',
+            tone: 'peach',
+            icon: 'profile',
+          },
+        ],
+        dropExample: 'Your business details',
+        headline: 'A Google Business Profile and a local page for each town.',
+        support: 'With the same details everywhere.',
+        proof: 'Set up and matched',
+        demoMockup: true,
+        requiresAnyFlag: ['googleBusinessProfile', 'serviceAreaPages'],
+        fallbackHeadline: 'Clear local pages built around the towns you cover.',
+        fallbackSupport: 'With matching business details across your site.',
       },
       {
         id: 'enquiries',
         label: 'Handle enquiries',
         icon: 'enquiries',
-        typical: 'An enquiry waits in an inbox until you are off the job.',
-        highlight: 'Replies to enquiries on supported channels.',
-        continuation: 'Hands you the details in one place.',
-        fileTitle: 'New enquiry',
-        fileSubtitle: 'Roof repair, Cork',
-        fileIsDemo: true,
-        requiresAnyFlag: ['missedCallTextBack', 'afterHoursAutoReply', 'aiLeadCapture'],
+        sendLead: 'Tell us what customers ask and how you like to reply.',
+        sendItems: [
+          {
+            label: 'The questions you hear most',
+            detail: 'Common call-outs, jobs and pricing questions.',
+            tone: 'green',
+            icon: 'chat',
+          },
+          {
+            label: 'Your usual reply to a quote request',
+            detail: 'Plain wording in the way you already speak.',
+            tone: 'peach',
+            icon: 'reply',
+          },
+          {
+            label: 'The jobs you take, and the ones you do not',
+            detail: 'So enquiries match the work you actually want.',
+            tone: 'green',
+            icon: 'filter',
+          },
+        ],
+        dropExample: 'Your usual reply',
+        headline: 'Enquiries get a reply on supported channels, with the job details in one place.',
+        support: 'You see what came in when you are off the job.',
+        proof: 'Details collected for you',
+        demoMockup: true,
+        requiresAnyFlag: ['missedCallTextBack', 'afterHoursAutoReply', 'aiLeadCapture', 'enquiryTracking'],
         aiDisclosure: 'The assistant always says it is an AI.',
       },
       {
         id: 'care',
         label: 'Ongoing care',
         icon: 'care',
-        typical: 'The site goes live and then nobody looks at it.',
-        highlight: 'Keeps your profile and pages up to date each month.',
-        continuation: 'Hands you a short monthly report.',
-        fileTitle: 'Monthly report.pdf',
-        fileSubtitle: 'PDF',
-        fileIsDemo: true,
-        fallbackHighlight: 'Keeps your website pages up to date each month.',
+        sendLead: 'Tell us what changes and we keep the site current.',
+        sendItems: [
+          {
+            label: 'New photos and finished jobs',
+            detail: 'Send them over whenever a job wraps up.',
+            tone: 'peach',
+            icon: 'camera',
+          },
+          {
+            label: 'New services or changed hours',
+            detail: 'Updated seasonal hours, towns or services.',
+            tone: 'green',
+            icon: 'clock',
+          },
+          {
+            label: 'Anything you want fixed or added',
+            detail: 'Updates handled without back-and-forth.',
+            tone: 'peach',
+            icon: 'wrench',
+          },
+        ],
+        dropExample: 'New photos',
+        headline: 'Monthly updates to your profile and pages, and a short report.',
+        support: 'So the site keeps working after launch.',
+        proof: 'Monthly report',
+        demoMockup: true,
         requiresMonthlyPackageData: true,
+        fallbackHeadline: 'Monthly updates to your website pages, and a short report.',
       },
     ],
   },

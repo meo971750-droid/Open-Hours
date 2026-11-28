@@ -262,7 +262,7 @@ export default function App() {
               id="compare"
               nextId="proof"
               loadChunk={loadCompare}
-              placeholderClassName="min-h-[1108px] lg:min-h-[1129px] bg-white"
+              placeholderClassName="min-h-[1694px] md:min-h-[1660px] lg:min-h-[1293px] bg-white"
             >
               <CompareSection />
             </LazySection>
