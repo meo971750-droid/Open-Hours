@@ -225,7 +225,7 @@ function TabGlossyIcon({
       viewBox="0 0 28 28"
       fill="none"
       aria-hidden="true"
-      className="w-7 h-7 shrink-0"
+      className="w-[calc(28px*var(--s))] h-[calc(28px*var(--s))] shrink-0"
     >
       <defs>
         <linearGradient id={gradId} x1="3" y1="2" x2="24" y2="26" gradientUnits="userSpaceOnUse">
@@ -336,7 +336,7 @@ function GlossySendCircleIcon({ uid }: { uid: string }) {
       viewBox="0 0 40 40"
       fill="none"
       aria-hidden="true"
-      className="w-10 h-10 shrink-0 drop-shadow-[0_6px_12px_rgba(20,115,90,0.28)]"
+      className="w-[calc(40px*var(--s))] h-[calc(40px*var(--s))] shrink-0 drop-shadow-[0_6px_12px_rgba(20,115,90,0.28)]"
     >
       <defs>
         <linearGradient id={gradId} x1="4" y1="3" x2="36" y2="38" gradientUnits="userSpaceOnUse">
@@ -364,7 +364,7 @@ function GlossySendCircleIcon({ uid }: { uid: string }) {
 }
 
 function ChecklistRowIcon({ kind }: { kind?: CompareSendItemConfig['icon'] }) {
-  const cls = 'w-5 h-5';
+  const cls = 'w-[calc(20px*var(--s))] h-[calc(20px*var(--s))]';
   switch (kind) {
     case 'photo':
     case 'camera':
@@ -442,7 +442,7 @@ function TradeThumbGlyph({ variant }: { variant: 0 | 1 | 2 }) {
   if (variant === 0) {
     // House silhouette glyph
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-4 h-4 text-[#14624F]/70">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-[calc(16px*var(--s))] h-[calc(16px*var(--s))] text-[#14624F]/70">
         <path d="M3 10.5L12 3l9 7.5" />
         <path d="M5.5 9.5V20h13V9.5" />
         <path d="M9.5 20v-5.5h5V20" />
@@ -452,7 +452,7 @@ function TradeThumbGlyph({ variant }: { variant: 0 | 1 | 2 }) {
   if (variant === 1) {
     // Pitched roof & dormer glyph
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-4 h-4 text-[#14624F]/70">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-[calc(16px*var(--s))] h-[calc(16px*var(--s))] text-[#14624F]/70">
         <path d="M2.5 13L12 5l9.5 8" />
         <path d="M6 10.5V19h12v-8.5" />
         <rect x="9.5" y="12.5" width="5" height="3.5" rx="0.8" />
@@ -461,7 +461,7 @@ function TradeThumbGlyph({ variant }: { variant: 0 | 1 | 2 }) {
   }
   // Roof ridge / tiles glyph
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-4 h-4 text-[#14624F]/70">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-[calc(16px*var(--s))] h-[calc(16px*var(--s))] text-[#14624F]/70">
       <path d="M3 15l9-8 9 8" />
       <path d="M6.5 15l5.5-5 5.5 5" />
       <line x1="4" y1="19" x2="20" y2="19" />
@@ -477,7 +477,7 @@ function OpenHoursTileMark() {
       viewBox="0 0 42 42"
       fill="none"
       aria-hidden="true"
-      className="w-[38px] h-[38px]"
+      className="w-[calc(38px*var(--s))] h-[calc(38px*var(--s))]"
     >
       <circle cx="21" cy="21" r="12.5" stroke="#0B1B22" strokeWidth="5.2" />
       <circle cx="21" cy="21" r="4.3" fill="#1E9E6A" />
@@ -491,84 +491,84 @@ function OutputMockupPanel({ tab }: { tab: ResolvedCompareTab }) {
   return (
     <div
       aria-hidden="true"
-      className="relative rounded-[24px] bg-[#FAFDFB] border border-white/60 text-[#0B1B22] shadow-[0_18px_36px_-14px_rgba(6,37,30,0.42)] h-[212px] sm:h-[224px] p-3.5 sm:p-4 overflow-hidden select-none"
+      className="relative rounded-[calc(24px*var(--s))] bg-[#FAFDFB] border border-white/60 text-[#0B1B22] shadow-[0_18px_36px_-14px_rgba(6,37,30,0.42)] h-[calc(212px*var(--s))] sm:h-[calc(224px*var(--s))] p-[calc(14px*var(--s))] sm:p-[calc(16px*var(--s))] overflow-hidden select-none"
     >
       {tab.demoMockup && config.ui.demoLabels && (
-        <span className="absolute top-2.5 right-2.5 z-20 px-2 py-0.5 rounded bg-[#0B1B22]/8 text-[10px] font-semibold uppercase tracking-wider text-[#475754] leading-none">
+        <span className="absolute top-[calc(10px*var(--s))] right-[calc(10px*var(--s))] z-20 px-[calc(8px*var(--s))] py-[calc(2px*var(--s))] rounded-[calc(4px*var(--s))] bg-[#0B1B22]/8 text-[calc(10px*var(--s))] font-semibold uppercase tracking-wider text-[#475754] leading-none">
           Demo
         </span>
       )}
 
       {tab.id === 'website' && (
-        <div className="h-full flex items-center justify-center gap-2 sm:gap-4">
+        <div className="h-full flex items-center justify-center gap-[calc(8px*var(--s))] sm:gap-[calc(16px*var(--s))]">
           {/* Step 2: Foreground Phone Screen */}
-          <div className="oh-mockup-step-2 w-[130px] sm:w-[172px] h-full rounded-[26px] border-[3px] border-[#0F2A35] bg-white p-2 sm:p-2.5 shadow-[0_10px_22px_-10px_rgba(11,27,34,0.28)] flex flex-col justify-between shrink-0">
-            <div className="flex items-center justify-between gap-1.5 pb-1.5 border-b border-[#0B1B22]/8">
-              <span className="h-2.5 w-14 sm:w-16 rounded-full bg-[#0B1B22]/80" />
-              <span className="h-2 w-2 rounded-full bg-[#1E9E6A]" />
+          <div className="oh-mockup-step-2 w-[calc(132px*var(--s))] sm:w-[calc(172px*var(--s))] h-full rounded-[calc(26px*var(--s))] border-[calc(3px*var(--s))] border-[#0F2A35] bg-white p-[calc(8px*var(--s))] sm:p-[calc(10px*var(--s))] shadow-[0_10px_22px_-10px_rgba(11,27,34,0.28)] flex flex-col justify-between shrink-0">
+            <div className="flex items-center justify-between gap-[calc(6px*var(--s))] pb-[calc(6px*var(--s))] border-b border-[#0B1B22]/8">
+              <span className="h-[calc(10px*var(--s))] w-[calc(56px*var(--s))] sm:w-[calc(64px*var(--s))] rounded-full bg-[#0B1B22]/80" />
+              <span className="h-[calc(8px*var(--s))] w-[calc(8px*var(--s))] rounded-full bg-[#1E9E6A]" />
             </div>
 
-            <div className="rounded-[10px] bg-[#14735A] text-white text-[10px] sm:text-[10.5px] font-semibold py-1.5 px-2 sm:px-2.5 flex items-center justify-center gap-1.5 whitespace-nowrap">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3 h-3 shrink-0">
+            <div className="rounded-[calc(10px*var(--s))] bg-[#14735A] text-white text-[calc(10px*var(--s))] sm:text-[calc(10.5px*var(--s))] font-semibold py-[calc(6px*var(--s))] px-[calc(8px*var(--s))] sm:px-[calc(10px*var(--s))] flex items-center justify-center gap-[calc(6px*var(--s))] whitespace-nowrap">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-[calc(12px*var(--s))] h-[calc(12px*var(--s))] shrink-0">
                 <path d="M13.5 11.1v1.8a1.2 1.2 0 0 1-1.3 1.2 11.8 11.8 0 0 1-5.1-1.8 11.6 11.6 0 0 1-3.6-3.6A11.8 11.8 0 0 1 1.7 3.6 1.2 1.2 0 0 1 2.9 2.3h1.8a1.2 1.2 0 0 1 1.2 1c.07.58.22 1.15.42 1.7a1.2 1.2 0 0 1-.27 1.26l-.76.76a9.6 9.6 0 0 0 3.6 3.6l.76-.76a1.2 1.2 0 0 1 1.26-.27c.55.2 1.12.35 1.7.42a1.2 1.2 0 0 1 1.09 1.09Z" />
               </svg>
               <span>Call now</span>
             </div>
 
-            <div className="oh-mockup-step-3 space-y-1.5 my-1">
+            <div className="oh-mockup-step-3 flex flex-col gap-[calc(6px*var(--s))] my-[calc(4px*var(--s))]">
               {[0, 1, 2].map((row) => (
                 <div
                   key={row}
-                  className="flex items-center gap-1.5 rounded-md bg-[#F2F6F4] px-1.5 py-1"
+                  className="flex items-center gap-[calc(6px*var(--s))] rounded-[calc(6px*var(--s))] bg-[#F2F6F4] px-[calc(6px*var(--s))] py-[calc(4px*var(--s))]"
                 >
-                  <span className="w-3 h-3 rounded bg-[#1E9E6A]/20 flex items-center justify-center shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#14735A]" />
+                  <span className="w-[calc(12px*var(--s))] h-[calc(12px*var(--s))] rounded-[calc(4px*var(--s))] bg-[#1E9E6A]/20 flex items-center justify-center shrink-0">
+                    <span className="w-[calc(6px*var(--s))] h-[calc(6px*var(--s))] rounded-full bg-[#14735A]" />
                   </span>
-                  <span className="h-1.5 flex-1 rounded-full bg-[#0B1B22]/25" />
+                  <span className="h-[calc(6px*var(--s))] flex-1 rounded-full bg-[#0B1B22]/25" />
                 </div>
               ))}
             </div>
 
-            <div className="oh-mockup-step-3 rounded-[9px] border border-[#14735A]/30 bg-[#E7F5EE] text-[#0F4A3E] text-[9.5px] sm:text-[10px] font-semibold py-1 text-center whitespace-nowrap">
+            <div className="oh-mockup-step-3 rounded-[calc(9px*var(--s))] border border-[#14735A]/30 bg-[#E7F5EE] text-[#0F4A3E] text-[calc(9.5px*var(--s))] sm:text-[calc(10px*var(--s))] font-semibold py-[calc(4px*var(--s))] text-center whitespace-nowrap">
               Get a quote
             </div>
           </div>
 
           {/* Step 1: Small Desktop Browser Window */}
-          <div className="oh-mockup-step-1 flex-1 min-w-0 max-w-[240px] h-[168px] rounded-[16px] border border-[#0B1B22]/12 bg-white shadow-[0_8px_20px_-10px_rgba(11,27,34,0.16)] overflow-hidden flex flex-col">
-            <div className="h-7 bg-[#F3F6F4] border-b border-[#0B1B22]/8 px-2 sm:px-2.5 flex items-center gap-1.5 sm:gap-2">
-              <div className="flex items-center gap-1 shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0B1B22]/25" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0B1B22]/25" />
+          <div className="oh-mockup-step-1 flex-1 min-w-0 max-w-[calc(240px*var(--s))] h-[calc(168px*var(--s))] rounded-[calc(16px*var(--s))] border border-[#0B1B22]/12 bg-white shadow-[0_8px_20px_-10px_rgba(11,27,34,0.16)] overflow-hidden flex flex-col">
+            <div className="h-[calc(28px*var(--s))] bg-[#F3F6F4] border-b border-[#0B1B22]/8 px-[calc(8px*var(--s))] sm:px-[calc(10px*var(--s))] flex items-center gap-[calc(6px*var(--s))] sm:gap-[calc(8px*var(--s))]">
+              <div className="flex items-center gap-[calc(4px*var(--s))] shrink-0">
+                <span className="w-[calc(6px*var(--s))] h-[calc(6px*var(--s))] rounded-full bg-[#0B1B22]/25" />
+                <span className="w-[calc(6px*var(--s))] h-[calc(6px*var(--s))] rounded-full bg-[#0B1B22]/25" />
               </div>
-              <div className="flex-1 min-w-0 rounded-full bg-white border border-[#0B1B22]/10 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-medium text-[#475754] whitespace-nowrap text-center">
+              <div className="flex-1 min-w-0 rounded-full bg-white border border-[#0B1B22]/10 px-[calc(6px*var(--s))] sm:px-[calc(8px*var(--s))] py-[calc(2px*var(--s))] text-[calc(9.5px*var(--s))] sm:text-[calc(10px*var(--s))] font-medium text-[#475754] whitespace-nowrap text-center">
                 yourbusiness.ie
               </div>
             </div>
 
-            <div className="p-2 sm:p-2.5 flex-1 flex flex-col justify-between">
-              <div className="space-y-1.5">
-                <div className="h-2.5 w-3/4 rounded-full bg-[#0B1B22]/75" />
-                <div className="h-2 w-1/2 rounded-full bg-[#475754]/30" />
+            <div className="p-[calc(8px*var(--s))] sm:p-[calc(10px*var(--s))] flex-1 flex flex-col justify-between">
+              <div className="flex flex-col gap-[calc(6px*var(--s))]">
+                <div className="h-[calc(10px*var(--s))] w-3/4 rounded-full bg-[#0B1B22]/75" />
+                <div className="h-[calc(8px*var(--s))] w-1/2 rounded-full bg-[#475754]/30" />
               </div>
 
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                <span className="px-1.5 sm:px-2 py-1 rounded-full bg-[#14735A] text-white text-[8px] sm:text-[9px] font-semibold whitespace-nowrap">
+              <div className="flex items-center gap-[calc(4px*var(--s))] sm:gap-[calc(6px*var(--s))]">
+                <span className="px-[calc(6px*var(--s))] sm:px-[calc(8px*var(--s))] py-[calc(4px*var(--s))] rounded-full bg-[#14735A] text-white text-[calc(8.5px*var(--s))] sm:text-[calc(9px*var(--s))] font-semibold whitespace-nowrap">
                   Call now
                 </span>
-                <span className="px-1.5 sm:px-2 py-1 rounded-full bg-[#E7F5EE] text-[#0F4A3E] text-[8px] sm:text-[9px] font-semibold whitespace-nowrap">
+                <span className="px-[calc(6px*var(--s))] sm:px-[calc(8px*var(--s))] py-[calc(4px*var(--s))] rounded-full bg-[#E7F5EE] text-[#0F4A3E] text-[calc(8.5px*var(--s))] sm:text-[calc(9px*var(--s))] font-semibold whitespace-nowrap">
                   Get a quote
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-[calc(6px*var(--s))]">
                 {[0, 1, 2].map((box) => (
                   <div
                     key={box}
-                    className="h-9 rounded-lg bg-[#F2F6F4] border border-[#0B1B22]/6 p-1.5 flex flex-col justify-between"
+                    className="h-[calc(36px*var(--s))] rounded-[calc(8px*var(--s))] bg-[#F2F6F4] border border-[#0B1B22]/6 p-[calc(6px*var(--s))] flex flex-col justify-between"
                   >
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#1E9E6A]/25" />
-                    <span className="h-1.5 w-full rounded-full bg-[#0B1B22]/20" />
+                    <span className="w-[calc(10px*var(--s))] h-[calc(10px*var(--s))] rounded-[calc(2px*var(--s))] bg-[#1E9E6A]/25" />
+                    <span className="h-[calc(6px*var(--s))] w-full rounded-full bg-[#0B1B22]/20" />
                   </div>
                 ))}
               </div>
@@ -578,10 +578,10 @@ function OutputMockupPanel({ tab }: { tab: ResolvedCompareTab }) {
       )}
 
       {tab.id === 'google' && (
-        <div className="h-full flex flex-col justify-between gap-2.5 pt-1">
-          <div className="flex-1 grid grid-cols-12 gap-3 min-h-0">
+        <div className="h-full flex flex-col justify-between gap-[calc(10px*var(--s))] pt-[calc(4px*var(--s))]">
+          <div className="flex-1 grid grid-cols-12 gap-[calc(12px*var(--s))] min-h-0">
             {/* Step 1: Light Map Tile with Ping Pin */}
-            <div className="oh-mockup-step-1 col-span-5 relative rounded-[16px] bg-[#E7F1EB] border border-[#14624F]/12 overflow-hidden">
+            <div className="oh-mockup-step-1 col-span-5 relative rounded-[calc(16px*var(--s))] bg-[#E7F1EB] border border-[#14624F]/12 overflow-hidden">
               <svg viewBox="0 0 180 130" fill="none" className="w-full h-full object-cover">
                 <path d="M-10 38L190 74" stroke="#FFFFFF" strokeWidth="7" />
                 <path d="M44 -10L78 140" stroke="#FFFFFF" strokeWidth="6" />
@@ -591,8 +591,8 @@ function OutputMockupPanel({ tab }: { tab: ResolvedCompareTab }) {
                 <rect x="18" y="64" width="34" height="20" rx="4" fill="#CBE2D4" />
               </svg>
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-                <span className="oh-compare-pin-ping absolute w-9 h-9 rounded-full bg-[#1E9E6A]/35" />
-                <svg viewBox="0 0 28 34" fill="none" className="relative w-7 h-8 drop-shadow-md">
+                <span className="oh-compare-pin-ping absolute w-[calc(36px*var(--s))] h-[calc(36px*var(--s))] rounded-full bg-[#1E9E6A]/35" />
+                <svg viewBox="0 0 28 34" fill="none" className="relative w-[calc(28px*var(--s))] h-[calc(32px*var(--s))] drop-shadow-md">
                   <path
                     d="M14 1.5C7.1 1.5 1.5 7.1 1.5 14C1.5 22.8 11.9 31.4 13.1 32.3C13.6 32.7 14.4 32.7 14.9 32.3C16.1 31.4 26.5 22.8 26.5 14C26.5 7.1 20.9 1.5 14 1.5Z"
                     fill="#14735A"
@@ -603,29 +603,29 @@ function OutputMockupPanel({ tab }: { tab: ResolvedCompareTab }) {
             </div>
 
             {/* Step 2: Google-profile-style Card */}
-            <div className="oh-mockup-step-2 col-span-7 rounded-[16px] bg-white border border-[#0B1B22]/10 p-3 shadow-xs flex flex-col justify-between">
-              <div className="space-y-1.5 pr-10">
-                <div className="h-3 w-3/4 rounded-full bg-[#0B1B22]/80" />
-                <div className="h-2 w-full rounded-full bg-[#475754]/25" />
-                <div className="h-2 w-5/6 rounded-full bg-[#475754]/20" />
-                <div className="h-2 w-2/3 rounded-full bg-[#475754]/20" />
+            <div className="oh-mockup-step-2 col-span-7 rounded-[calc(16px*var(--s))] bg-white border border-[#0B1B22]/10 p-[calc(12px*var(--s))] shadow-xs flex flex-col justify-between">
+              <div className="flex flex-col gap-[calc(6px*var(--s))] pr-[calc(40px*var(--s))]">
+                <div className="h-[calc(12px*var(--s))] w-3/4 rounded-full bg-[#0B1B22]/80" />
+                <div className="h-[calc(8px*var(--s))] w-full rounded-full bg-[#475754]/25" />
+                <div className="h-[calc(8px*var(--s))] w-5/6 rounded-full bg-[#475754]/20" />
+                <div className="h-[calc(8px*var(--s))] w-2/3 rounded-full bg-[#475754]/20" />
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <div className="flex flex-wrap items-center gap-[calc(6px*var(--s))] pt-[calc(4px*var(--s))]">
                 {tab.showGbp ? (
                   <>
-                    <span className="px-2 py-0.5 rounded-full bg-[#E7F5EE] text-[#0F4A3E] text-[10px] font-semibold">
+                    <span className="px-[calc(8px*var(--s))] py-[calc(2px*var(--s))] rounded-full bg-[#E7F5EE] text-[#0F4A3E] text-[calc(10px*var(--s))] font-semibold">
                       Open now
                     </span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#F3F5F3] text-[#0B1B22] text-[10px] font-medium">
+                    <span className="px-[calc(8px*var(--s))] py-[calc(2px*var(--s))] rounded-full bg-[#F3F5F3] text-[#0B1B22] text-[calc(10px*var(--s))] font-medium">
                       Call
                     </span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#F3F5F3] text-[#0B1B22] text-[10px] font-medium">
+                    <span className="px-[calc(8px*var(--s))] py-[calc(2px*var(--s))] rounded-full bg-[#F3F5F3] text-[#0B1B22] text-[calc(10px*var(--s))] font-medium">
                       Directions
                     </span>
                   </>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-full bg-[#E7F5EE] text-[#0F4A3E] text-[10px] font-semibold">
+                  <span className="px-[calc(8px*var(--s))] py-[calc(2px*var(--s))] rounded-full bg-[#E7F5EE] text-[#0F4A3E] text-[calc(10px*var(--s))] font-semibold">
                     Local page matched
                   </span>
                 )}
@@ -635,13 +635,13 @@ function OutputMockupPanel({ tab }: { tab: ResolvedCompareTab }) {
 
           {/* Step 3: 3 Local Page Town Chips */}
           {tab.showAreaPages && (
-            <div className="oh-mockup-step-3 flex items-center justify-between gap-2 rounded-[12px] bg-[#F1F6F3] px-3 py-2 border border-[#14624F]/10">
-              <span className="text-[11px] font-medium text-[#475754] shrink-0">Local pages</span>
-              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+            <div className="oh-mockup-step-3 flex items-center justify-between gap-[calc(8px*var(--s))] rounded-[calc(12px*var(--s))] bg-[#F1F6F3] px-[calc(12px*var(--s))] py-[calc(8px*var(--s))] border border-[#14624F]/10">
+              <span className="text-[calc(11px*var(--s))] font-medium text-[#475754] shrink-0">Local pages</span>
+              <div className="flex items-center gap-[calc(6px*var(--s))] flex-wrap justify-end">
                 {towns.map((town) => (
                   <span
                     key={town}
-                    className="px-2.5 py-0.5 rounded-full bg-white border border-[#14624F]/18 text-[11px] font-semibold text-[#0F4A3E]"
+                    className="px-[calc(10px*var(--s))] py-[calc(2px*var(--s))] rounded-full bg-white border border-[#14624F]/18 text-[calc(11px*var(--s))] font-semibold text-[#0F4A3E]"
                   >
                     {town}
                   </span>
@@ -653,29 +653,29 @@ function OutputMockupPanel({ tab }: { tab: ResolvedCompareTab }) {
       )}
 
       {tab.id === 'enquiries' && (
-        <div className="h-full grid grid-cols-12 gap-3 pt-1">
+        <div className="h-full grid grid-cols-12 gap-[calc(12px*var(--s))] pt-[calc(4px*var(--s))]">
           {/* Step 1 & 2: Phone Chat */}
           {tab.showReplyFlow && (
             <div
               className={`${
                 tab.showEnquiryCard ? 'col-span-6' : 'col-span-12'
-              } rounded-[20px] border-[2px] border-[#0F2A35] bg-[#F4F8F6] p-2.5 flex flex-col justify-between shadow-xs`}
+              } rounded-[calc(20px*var(--s))] border-[calc(2px*var(--s))] border-[#0F2A35] bg-[#F4F8F6] p-[calc(10px*var(--s))] flex flex-col justify-between shadow-xs`}
             >
-              <div className="flex items-center justify-between border-b border-[#0B1B22]/8 pb-1.5">
-                <span className="h-2 w-14 rounded-full bg-[#0B1B22]/45" />
-                <span className="text-[9.5px] font-medium text-[#475754]">Messages</span>
+              <div className="flex items-center justify-between border-b border-[#0B1B22]/8 pb-[calc(6px*var(--s))]">
+                <span className="h-[calc(8px*var(--s))] w-[calc(56px*var(--s))] rounded-full bg-[#0B1B22]/45" />
+                <span className="text-[calc(9.5px*var(--s))] font-medium text-[#475754]">Messages</span>
               </div>
 
-              <div className="space-y-1.5 my-1">
-                <div className="oh-mockup-step-1 w-fit max-w-[90%] rounded-full bg-[#E2E7E5] text-[#0B1B22] px-2.5 py-1 text-[10.5px] font-medium">
+              <div className="flex flex-col gap-[calc(6px*var(--s))] my-[calc(4px*var(--s))]">
+                <div className="oh-mockup-step-1 w-fit max-w-[90%] rounded-full bg-[#E2E7E5] text-[#0B1B22] px-[calc(10px*var(--s))] py-[calc(4px*var(--s))] text-[calc(10.5px*var(--s))] font-medium">
                   Missed call
                 </div>
 
-                <div className="oh-mockup-step-2 ml-auto w-fit max-w-[92%] rounded-[12px] rounded-br-xs bg-[#14735A] text-white px-2.5 py-1.5 text-[10px] leading-snug">
+                <div className="oh-mockup-step-2 ml-auto w-fit max-w-[92%] rounded-[calc(12px*var(--s))] rounded-br-xs bg-[#14735A] text-white px-[calc(10px*var(--s))] py-[calc(6px*var(--s))] text-[calc(10px*var(--s))] leading-snug">
                   Sorry we missed you, send your job details here.
                 </div>
 
-                <div className="oh-mockup-step-2 text-right text-[9.5px] font-semibold text-[#14624F]">
+                <div className="oh-mockup-step-2 text-right text-[calc(9.5px*var(--s))] font-semibold text-[#14624F]">
                   Delivered
                 </div>
               </div>
@@ -687,13 +687,13 @@ function OutputMockupPanel({ tab }: { tab: ResolvedCompareTab }) {
             <div
               className={`oh-mockup-step-3 ${
                 tab.showReplyFlow ? 'col-span-6' : 'col-span-12'
-              } rounded-[16px] bg-white border border-[#0B1B22]/10 p-3 shadow-xs flex flex-col justify-between`}
+              } rounded-[calc(16px*var(--s))] bg-white border border-[#0B1B22]/10 p-[calc(12px*var(--s))] shadow-xs flex flex-col justify-between`}
             >
-              <div className="flex items-center justify-between gap-2 pr-10">
-                <span className="text-[12px] font-semibold text-[#0B1B22]">New enquiry</span>
+              <div className="flex items-center justify-between gap-[calc(8px*var(--s))] pr-[calc(40px*var(--s))]">
+                <span className="text-[calc(12px*var(--s))] font-semibold text-[#0B1B22]">New enquiry</span>
                 {tab.showOwnerBell && (
-                  <span className="w-6 h-6 rounded-full bg-[#E7F5EE] text-[#14735A] flex items-center justify-center shrink-0">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                  <span className="w-[calc(24px*var(--s))] h-[calc(24px*var(--s))] rounded-full bg-[#E7F5EE] text-[#14735A] flex items-center justify-center shrink-0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-[calc(14px*var(--s))] h-[calc(14px*var(--s))]">
                       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                     </svg>
@@ -701,18 +701,18 @@ function OutputMockupPanel({ tab }: { tab: ResolvedCompareTab }) {
                 )}
               </div>
 
-              <div className="space-y-2 mt-2">
+              <div className="flex flex-col gap-[calc(8px*var(--s))] mt-[calc(8px*var(--s))]">
                 {(['Job', 'Town', 'Photos'] as const).map((fieldLabel, rowIdx) => (
                   <div
                     key={fieldLabel}
-                    className="flex items-center justify-between gap-2 rounded-lg bg-[#F5F7F6] px-2.5 py-1.5"
+                    className="flex items-center justify-between gap-[calc(8px*var(--s))] rounded-[calc(8px*var(--s))] bg-[#F5F7F6] px-[calc(10px*var(--s))] py-[calc(6px*var(--s))]"
                   >
-                    <span className="text-[10.5px] font-semibold text-[#475754] shrink-0">
+                    <span className="text-[calc(10.5px*var(--s))] font-semibold text-[#475754] shrink-0">
                       {fieldLabel}
                     </span>
                     <span
-                      className={`h-2 rounded-full bg-[#14735A]/30 ${
-                        rowIdx === 0 ? 'w-16' : rowIdx === 1 ? 'w-12' : 'w-14'
+                      className={`h-[calc(8px*var(--s))] rounded-full bg-[#14735A]/30 ${
+                        rowIdx === 0 ? 'w-[calc(64px*var(--s))]' : rowIdx === 1 ? 'w-[calc(48px*var(--s))]' : 'w-[calc(56px*var(--s))]'
                       }`}
                     />
                   </div>
@@ -724,40 +724,40 @@ function OutputMockupPanel({ tab }: { tab: ResolvedCompareTab }) {
       )}
 
       {tab.id === 'care' && (
-        <div className="h-full rounded-[18px] bg-white border border-[#0B1B22]/10 p-3.5 shadow-xs flex flex-col justify-between">
+        <div className="h-full rounded-[calc(18px*var(--s))] bg-white border border-[#0B1B22]/10 p-[calc(14px*var(--s))] shadow-xs flex flex-col justify-between">
           {/* Step 1: Report Title Bar + Chip */}
-          <div className="oh-mockup-step-1 flex items-center justify-between gap-2 pr-12">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-6 h-6 rounded-lg bg-[#E7F5EE] text-[#14735A] flex items-center justify-center shrink-0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+          <div className="oh-mockup-step-1 flex items-center justify-between gap-[calc(8px*var(--s))] pr-[calc(48px*var(--s))]">
+            <div className="flex items-center gap-[calc(8px*var(--s))] min-w-0">
+              <span className="w-[calc(24px*var(--s))] h-[calc(24px*var(--s))] rounded-[calc(8px*var(--s))] bg-[#E7F5EE] text-[#14735A] flex items-center justify-center shrink-0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-[calc(14px*var(--s))] h-[calc(14px*var(--s))]">
                   <path d="M4 19h16M7 16V9M12 16V5M17 16v-4" />
                 </svg>
               </span>
-              <span className="h-2.5 w-24 rounded-full bg-[#0B1B22]/80" />
+              <span className="h-[calc(10px*var(--s))] w-[calc(96px*var(--s))] rounded-full bg-[#0B1B22]/80" />
             </div>
-            <span className="px-2.5 py-1 rounded-full bg-[#E7F5EE] text-[#0F4A3E] text-[10.5px] font-semibold shrink-0">
+            <span className="px-[calc(10px*var(--s))] py-[calc(4px*var(--s))] rounded-full bg-[#E7F5EE] text-[#0F4A3E] text-[calc(10.5px*var(--s))] font-semibold shrink-0">
               Monthly update
             </span>
           </div>
 
           {/* Step 2: Three Small Bar Groups (no axis numbers) */}
-          <div className="oh-mockup-step-2 flex-1 flex items-end justify-around gap-4 px-2 py-2.5 my-1 rounded-[12px] bg-[#F4F8F6] border border-[#0B1B22]/5">
+          <div className="oh-mockup-step-2 flex-1 flex items-end justify-around gap-[calc(16px*var(--s))] px-[calc(8px*var(--s))] py-[calc(10px*var(--s))] my-[calc(4px*var(--s))] rounded-[calc(12px*var(--s))] bg-[#F4F8F6] border border-[#0B1B22]/5">
             {[
-              ['h-7', 'h-11'],
-              ['h-10', 'h-14'],
-              ['h-8', 'h-12'],
+              ['h-[calc(28px*var(--s))]', 'h-[calc(44px*var(--s))]'],
+              ['h-[calc(40px*var(--s))]', 'h-[calc(56px*var(--s))]'],
+              ['h-[calc(32px*var(--s))]', 'h-[calc(48px*var(--s))]'],
             ].map((pair, groupIdx) => (
-              <div key={groupIdx} className="flex items-end gap-1.5">
-                <div className={`w-3.5 rounded-t-md bg-[#A8EBD3] ${pair[0]}`} />
-                <div className={`w-3.5 rounded-t-md bg-[#14735A] ${pair[1]}`} />
+              <div key={groupIdx} className="flex items-end gap-[calc(6px*var(--s))]">
+                <div className={`w-[calc(14px*var(--s))] rounded-t-[calc(6px*var(--s))] bg-[#A8EBD3] ${pair[0]}`} />
+                <div className={`w-[calc(14px*var(--s))] rounded-t-[calc(6px*var(--s))] bg-[#14735A] ${pair[1]}`} />
               </div>
             ))}
           </div>
 
           {/* Step 3: Two Skeleton Lines */}
-          <div className="oh-mockup-step-3 space-y-1.5">
-            <div className="h-2 w-4/5 rounded-full bg-[#475754]/25" />
-            <div className="h-2 w-3/5 rounded-full bg-[#475754]/18" />
+          <div className="oh-mockup-step-3 flex flex-col gap-[calc(6px*var(--s))]">
+            <div className="h-[calc(8px*var(--s))] w-4/5 rounded-full bg-[#475754]/25" />
+            <div className="h-[calc(8px*var(--s))] w-3/5 rounded-full bg-[#475754]/18" />
           </div>
         </div>
       )}
@@ -799,9 +799,11 @@ export default function CompareSection() {
 
   const measurePill = useCallback(() => {
     const btn = tabRefs.current[activeIndex];
+    const track = trackRef.current;
     if (!btn) return;
+    const pad = track ? parseFloat(getComputedStyle(track).paddingLeft) || 4.25 : 4.25;
     setPillStyle({
-      left: Math.max(0, btn.offsetLeft - 5),
+      left: Math.max(0, btn.offsetLeft - pad),
       width: btn.offsetWidth,
     });
   }, [activeIndex]);
@@ -879,6 +881,7 @@ export default function CompareSection() {
       ref={sectionRef}
       id="compare"
       aria-label="What you send us and what you get back"
+      style={{ '--s': 0.85 } as React.CSSProperties}
       className="oh-cv-auto oh-anim-paused relative w-full bg-white text-[#0B1B22] py-[var(--section-py)] overflow-x-clip"
     >
       <style>{`
@@ -965,31 +968,31 @@ export default function CompareSection() {
         }
       `}</style>
 
-      <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[var(--container-max)] mx-auto px-[var(--container-px)]">
         {/* 1. Centered Header */}
-        <div className="text-center max-w-[920px] mx-auto mb-10 sm:mb-12">
-          <h2 className="font-heading text-[clamp(40px,6vw,96px)] font-bold leading-[1.0] tracking-[-0.03em] text-[#0B1B22]">
+        <div className="text-center max-w-[780px] mx-auto mb-12 sm:mb-14">
+          <h2 className="font-heading text-[length:var(--h2-size)] font-bold leading-[var(--h2-lh)] tracking-[-0.03em] text-[#0B1B22]">
             <span className="block">{headingLine1}</span>
             {headingLine2 && <span className="block">{headingLine2}</span>}
           </h2>
 
-          <p className="mt-5 text-[17px] sm:text-[20px] leading-[1.45] text-[#475754] max-w-[700px] mx-auto">
+          <p className="mt-4 text-[length:var(--sub-size)] leading-[1.6] text-[#475754] max-w-[640px] mx-auto">
             {subtitleText}
           </p>
         </div>
 
         {/* 2. Pill Tab Bar */}
-        <div className="w-full max-w-[1700px] mx-auto mb-8 sm:mb-10">
+        <div className="w-full mx-auto mb-[calc(34px*var(--s))] sm:mb-[calc(40px*var(--s))]">
           <div
             ref={trackRef}
             role="tablist"
             aria-label="Deliverable stages"
-            className={`relative h-[70px] w-full rounded-full bg-[#F6F4F2] p-[5px] flex min-[960px]:grid ${desktopGridColsClass} items-center overflow-x-auto min-[960px]:overflow-visible no-scrollbar snap-x snap-proximity`}
+            className={`relative h-[calc(70px*var(--s))] w-full rounded-full bg-[#F6F4F2] p-[calc(5px*var(--s))] flex min-[960px]:grid ${desktopGridColsClass} items-center overflow-x-auto min-[960px]:overflow-visible no-scrollbar snap-x snap-proximity`}
           >
             {/* Shared Sliding Dark Pill */}
             <div
               aria-hidden="true"
-              className={`pointer-events-none absolute top-[5px] bottom-[5px] left-[5px] rounded-full shadow-[0_8px_20px_-6px_rgba(11,27,34,0.35)] ${
+              className={`pointer-events-none absolute top-[calc(5px*var(--s))] bottom-[calc(5px*var(--s))] left-[calc(5px*var(--s))] rounded-full shadow-[0_8px_20px_-6px_rgba(11,27,34,0.35)] ${
                 prefersReducedMotion
                   ? ''
                   : 'transition-[transform,width] duration-300 ease-[cubic-bezier(0.34,1.35,0.64,1)]'
@@ -1021,12 +1024,12 @@ export default function CompareSection() {
                   tabIndex={isActive ? 0 : -1}
                   onClick={() => selectTab(idx, false)}
                   onKeyDown={(e) => handleTabKeyDown(e, idx)}
-                  className={`relative z-10 h-full shrink-0 min-[960px]:shrink flex items-center justify-center gap-2.5 sm:gap-3 px-5 min-[960px]:px-3 rounded-full whitespace-nowrap snap-center cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-[#1E9E6A] focus-visible:outline-offset-[-2px] ${
+                  className={`relative z-10 h-full shrink-0 min-[960px]:shrink flex items-center justify-center gap-[calc(10px*var(--s))] sm:gap-[calc(12px*var(--s))] px-[calc(20px*var(--s))] min-[960px]:px-[calc(12px*var(--s))] rounded-full whitespace-nowrap snap-center cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-[#1E9E6A] focus-visible:outline-offset-[-2px] ${
                     isActive ? 'text-white' : 'text-[#0B1B22] hover:text-[#14624F]'
                   }`}
                 >
                   <TabGlossyIcon kind={tab.icon} active={isActive} uid={uid} />
-                  <span className="font-heading text-[16px] sm:text-[18px] min-[1180px]:text-[22px] font-medium leading-none tracking-[-0.02em]">
+                  <span className="font-heading text-[calc(17px*var(--s))] sm:text-[calc(18px*var(--s))] min-[1180px]:text-[calc(22px*var(--s))] font-medium leading-none tracking-[-0.02em]">
                     {tab.label}
                   </span>
                 </button>
@@ -1040,37 +1043,37 @@ export default function CompareSection() {
           role="tabpanel"
           id={`${uid}-panel-${activeTab.id}`}
           aria-labelledby={`${uid}-tab-${activeTab.id}`}
-          className="w-full max-w-[1700px] mx-auto"
+          className="w-full mx-auto"
         >
-          <div className="relative flex flex-col min-[1024px]:flex-row items-stretch gap-4 min-[1024px]:gap-[150px]">
+          <div className="relative flex flex-col min-[1024px]:flex-row items-stretch gap-[calc(16px*var(--s))] min-[1024px]:gap-[calc(150px*var(--s))]">
             {/* LEFT CARD: What you send us */}
-            <div className="relative z-10 flex-1 min-h-[400px] rounded-[32px] bg-[#F8F4EF] border border-[#0B1B22]/10 shadow-[0_14px_34px_-18px_rgba(11,27,34,0.14)] p-6 sm:p-[36px] flex flex-col justify-between gap-4 sm:gap-5">
-              <div className="space-y-4">
-                {/* Header Row: 40px Glossy Green Icon + Title */}
-                <div className="flex items-center gap-3.5">
+            <div className="relative z-10 flex-1 min-h-[calc(400px*var(--s))] rounded-[calc(32px*var(--s))] bg-[#F8F4EF] border border-[#0B1B22]/10 shadow-[0_14px_34px_-18px_rgba(11,27,34,0.14)] p-[calc(24px*var(--s))] sm:p-[calc(36px*var(--s))] flex flex-col justify-between gap-[calc(16px*var(--s))] sm:gap-[calc(20px*var(--s))]">
+              <div className="flex flex-col gap-[calc(16px*var(--s))]">
+                {/* Header Row: 40px*s Glossy Green Icon + Title */}
+                <div className="flex items-center gap-[calc(14px*var(--s))]">
                   <GlossySendCircleIcon uid={uid} />
-                  <h3 className="font-heading text-[26px] sm:text-[30px] font-semibold leading-[1.12] tracking-[-0.025em] text-[#0B1B22]">
+                  <h3 className="font-heading text-[calc(28px*var(--s))] sm:text-[calc(30px*var(--s))] font-semibold leading-[1.12] tracking-[-0.025em] text-[#0B1B22]">
                     You send us
                   </h3>
                 </div>
 
                 {/* Short Lead Line */}
-                <p className="text-[18px] sm:text-[20px] leading-[1.35] text-[#475754]">
+                <p className="text-[calc(18px*var(--s))] sm:text-[calc(20px*var(--s))] leading-[1.35] text-[#475754]">
                   {activeTab.sendLead}
                 </p>
 
                 {/* 3-Row Sequential Checklist */}
-                <ul className="flex flex-col gap-3.5 list-none p-0 m-0 pt-1">
+                <ul className="flex flex-col gap-[calc(14px*var(--s))] list-none p-0 m-0 pt-[calc(4px*var(--s))]">
                   {activeTab.sendItems.slice(0, 3).map((item, idx) => {
                     const isPeach = item.tone === 'peach';
                     return (
                       <li
                         key={`${activeTab.id}-send-${idx}`}
-                        className="flex items-center justify-between gap-3.5 rounded-[18px] bg-white/70 border border-[#0B1B22]/6 px-3.5 py-3"
+                        className="flex items-center justify-between gap-[calc(14px*var(--s))] rounded-[calc(18px*var(--s))] bg-white/70 border border-[#0B1B22]/6 px-[calc(14px*var(--s))] py-[calc(12px*var(--s))]"
                       >
-                        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-[calc(14px*var(--s))] min-w-0 flex-1">
                           <div
-                            className={`w-11 h-11 rounded-[13px] shrink-0 flex items-center justify-center ${
+                            className={`w-[calc(44px*var(--s))] h-[calc(44px*var(--s))] rounded-[calc(13px*var(--s))] shrink-0 flex items-center justify-center ${
                               isPeach
                                 ? 'bg-[#FBE6D8] text-[#9A4D22]'
                                 : 'bg-[#DDF4EA] text-[#14624F]'
@@ -1080,10 +1083,10 @@ export default function CompareSection() {
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="font-heading text-[18px] sm:text-[20px] font-semibold leading-[1.2] text-[#0B1B22]">
+                            <div className="font-heading text-[calc(18.5px*var(--s))] sm:text-[calc(20px*var(--s))] font-semibold leading-[1.2] text-[#0B1B22]">
                               {item.label}
                             </div>
-                            <div className="text-[14.5px] sm:text-[16px] leading-[1.35] text-[#475754] mt-0.5">
+                            <div className="text-[calc(16px*var(--s))] sm:text-[calc(17px*var(--s))] leading-[1.35] text-[#475754] mt-[calc(2px*var(--s))]">
                               {item.detail}
                             </div>
                           </div>
@@ -1092,7 +1095,7 @@ export default function CompareSection() {
                         {/* Empty Round Tick -> Sequential Green Tick */}
                         <span
                           aria-hidden="true"
-                          className="relative w-6 h-6 rounded-full border border-[#0B1B22]/18 bg-white shrink-0 flex items-center justify-center overflow-hidden"
+                          className="relative w-[calc(24px*var(--s))] h-[calc(24px*var(--s))] rounded-full border border-[#0B1B22]/18 bg-white shrink-0 flex items-center justify-center overflow-hidden"
                         >
                           <span
                             className={`absolute inset-0 rounded-full bg-[#1E9E6A] flex items-center justify-center ${tickDelayClasses[idx]}`}
@@ -1104,7 +1107,7 @@ export default function CompareSection() {
                               strokeWidth="2.2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              className="w-3.5 h-3.5"
+                              className="w-[calc(14px*var(--s))] h-[calc(14px*var(--s))]"
                             >
                               <polyline points="3.5 8.5 6.5 11.5 12.5 5" />
                             </svg>
@@ -1117,11 +1120,11 @@ export default function CompareSection() {
               </div>
 
               {/* Drop Zone Strip */}
-              <div className="rounded-[20px] border-[1.5px] border-dashed border-[#1E9E6A]/45 bg-[#E7F5EE]/75 px-4 py-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="rounded-[calc(20px*var(--s))] border-[1.5px] border-dashed border-[#1E9E6A]/45 bg-[#E7F5EE]/75 px-[calc(16px*var(--s))] py-[calc(12px*var(--s))] flex flex-wrap sm:flex-nowrap items-center justify-between gap-[calc(12px*var(--s))]">
+                <div className="flex items-center gap-[calc(12px*var(--s))] min-w-0 flex-1">
                   <span
                     aria-hidden="true"
-                    className="w-9 h-9 rounded-full bg-[#D2EEE1] text-[#14624F] flex items-center justify-center shrink-0"
+                    className="w-[calc(36px*var(--s))] h-[calc(36px*var(--s))] rounded-full bg-[#D2EEE1] text-[#14624F] flex items-center justify-center shrink-0"
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -1130,24 +1133,24 @@ export default function CompareSection() {
                       strokeWidth={2}
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="w-4 h-4"
+                      className="w-[calc(16px*var(--s))] h-[calc(16px*var(--s))]"
                     >
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="17 8 12 3 7 8" />
                       <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
                   </span>
-                  <span className="text-[15.5px] sm:text-[16px] font-medium text-[#0F4A3E] leading-snug">
+                  <span className="text-[calc(15.5px*var(--s))] sm:text-[calc(16.5px*var(--s))] font-medium text-[#0F4A3E] leading-snug">
                     {activeTab.dropExample}
                   </span>
                 </div>
 
                 {/* 3 Tiny Placeholder Thumbnails (soft grey-green gradient squares with house/roof glyph) */}
-                <div className="flex items-center gap-1.5 shrink-0" aria-hidden="true">
+                <div className="flex items-center gap-[calc(6px*var(--s))] shrink-0" aria-hidden="true">
                   {([0, 1, 2] as const).map((variant) => (
                     <div
                       key={variant}
-                      className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-[#DCE8E1] to-[#C2D8CC] border border-[#14624F]/15 flex items-center justify-center"
+                      className="w-[calc(36px*var(--s))] h-[calc(36px*var(--s))] rounded-[calc(10px*var(--s))] bg-gradient-to-br from-[#DCE8E1] to-[#C2D8CC] border border-[#14624F]/15 flex items-center justify-center"
                     >
                       <TradeThumbGlyph variant={variant} />
                     </div>
@@ -1159,7 +1162,7 @@ export default function CompareSection() {
             {/* EMBOSSED SOFT GREEN-TINTED ARROW BETWEEN CARDS */}
             <div
               aria-hidden="true"
-              className="pointer-events-none flex items-center justify-center my-[-10px] min-[1024px]:my-0 min-[1024px]:absolute min-[1024px]:left-1/2 min-[1024px]:top-1/2 min-[1024px]:-translate-x-1/2 min-[1024px]:-translate-y-1/2 z-20"
+              className="pointer-events-none flex items-center justify-center my-[calc(-10px*var(--s))] min-[1024px]:my-0 min-[1024px]:absolute min-[1024px]:left-1/2 min-[1024px]:top-1/2 min-[1024px]:-translate-x-1/2 min-[1024px]:-translate-y-1/2 z-20"
             >
               <div className="hidden min-[1024px]:block oh-compare-arrow-desktop">
                 <svg
@@ -1167,7 +1170,7 @@ export default function CompareSection() {
                   height="90"
                   viewBox="0 0 156 94"
                   fill="none"
-                  className="w-[148px] h-[90px]"
+                  className="w-[calc(148px*var(--s))] h-[calc(90px*var(--s))]"
                   style={{
                     filter: 'drop-shadow(6px 10px 16px rgba(15, 74, 62, 0.14))',
                   }}
@@ -1195,7 +1198,7 @@ export default function CompareSection() {
                   height="52"
                   viewBox="0 0 154 94"
                   fill="none"
-                  className="w-[76px] h-[52px]"
+                  className="w-[calc(76px*var(--s))] h-[calc(52px*var(--s))]"
                   style={{
                     filter: 'drop-shadow(0 6px 12px rgba(15, 74, 62, 0.12))',
                   }}
@@ -1220,24 +1223,24 @@ export default function CompareSection() {
 
             {/* RIGHT CARD: What you get back */}
             <div
-              className="relative z-10 flex-1 min-h-[400px] rounded-[32px] p-6 sm:p-[36px] text-white overflow-hidden flex flex-col justify-between gap-4 sm:gap-5 shadow-[0_22px_48px_-20px_rgba(6,37,30,0.45)]"
+              className="relative z-10 flex-1 min-h-[calc(400px*var(--s))] rounded-[calc(32px*var(--s))] p-[calc(24px*var(--s))] sm:p-[calc(36px*var(--s))] text-white overflow-hidden flex flex-col justify-between gap-[calc(16px*var(--s))] sm:gap-[calc(20px*var(--s))] shadow-[0_22px_48px_-20px_rgba(6,37,30,0.45)]"
               style={{
                 background:
                   'radial-gradient(circle at 86% 12%, rgba(111, 214, 176, 0.22) 0%, transparent 45%), linear-gradient(135deg, #137057 0%, #0D4E3D 50%, #062B22 100%)',
               }}
             >
-              <div className="space-y-4">
-                {/* Header Row: Open Hours Wordmark Left + 64px White Tile Right */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="h-[40px] flex items-center min-w-0">
+              <div className="flex flex-col gap-[calc(16px*var(--s))]">
+                {/* Header Row: Open Hours Wordmark Left + 64px*s White Tile Right */}
+                <div className="flex items-center justify-between gap-[calc(16px*var(--s))]">
+                  <div className="h-[calc(40px*var(--s))] flex items-center min-w-0">
                     <Logo
                       variant="light"
                       size="lg"
-                      className="[&>span]:text-[32px] sm:[&>span]:text-[38px] leading-none"
+                      className="[&>span]:text-[calc(32px*var(--s))] sm:[&>span]:text-[calc(38px*var(--s))] leading-none"
                     />
                   </div>
 
-                  <div className="w-[64px] h-[64px] rounded-[16px] bg-white shadow-[0_14px_30px_-8px_rgba(6,56,46,0.52)] flex items-center justify-center shrink-0">
+                  <div className="w-[calc(64px*var(--s))] h-[calc(64px*var(--s))] rounded-[calc(16px*var(--s))] bg-white shadow-[0_14px_30px_-8px_rgba(6,56,46,0.52)] flex items-center justify-center shrink-0">
                     <OpenHoursTileMark />
                   </div>
                 </div>
@@ -1247,26 +1250,26 @@ export default function CompareSection() {
                   key={`text-${activeTab.id}`}
                   className={hasSwitched ? 'oh-compare-right-enter' : ''}
                 >
-                  <div className="font-heading text-[26px] sm:text-[30px] font-semibold leading-[1.12] tracking-[-0.02em] text-white">
+                  <div className="font-heading text-[calc(28px*var(--s))] sm:text-[calc(30px*var(--s))] font-semibold leading-[1.12] tracking-[-0.02em] text-white">
                     You get
                   </div>
-                  <h3 className="font-heading text-[22px] sm:text-[26px] xl:text-[29px] font-semibold leading-[1.18] tracking-[-0.025em] text-white mt-2">
+                  <h3 className="font-heading text-[calc(25px*var(--s))] sm:text-[calc(27px*var(--s))] xl:text-[calc(29px*var(--s))] font-semibold leading-[1.18] tracking-[-0.025em] text-white mt-[calc(8px*var(--s))]">
                     {activeTab.headline}
                   </h3>
-                  <p className="text-[17px] sm:text-[19px] leading-[1.35] text-white/85 mt-2">
+                  <p className="text-[calc(17.5px*var(--s))] sm:text-[calc(19px*var(--s))] leading-[1.35] text-white/85 mt-[calc(8px*var(--s))]">
                     {activeTab.support}
                   </p>
                 </div>
               </div>
 
-              {/* Mockup Panel (200-240px high, inline SVG/CSS only, 3-step assemble) */}
+              {/* Mockup Panel (200-240px*s high, inline SVG/CSS only, 3-step assemble) */}
               <div key={`mockup-${activeTab.id}`}>
                 <OutputMockupPanel tab={activeTab} />
               </div>
 
               {/* Bottom Proof Pill (fully visible, no clipping) */}
               <div>
-                <span className="inline-flex items-center w-fit max-w-full rounded-full bg-white/14 border border-white/25 px-4 py-1.5 text-[14px] font-medium text-white leading-snug">
+                <span className="inline-flex items-center w-fit max-w-full rounded-full bg-white/14 border border-white/25 px-[calc(16px*var(--s))] py-[calc(6px*var(--s))] text-[calc(14.5px*var(--s))] font-medium text-white leading-snug">
                   {activeTab.proof}
                 </span>
               </div>

@@ -27,7 +27,14 @@ interface OrbitChannelTile {
 
 function DomainGlyph() {
   return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-9 h-9 shrink-0">
+    <svg
+      width="36"
+      height="36"
+      viewBox="0 0 36 36"
+      fill="none"
+      aria-hidden="true"
+      className="w-[calc(36px*var(--s))] h-[calc(36px*var(--s))] shrink-0"
+    >
       <rect width="36" height="36" rx="11" fill="#EBF6F1" />
       <rect x="8.5" y="10" width="19" height="16" rx="3.5" stroke="#14624F" strokeWidth="1.9" />
       <line x1="9" y1="14.5" x2="27" y2="14.5" stroke="#14624F" strokeWidth="1.7" />
@@ -40,7 +47,14 @@ function DomainGlyph() {
 
 function ProfileOrPagesGlyph({ useProfile }: { useProfile: boolean }) {
   return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-9 h-9 shrink-0">
+    <svg
+      width="36"
+      height="36"
+      viewBox="0 0 36 36"
+      fill="none"
+      aria-hidden="true"
+      className="w-[calc(36px*var(--s))] h-[calc(36px*var(--s))] shrink-0"
+    >
       <rect width="36" height="36" rx="11" fill="#EBF6F1" />
       {useProfile ? (
         <>
@@ -76,7 +90,7 @@ function AnimatedCheckIcon({
       viewBox="0 0 26 26"
       fill="none"
       aria-hidden="true"
-      className="w-[24px] h-[24px] sm:w-[26px] sm:h-[26px] shrink-0"
+      className="w-[calc(24px*var(--s))] h-[calc(24px*var(--s))] sm:w-[calc(26px*var(--s))] sm:h-[calc(26px*var(--s))] shrink-0"
     >
       <path
         d="M5.5 13.8L10.4 18.6L20.5 7.8"
@@ -96,7 +110,7 @@ function ChannelNeutralGlyph({ id }: { id: ChannelId }) {
   switch (id) {
     case 'maps':
       return (
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-8 h-8 sm:w-9 sm:h-9">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-[calc(34px*var(--s))] h-[calc(34px*var(--s))] sm:w-[calc(36px*var(--s))] sm:h-[calc(36px*var(--s))]">
           <path
             d="M18 6C12.75 6 8.5 10.14 8.5 15.25C8.5 21.74 16.56 29 17.4 29.74C17.74 30.04 18.26 30.04 18.6 29.74C19.44 29 27.5 21.74 27.5 15.25C27.5 10.14 23.25 6 18 6Z"
             stroke="#0F4A3E"
@@ -108,14 +122,14 @@ function ChannelNeutralGlyph({ id }: { id: ChannelId }) {
       );
     case 'search':
       return (
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-8 h-8 sm:w-9 sm:h-9">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-[calc(34px*var(--s))] h-[calc(34px*var(--s))] sm:w-[calc(36px*var(--s))] sm:h-[calc(36px*var(--s))]">
           <circle cx="16" cy="16" r="7.5" stroke="#0F4A3E" strokeWidth="2.6" fill="#E8F6F0" />
           <path d="M21.8 21.8L28.5 28.5" stroke="#1E9E6A" strokeWidth="3" strokeLinecap="round" />
         </svg>
       );
     case 'gbp':
       return (
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-8 h-8 sm:w-9 sm:h-9">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-[calc(34px*var(--s))] h-[calc(34px*var(--s))] sm:w-[calc(36px*var(--s))] sm:h-[calc(36px*var(--s))]">
           <path
             d="M7.5 15L9.6 8.5H26.4L28.5 15C28.5 17.1 26.8 18.6 24.8 18.6C22.9 18.6 21.4 17.2 21.4 15.4C21.4 17.2 19.9 18.6 18 18.6C16.1 18.6 14.6 17.2 14.6 15.4C14.6 17.2 13.1 18.6 11.2 18.6C9.2 18.6 7.5 17.1 7.5 15Z"
             stroke="#0F4A3E"
@@ -129,7 +143,7 @@ function ChannelNeutralGlyph({ id }: { id: ChannelId }) {
       );
     case 'whatsapp':
       return (
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-8 h-8 sm:w-9 sm:h-9">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-[calc(34px*var(--s))] h-[calc(34px*var(--s))] sm:w-[calc(36px*var(--s))] sm:h-[calc(36px*var(--s))]">
           <path
             d="M18 7C11.92 7 7 11.72 7 17.55C7 19.83 7.75 21.95 9.04 23.68L7.6 28.4L12.56 26.95C14.18 27.68 16.03 28.1 18 28.1C24.08 28.1 29 23.38 29 17.55C29 11.72 24.08 7 18 7Z"
             stroke="#0F4A3E"
@@ -145,7 +159,7 @@ function ChannelNeutralGlyph({ id }: { id: ChannelId }) {
       );
     case 'phone':
       return (
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-7 h-7 sm:w-8 sm:h-8">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-[calc(30px*var(--s))] h-[calc(30px*var(--s))] sm:w-[calc(32px*var(--s))] sm:h-[calc(32px*var(--s))]">
           <path
             d="M11.6 8.8L14.5 12.7C14.9 13.3 14.8 14.1 14.2 14.6L12.7 15.8C14.1 18.6 16.4 20.9 19.2 22.3L20.4 20.8C20.9 20.2 21.7 20.1 22.3 20.5L26.2 23.4C26.8 23.9 27 24.8 26.5 25.5C25.2 27.3 22.9 28.1 20.7 27.3C14.9 25.1 10.9 21.1 8.7 15.3C7.9 13.1 8.7 10.8 10.5 9.5C11.2 9 11.2 8.3 11.6 8.8Z"
             stroke="#0F4A3E"
@@ -157,7 +171,7 @@ function ChannelNeutralGlyph({ id }: { id: ChannelId }) {
       );
     case 'star':
       return (
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-7 h-7 sm:w-8 sm:h-8">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-[calc(30px*var(--s))] h-[calc(30px*var(--s))] sm:w-[calc(32px*var(--s))] sm:h-[calc(32px*var(--s))]">
           <path
             d="M18 7.5L21.1 13.9L28.1 14.9L23 19.8L24.2 26.8L18 23.5L11.8 26.8L13 19.8L7.9 14.9L14.9 13.9L18 7.5Z"
             stroke="#0F4A3E"
@@ -169,7 +183,7 @@ function ChannelNeutralGlyph({ id }: { id: ChannelId }) {
       );
     case 'facebook':
       return (
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-7 h-7 sm:w-8 sm:h-8">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-[calc(30px*var(--s))] h-[calc(30px*var(--s))] sm:w-[calc(32px*var(--s))] sm:h-[calc(32px*var(--s))]">
           <circle cx="18" cy="18" r="10.5" stroke="#0F4A3E" strokeWidth="2.2" fill="#E8F6F0" />
           <path
             d="M19.8 28V19.6H22.5L22.9 16.5H19.8V14.6C19.8 13.7 20.1 13.1 21.3 13.1H23V10.3C22.3 10.2 21.4 10.1 20.5 10.1C18.1 10.1 16.6 11.5 16.6 14.2V16.5H14V19.6H16.6V28"
@@ -179,7 +193,7 @@ function ChannelNeutralGlyph({ id }: { id: ChannelId }) {
       );
     case 'instagram':
       return (
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-7 h-7 sm:w-8 sm:h-8">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="w-[calc(30px*var(--s))] h-[calc(30px*var(--s))] sm:w-[calc(32px*var(--s))] sm:h-[calc(32px*var(--s))]">
           <rect x="8.5" y="8.5" width="19" height="19" rx="5.5" stroke="#0F4A3E" strokeWidth="2.2" fill="#E8F6F0" />
           <circle cx="18" cy="18" r="4.3" stroke="#1E9E6A" strokeWidth="2.1" />
           <circle cx="23.5" cy="12.6" r="1.2" fill="#0F4A3E" />
@@ -188,9 +202,9 @@ function ChannelNeutralGlyph({ id }: { id: ChannelId }) {
   }
 }
 
-function OpenHoursWhiteMark({ size = 72 }: { size?: number }) {
+function OpenHoursWhiteMark({ className = '' }: { className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 72 72" fill="none" aria-hidden="true">
+    <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true" className={className}>
       <circle cx="36" cy="36" r="22" stroke="#FFFFFF" strokeWidth="9.5" />
       <circle cx="36" cy="36" r="7.5" fill="#FFFFFF" fillOpacity="0.92" />
     </svg>
@@ -404,8 +418,8 @@ export default function HelpSection() {
     : 'One page for each town you cover';
 
   const gridClassName = showAiCard
-    ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[25px]'
-    : 'grid grid-cols-1 md:grid-cols-2 gap-[25px] max-w-[1125px] mx-auto';
+    ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[calc(25px*var(--s))]'
+    : 'grid grid-cols-1 md:grid-cols-2 gap-[calc(25px*var(--s))] max-w-[calc(1125px*var(--s))] mx-auto';
 
   const shouldAnimate = hasEntered && !prefersReducedMotion;
 
@@ -414,6 +428,7 @@ export default function HelpSection() {
       ref={sectionRef}
       id="help"
       aria-label="How Open Hours helps your trade business"
+      style={{ '--s': 0.76 } as React.CSSProperties}
       className="oh-cv-auto oh-anim-paused relative w-full bg-white text-[#0B1B22] py-[var(--section-py)] overflow-x-clip"
     >
       <style>{`
@@ -489,10 +504,10 @@ export default function HelpSection() {
         }
       `}</style>
 
-      <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[var(--container-max)] mx-auto px-[var(--container-px)]">
         {/* 1. Centered Two-Line Heading */}
-        <div className="text-center max-w-[980px] mx-auto mb-12 sm:mb-14">
-          <h2 className="font-heading text-[clamp(36px,4.6vw,64px)] font-bold leading-[1.08] tracking-[-0.03em] text-[#0B1B22]">
+        <div className="text-center max-w-[780px] mx-auto mb-12 sm:mb-14">
+          <h2 className="font-heading text-[length:var(--h2-size)] font-bold leading-[var(--h2-lh)] tracking-[-0.03em] text-[#0B1B22]">
             <span className="block">{headingLine1}</span>
             <span className="block oh-help-gradient-text pb-1">{headingLine2}</span>
           </h2>
@@ -503,22 +518,22 @@ export default function HelpSection() {
           {/* ===============================================================
               CARD 1: Build your website
               =============================================================== */}
-          <article className="rounded-[40px] bg-[#FAF7F5] overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1">
-            {/* Top Emerald Gradient Panel (all 4 corners radius 40px) */}
+          <article className="rounded-[calc(40px*var(--s))] bg-[#FAF7F5] overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1">
+            {/* Top Emerald Gradient Panel (all 4 corners radius 40px*s) */}
             <div
-              className="relative h-[300px] md:h-[384px] rounded-[40px] overflow-hidden px-4 sm:px-6 lg:px-7 flex flex-col items-center justify-center"
+              className="relative h-[calc(330px*var(--s))] md:h-[calc(384px*var(--s))] rounded-[calc(40px*var(--s))] overflow-hidden px-[calc(18px*var(--s))] sm:px-[calc(24px*var(--s))] lg:px-[calc(28px*var(--s))] flex flex-col items-center justify-center"
               style={{
                 background: 'linear-gradient(180deg, #05261F 0%, #0D5442 54%, #3DBE93 100%)',
               }}
             >
               {/* Pill 1 */}
-              <div className="w-full max-w-[440px] min-h-[78px] sm:h-[95px] rounded-[28px] sm:rounded-[36px] bg-white px-4 sm:px-5 lg:px-6 py-3 flex items-center justify-between gap-2.5 sm:gap-3.5 shadow-[0_20px_42px_-12px_rgba(5,38,31,0.52)]">
+              <div className="w-full max-w-[calc(440px*var(--s))] min-h-[calc(86px*var(--s))] sm:h-[calc(95px*var(--s))] rounded-[calc(30px*var(--s))] sm:rounded-[calc(36px*var(--s))] bg-white px-[calc(18px*var(--s))] sm:px-[calc(22px*var(--s))] lg:px-[calc(24px*var(--s))] py-[calc(12px*var(--s))] flex items-center justify-between gap-[calc(12px*var(--s))] sm:gap-[calc(14px*var(--s))] shadow-[0_20px_42px_-12px_rgba(5,38,31,0.52)]">
                 <DomainGlyph />
                 <div className="min-w-0 flex-1">
-                  <div className="font-heading text-[16px] sm:text-[19px] xl:text-[22px] font-semibold text-[#0B1B22] leading-[1.18] tracking-[-0.02em]">
+                  <div className="font-heading text-[calc(19px*var(--s))] sm:text-[calc(21px*var(--s))] xl:text-[calc(22px*var(--s))] font-semibold text-[#0B1B22] leading-[1.18] tracking-[-0.02em]">
                     Your website
                   </div>
-                  <div className="text-[12.5px] sm:text-[14.5px] xl:text-[17px] text-[#5B666B] leading-[1.25] mt-0.5">
+                  <div className="text-[calc(15px*var(--s))] sm:text-[calc(16px*var(--s))] xl:text-[calc(17px*var(--s))] text-[#5B666B] leading-[1.25] mt-[calc(2px*var(--s))]">
                     Built for your trade, on your domain
                   </div>
                 </div>
@@ -526,18 +541,18 @@ export default function HelpSection() {
               </div>
 
               {/* Word between pills */}
-              <span className="my-2.5 sm:my-3.5 text-[19px] sm:text-[22px] font-medium text-white/95 leading-none select-none">
+              <span className="my-[calc(12px*var(--s))] sm:my-[calc(14px*var(--s))] text-[calc(20px*var(--s))] sm:text-[calc(22px*var(--s))] font-medium text-white/95 leading-none select-none">
                 plus
               </span>
 
               {/* Pill 2 */}
-              <div className="w-full max-w-[440px] min-h-[78px] sm:h-[95px] rounded-[28px] sm:rounded-[36px] bg-white px-4 sm:px-5 lg:px-6 py-3 flex items-center justify-between gap-2.5 sm:gap-3.5 shadow-[0_20px_42px_-12px_rgba(5,38,31,0.52)]">
+              <div className="w-full max-w-[calc(440px*var(--s))] min-h-[calc(86px*var(--s))] sm:h-[calc(95px*var(--s))] rounded-[calc(30px*var(--s))] sm:rounded-[calc(36px*var(--s))] bg-white px-[calc(18px*var(--s))] sm:px-[calc(22px*var(--s))] lg:px-[calc(24px*var(--s))] py-[calc(12px*var(--s))] flex items-center justify-between gap-[calc(12px*var(--s))] sm:gap-[calc(14px*var(--s))] shadow-[0_20px_42px_-12px_rgba(5,38,31,0.52)]">
                 <ProfileOrPagesGlyph useProfile={gbpEnabled} />
                 <div className="min-w-0 flex-1">
-                  <div className="font-heading text-[16px] sm:text-[19px] xl:text-[22px] font-semibold text-[#0B1B22] leading-[1.18] tracking-[-0.02em]">
+                  <div className="font-heading text-[calc(19px*var(--s))] sm:text-[calc(21px*var(--s))] xl:text-[calc(22px*var(--s))] font-semibold text-[#0B1B22] leading-[1.18] tracking-[-0.02em]">
                     {card1Pill2Title}
                   </div>
-                  <div className="text-[12.5px] sm:text-[14.5px] xl:text-[17px] text-[#5B666B] leading-[1.25] mt-0.5">
+                  <div className="text-[calc(15px*var(--s))] sm:text-[calc(16px*var(--s))] xl:text-[calc(17px*var(--s))] text-[#5B666B] leading-[1.25] mt-[calc(2px*var(--s))]">
                     {card1Pill2Subtitle}
                   </div>
                 </div>
@@ -546,22 +561,22 @@ export default function HelpSection() {
             </div>
 
             {/* Bottom Text Area */}
-            <div className="p-7 sm:p-[36px] flex-1 flex flex-col">
-              <div className="flex items-start gap-3.5">
+            <div className="p-[calc(30px*var(--s))] sm:p-[calc(36px*var(--s))] flex-1 flex flex-col">
+              <div className="flex items-start gap-[calc(14px*var(--s))]">
                 <span
                   aria-hidden="true"
-                  className="mt-1 sm:mt-2 w-[28px] h-[28px] rounded-[8px] shrink-0 flex items-center justify-center text-white text-[14px] font-bold tabular-nums shadow-[0_6px_14px_-4px_rgba(30,158,106,0.55)]"
+                  className="mt-[calc(4px*var(--s))] sm:mt-[calc(8px*var(--s))] w-[calc(28px*var(--s))] h-[calc(28px*var(--s))] rounded-[calc(8px*var(--s))] shrink-0 flex items-center justify-center text-white text-[calc(15px*var(--s))] font-bold tabular-nums shadow-[0_6px_14px_-4px_rgba(30,158,106,0.55)]"
                   style={{
                     background: 'linear-gradient(135deg, #1E9E6A 0%, #3DBE93 100%)',
                   }}
                 >
                   1
                 </span>
-                <h3 className="font-heading text-[clamp(26px,2.3vw,44px)] font-semibold leading-[1.08] tracking-[-0.028em] text-[#0B1B22]">
+                <h3 className="font-heading text-[calc(clamp(34px,3.4vw,44px)*var(--s))] font-semibold leading-[1.08] tracking-[-0.028em] text-[#0B1B22]">
                   {card1.title}
                 </h3>
               </div>
-              <p className="mt-4 text-[17px] sm:text-[20px] leading-[1.45] text-[#5B666B] font-normal">
+              <p className="mt-[calc(16px*var(--s))] text-[calc(22.5px*var(--s))] leading-[1.45] text-[#5B666B] font-normal">
                 {card1.text}
               </p>
             </div>
@@ -570,10 +585,10 @@ export default function HelpSection() {
           {/* ===============================================================
               CARD 2: Get found and get enquiries
               =============================================================== */}
-          <article className="rounded-[40px] bg-[#FAF7F5] overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1">
-            {/* Top Emerald Gradient Panel (all 4 corners radius 40px) */}
+          <article className="rounded-[calc(40px*var(--s))] bg-[#FAF7F5] overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1">
+            {/* Top Emerald Gradient Panel (all 4 corners radius 40px*s) */}
             <div
-              className="relative h-[300px] md:h-[384px] rounded-[40px] overflow-hidden"
+              className="relative h-[calc(330px*var(--s))] md:h-[calc(384px*var(--s))] rounded-[calc(40px*var(--s))] overflow-hidden"
               style={{
                 background: 'linear-gradient(180deg, #05261F 0%, #0D5442 54%, #3DBE93 100%)',
               }}
@@ -605,8 +620,8 @@ export default function HelpSection() {
                   aria-label={tile.label}
                   className={`oh-help-orbit-tile absolute flex items-center justify-center bg-white ${
                     tile.blurred
-                      ? 'z-10 w-[56px] h-[56px] sm:w-[70px] sm:h-[70px] rounded-[18px] sm:rounded-[22px] blur-[2px] opacity-55 shadow-[0_14px_26px_-8px_rgba(5,38,31,0.35)]'
-                      : 'z-20 w-[68px] h-[68px] sm:w-[90px] sm:h-[90px] rounded-[22px] sm:rounded-[26px] shadow-[0_20px_38px_-10px_rgba(5,38,31,0.48)]'
+                      ? 'z-10 w-[calc(62px*var(--s))] h-[calc(62px*var(--s))] sm:w-[calc(70px*var(--s))] sm:h-[calc(70px*var(--s))] rounded-[calc(20px*var(--s))] sm:rounded-[calc(22px*var(--s))] blur-[2px] opacity-55 shadow-[0_14px_26px_-8px_rgba(5,38,31,0.35)]'
+                      : 'z-20 w-[calc(78px*var(--s))] h-[calc(78px*var(--s))] sm:w-[calc(90px*var(--s))] sm:h-[calc(90px*var(--s))] rounded-[calc(24px*var(--s))] sm:rounded-[calc(26px*var(--s))] shadow-[0_20px_38px_-10px_rgba(5,38,31,0.48)]'
                   }`}
                   style={
                     {
@@ -622,10 +637,10 @@ export default function HelpSection() {
                 </div>
               ))}
 
-              {/* Large Centered Frosted Glass Tile (~150px, radius 36px) */}
+              {/* Large Centered Frosted Glass Tile (~150px*s, radius 36px*s) */}
               <div
                 aria-hidden="true"
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 w-[116px] h-[116px] sm:w-[150px] sm:h-[150px] rounded-[28px] sm:rounded-[36px] flex items-center justify-center backdrop-blur-md"
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 w-[calc(132px*var(--s))] h-[calc(132px*var(--s))] sm:w-[calc(150px*var(--s))] sm:h-[calc(150px*var(--s))] rounded-[calc(32px*var(--s))] sm:rounded-[calc(36px*var(--s))] flex items-center justify-center backdrop-blur-md"
                 style={{
                   background: 'rgba(255, 255, 255, 0.15)',
                   border: '1px solid rgba(255, 255, 255, 0.36)',
@@ -633,29 +648,27 @@ export default function HelpSection() {
                     'inset 0 1px 18px rgba(255, 255, 255, 0.28), 0 24px 48px -12px rgba(5, 38, 31, 0.55)',
                 }}
               >
-                <div className="scale-75 sm:scale-100">
-                  <OpenHoursWhiteMark size={72} />
-                </div>
+                <OpenHoursWhiteMark className="w-[calc(64px*var(--s))] h-[calc(64px*var(--s))] sm:w-[calc(72px*var(--s))] sm:h-[calc(72px*var(--s))]" />
               </div>
             </div>
 
             {/* Bottom Text Area */}
-            <div className="p-7 sm:p-[36px] flex-1 flex flex-col">
-              <div className="flex items-start gap-3.5">
+            <div className="p-[calc(30px*var(--s))] sm:p-[calc(36px*var(--s))] flex-1 flex flex-col">
+              <div className="flex items-start gap-[calc(14px*var(--s))]">
                 <span
                   aria-hidden="true"
-                  className="mt-1 sm:mt-2 w-[28px] h-[28px] rounded-[8px] shrink-0 flex items-center justify-center text-white text-[14px] font-bold tabular-nums shadow-[0_6px_14px_-4px_rgba(30,158,106,0.55)]"
+                  className="mt-[calc(4px*var(--s))] sm:mt-[calc(8px*var(--s))] w-[calc(28px*var(--s))] h-[calc(28px*var(--s))] rounded-[calc(8px*var(--s))] shrink-0 flex items-center justify-center text-white text-[calc(15px*var(--s))] font-bold tabular-nums shadow-[0_6px_14px_-4px_rgba(30,158,106,0.55)]"
                   style={{
                     background: 'linear-gradient(135deg, #1E9E6A 0%, #3DBE93 100%)',
                   }}
                 >
                   2
                 </span>
-                <h3 className="font-heading text-[clamp(26px,2.3vw,44px)] font-semibold leading-[1.08] tracking-[-0.028em] text-[#0B1B22]">
+                <h3 className="font-heading text-[calc(clamp(34px,3.4vw,44px)*var(--s))] font-semibold leading-[1.08] tracking-[-0.028em] text-[#0B1B22]">
                   {card2.title}
                 </h3>
               </div>
-              <p className="mt-4 text-[17px] sm:text-[20px] leading-[1.45] text-[#5B666B] font-normal">
+              <p className="mt-[calc(16px*var(--s))] text-[calc(22.5px*var(--s))] leading-[1.45] text-[#5B666B] font-normal">
                 {card2.text}
               </p>
             </div>
@@ -665,10 +678,10 @@ export default function HelpSection() {
               CARD 3: An AI-powered enquiry system (gated by AI/enquiry flags)
               =============================================================== */}
           {showAiCard && (
-            <article className="md:col-span-2 lg:col-span-1 rounded-[40px] bg-[#FAF7F5] overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1">
-              {/* Top Emerald Gradient Panel (all 4 corners radius 40px) */}
+            <article className="md:col-span-2 lg:col-span-1 rounded-[calc(40px*var(--s))] bg-[#FAF7F5] overflow-hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1">
+              {/* Top Emerald Gradient Panel (all 4 corners radius 40px*s) */}
               <div
-                className="relative h-[300px] md:h-[384px] rounded-[40px] overflow-hidden"
+                className="relative h-[calc(340px*var(--s))] md:h-[calc(384px*var(--s))] rounded-[calc(40px*var(--s))] overflow-hidden"
                 style={{
                   background: 'linear-gradient(180deg, #05261F 0%, #0D5442 54%, #3DBE93 100%)',
                 }}
@@ -677,109 +690,109 @@ export default function HelpSection() {
                 <DemoTag
                   variant="demo"
                   tone="dark"
-                  className="absolute top-2.5 right-5 z-20"
+                  className="absolute top-[calc(10px*var(--s))] right-[calc(20px*var(--s))] z-20"
                 />
 
                 {/* Chat-Window Mock Bleeding Off Right & Bottom Edges */}
-                <div className="absolute left-[14px] sm:left-[22px] top-[24px] sm:top-[28px] -right-[14px] -bottom-[14px] rounded-tl-[28px] bg-white shadow-[0_24px_48px_-14px_rgba(5,38,31,0.58)] border border-white/80 flex overflow-hidden">
+                <div className="absolute left-[calc(16px*var(--s))] sm:left-[calc(22px*var(--s))] top-[calc(26px*var(--s))] sm:top-[calc(28px*var(--s))] -right-[calc(14px*var(--s))] -bottom-[calc(14px*var(--s))] rounded-tl-[calc(28px*var(--s))] bg-white shadow-[0_24px_48px_-14px_rgba(5,38,31,0.58)] border border-white/80 flex overflow-hidden">
                   {/* Pale Green Left Sidebar Strip */}
                   <div
                     aria-hidden="true"
-                    className="w-[32px] sm:w-[44px] shrink-0 bg-[#EBF7F2] border-r border-[#0B1B22]/[0.06] pt-4 px-2 flex flex-col gap-2.5"
+                    className="w-[calc(36px*var(--s))] sm:w-[calc(44px*var(--s))] shrink-0 bg-[#EBF7F2] border-r border-[#0B1B22]/[0.06] pt-[calc(16px*var(--s))] px-[calc(8px*var(--s))] flex flex-col gap-[calc(10px*var(--s))]"
                   >
-                    <span className="h-2.5 w-full rounded bg-[#C7E9D9]" />
-                    <span className="h-2 w-4/5 rounded bg-[#D7F0E4]" />
-                    <span className="h-2 w-full rounded bg-[#D7F0E4]" />
-                    <span className="h-2 w-3/4 rounded bg-[#D7F0E4]" />
+                    <span className="h-[calc(10px*var(--s))] w-full rounded-[calc(4px*var(--s))] bg-[#C7E9D9]" />
+                    <span className="h-[calc(8px*var(--s))] w-4/5 rounded-[calc(4px*var(--s))] bg-[#D7F0E4]" />
+                    <span className="h-[calc(8px*var(--s))] w-full rounded-[calc(4px*var(--s))] bg-[#D7F0E4]" />
+                    <span className="h-[calc(8px*var(--s))] w-3/4 rounded-[calc(4px*var(--s))] bg-[#D7F0E4]" />
                   </div>
 
                   {/* Main Window Content */}
-                  <div className="flex-1 min-w-0 flex flex-col bg-white pr-6 sm:pr-7 pb-5">
+                  <div className="flex-1 min-w-0 flex flex-col bg-white pr-[calc(24px*var(--s))] sm:pr-[calc(28px*var(--s))] pb-[calc(20px*var(--s))]">
                     {/* Window Header Bar */}
-                    <div className="h-[38px] sm:h-[44px] px-3.5 sm:px-4 border-b border-[#0B1B22]/[0.06] flex items-center justify-between gap-2 shrink-0">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-heading text-[12.5px] sm:text-[14px] font-semibold text-[#0B1B22] truncate">
+                    <div className="h-[calc(40px*var(--s))] sm:h-[calc(44px*var(--s))] px-[calc(14px*var(--s))] sm:px-[calc(16px*var(--s))] border-b border-[#0B1B22]/[0.06] flex items-center justify-between gap-[calc(8px*var(--s))] shrink-0">
+                      <div className="flex items-center gap-[calc(6px*var(--s))] min-w-0">
+                        <span className="font-heading text-[calc(13px*var(--s))] sm:text-[calc(14px*var(--s))] font-semibold text-[#0B1B22] truncate">
                           # new enquiries
                         </span>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="text-[#5B666B] shrink-0">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="w-[calc(12px*var(--s))] h-[calc(12px*var(--s))] text-[#5B666B] shrink-0">
                           <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
 
                       <div
                         aria-hidden="true"
-                        className="rounded-[8px] border border-[#0B1B22]/12 px-2 py-1 flex items-center gap-1 text-[#3D4B50] shrink-0 bg-[#FAFDFC]"
+                        className="rounded-[calc(8px*var(--s))] border border-[#0B1B22]/12 px-[calc(8px*var(--s))] py-[calc(4px*var(--s))] flex items-center gap-[calc(4px*var(--s))] text-[#3D4B50] shrink-0 bg-[#FAFDFC]"
                       >
-                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" className="w-[calc(13px*var(--s))] h-[calc(13px*var(--s))]">
                           <path d="M3 10V8a5 5 0 0 1 10 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                           <rect x="2" y="9.5" width="2.8" height="4.2" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
                           <rect x="11.2" y="9.5" width="2.8" height="4.2" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
                         </svg>
-                        <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+                        <svg width="9" height="9" viewBox="0 0 12 12" fill="none" className="w-[calc(9px*var(--s))] h-[calc(9px*var(--s))]">
                           <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
                     </div>
 
                     {/* Message + Stats + Chips (12px rise and fade once on first view; visible by default) */}
-                    <div className={`p-3 sm:p-4 flex-1 ${shouldAnimate ? 'oh-help-msg-rise' : ''}`}>
-                      <div className="flex items-start gap-2.5">
+                    <div className={`p-[calc(12px*var(--s))] sm:p-[calc(16px*var(--s))] flex-1 ${shouldAnimate ? 'oh-help-msg-rise' : ''}`}>
+                      <div className="flex items-start gap-[calc(10px*var(--s))]">
                         {/* Small Green Open Hours App Tile */}
                         <div
                           aria-hidden="true"
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-[9px] shrink-0 flex items-center justify-center shadow-[0_6px_14px_-4px_rgba(13,84,66,0.45)]"
+                          className="w-[calc(30px*var(--s))] h-[calc(30px*var(--s))] sm:w-[calc(32px*var(--s))] sm:h-[calc(32px*var(--s))] rounded-[calc(9px*var(--s))] shrink-0 flex items-center justify-center shadow-[0_6px_14px_-4px_rgba(13,84,66,0.45)]"
                           style={{
                             background: 'linear-gradient(135deg, #2FA97D 0%, #06382E 100%)',
                           }}
                         >
-                          <OpenHoursWhiteMark size={18} />
+                          <OpenHoursWhiteMark className="w-[calc(18px*var(--s))] h-[calc(18px*var(--s))]" />
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="font-heading text-[12px] sm:text-[13px] font-semibold text-[#0B1B22] leading-tight">
+                          <div className="flex flex-wrap items-center gap-[calc(6px*var(--s))]">
+                            <span className="font-heading text-[calc(12.5px*var(--s))] sm:text-[calc(13px*var(--s))] font-semibold text-[#0B1B22] leading-tight">
                               Open Hours assistant
                             </span>
-                            <span className="px-1.5 py-[1px] rounded bg-[#EBF5F0] text-[#14624F] text-[9.5px] font-semibold leading-tight">
+                            <span className="px-[calc(6px*var(--s))] py-[calc(1px*var(--s))] rounded-[calc(4px*var(--s))] bg-[#EBF5F0] text-[#14624F] text-[calc(10px*var(--s))] font-semibold leading-tight">
                               APP
                             </span>
-                            <span className="text-[10.5px] text-[#6B767B] tabular-nums leading-tight">
+                            <span className="text-[calc(10.5px*var(--s))] text-[#6B767B] tabular-nums leading-tight">
                               7:00 AM
                             </span>
                           </div>
 
-                          <p className="mt-1 text-[11px] sm:text-[12.5px] leading-[1.35] text-[#1A2930]">
+                          <p className="mt-[calc(4px*var(--s))] text-[calc(11.5px*var(--s))] sm:text-[calc(12.5px*var(--s))] leading-[1.35] text-[#1A2930]">
                             New quote request: roof repair in Cork. Details and photos collected, reply sent.
                           </p>
 
-                          <span className="mt-0.5 inline-block text-[11px] sm:text-[12px] font-medium text-[#1E9E6A]">
+                          <span className="mt-[calc(2px*var(--s))] inline-block text-[calc(11px*var(--s))] sm:text-[calc(12px*var(--s))] font-medium text-[#1E9E6A]">
                             View enquiry
                           </span>
 
                           {/* White Stats Card */}
-                          <div className="mt-2 rounded-[14px] border border-[#0B1B22]/[0.08] bg-white p-2 sm:p-2.5 shadow-[0_8px_18px_-10px_rgba(11,27,34,0.12)]">
-                            <div className="grid grid-cols-3 gap-1.5">
-                              <div className="rounded-[9px] bg-[#FAF7F5] px-2 py-1.5">
-                                <div className="text-[8.5px] uppercase tracking-wider text-[#6B767B] leading-none">
+                          <div className="mt-[calc(8px*var(--s))] rounded-[calc(14px*var(--s))] border border-[#0B1B22]/[0.08] bg-white p-[calc(8px*var(--s))] sm:p-[calc(10px*var(--s))] shadow-[0_8px_18px_-10px_rgba(11,27,34,0.12)]">
+                            <div className="grid grid-cols-3 gap-[calc(6px*var(--s))]">
+                              <div className="rounded-[calc(9px*var(--s))] bg-[#FAF7F5] px-[calc(8px*var(--s))] py-[calc(6px*var(--s))]">
+                                <div className="text-[calc(9px*var(--s))] uppercase tracking-wider text-[#6B767B] leading-none">
                                   JOB
                                 </div>
-                                <div className="mt-1 text-[10.5px] sm:text-[11.5px] font-semibold text-[#0B1B22] leading-tight truncate">
+                                <div className="mt-[calc(4px*var(--s))] text-[calc(11px*var(--s))] sm:text-[calc(11.5px*var(--s))] font-semibold text-[#0B1B22] leading-tight truncate">
                                   Roof repair
                                 </div>
                               </div>
-                              <div className="rounded-[9px] bg-[#FAF7F5] px-2 py-1.5">
-                                <div className="text-[8.5px] uppercase tracking-wider text-[#6B767B] leading-none">
+                              <div className="rounded-[calc(9px*var(--s))] bg-[#FAF7F5] px-[calc(8px*var(--s))] py-[calc(6px*var(--s))]">
+                                <div className="text-[calc(9px*var(--s))] uppercase tracking-wider text-[#6B767B] leading-none">
                                   TOWN
                                 </div>
-                                <div className="mt-1 text-[10.5px] sm:text-[11.5px] font-semibold text-[#0B1B22] leading-tight truncate">
+                                <div className="mt-[calc(4px*var(--s))] text-[calc(11px*var(--s))] sm:text-[calc(11.5px*var(--s))] font-semibold text-[#0B1B22] leading-tight truncate">
                                   Cork
                                 </div>
                               </div>
-                              <div className="rounded-[9px] bg-[#FAF7F5] px-2 py-1.5">
-                                <div className="text-[8.5px] uppercase tracking-wider text-[#6B767B] leading-none">
+                              <div className="rounded-[calc(9px*var(--s))] bg-[#FAF7F5] px-[calc(8px*var(--s))] py-[calc(6px*var(--s))]">
+                                <div className="text-[calc(9px*var(--s))] uppercase tracking-wider text-[#6B767B] leading-none">
                                   PHOTOS
                                 </div>
-                                <div className="mt-1 text-[10.5px] sm:text-[11.5px] font-semibold text-[#0B1B22] tabular-nums leading-tight">
+                                <div className="mt-[calc(4px*var(--s))] text-[calc(11px*var(--s))] sm:text-[calc(11.5px*var(--s))] font-semibold text-[#0B1B22] tabular-nums leading-tight">
                                   3
                                 </div>
                               </div>
@@ -788,12 +801,12 @@ export default function HelpSection() {
                             {/* Small Static Green Bar Chart (no axis numbers) */}
                             <div
                               aria-hidden="true"
-                              className="mt-2 pt-1.5 border-t border-[#0B1B22]/[0.05] flex items-end gap-1.5 h-[32px] sm:h-[42px]"
+                              className="mt-[calc(8px*var(--s))] pt-[calc(6px*var(--s))] border-t border-[#0B1B22]/[0.05] flex items-end gap-[calc(6px*var(--s))] h-[calc(36px*var(--s))] sm:h-[calc(42px*var(--s))]"
                             >
                               {CHART_BAR_HEIGHTS.map((pct, barIdx) => (
                                 <div
                                   key={barIdx}
-                                  className="flex-1 rounded-t-[4px]"
+                                  className="flex-1 rounded-t-[calc(4px*var(--s))]"
                                   style={{
                                     height: `${pct}%`,
                                     background:
@@ -807,23 +820,23 @@ export default function HelpSection() {
                           </div>
 
                           {/* Reaction Chips + Explicit AI Disclosure */}
-                          <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EBF5F0] text-[#14624F] text-[10px] font-medium leading-tight">
-                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                          <div className="mt-[calc(8px*var(--s))] flex flex-wrap items-center justify-between gap-[calc(6px*var(--s))]">
+                            <div className="flex items-center gap-[calc(6px*var(--s))]">
+                              <span className="inline-flex items-center gap-[calc(4px*var(--s))] px-[calc(8px*var(--s))] py-[calc(2px*var(--s))] rounded-full bg-[#EBF5F0] text-[#14624F] text-[calc(10.5px*var(--s))] font-medium leading-tight">
+                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="w-[calc(10px*var(--s))] h-[calc(10px*var(--s))]">
                                   <path d="M2.5 6.2L5 8.6L9.5 3.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                                 Seen
                               </span>
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EBF5F0] text-[#14624F] text-[10px] font-medium leading-tight">
-                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                              <span className="inline-flex items-center gap-[calc(4px*var(--s))] px-[calc(8px*var(--s))] py-[calc(2px*var(--s))] rounded-full bg-[#EBF5F0] text-[#14624F] text-[calc(10.5px*var(--s))] font-medium leading-tight">
+                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="w-[calc(10px*var(--s))] h-[calc(10px*var(--s))]">
                                   <path d="M4.5 4L2 6.5L4.5 9M2.3 6.5H7.5A2.5 2.5 0 0 1 10 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                                 Replied
                               </span>
                             </div>
 
-                            <span className="text-[10px] text-[#5B666B] font-medium leading-tight">
+                            <span className="text-[calc(10.5px*var(--s))] text-[#5B666B] font-medium leading-tight">
                               The assistant always says it is an AI.
                             </span>
                           </div>
@@ -835,11 +848,11 @@ export default function HelpSection() {
               </div>
 
               {/* Bottom Text Area */}
-              <div className="p-7 sm:p-[36px] flex-1 flex flex-col">
-                <div className="flex items-start gap-3.5">
+              <div className="p-[calc(30px*var(--s))] sm:p-[calc(36px*var(--s))] flex-1 flex flex-col">
+                <div className="flex items-start gap-[calc(14px*var(--s))]">
                   <span
                     aria-hidden="true"
-                    className="mt-1 sm:mt-2 w-[28px] h-[28px] rounded-[8px] shrink-0 flex items-center justify-center text-white text-[14px] font-bold tabular-nums shadow-[0_6px_14px_-4px_rgba(30,158,106,0.55)]"
+                    className="mt-[calc(4px*var(--s))] sm:mt-[calc(8px*var(--s))] w-[calc(28px*var(--s))] h-[calc(28px*var(--s))] rounded-[calc(8px*var(--s))] shrink-0 flex items-center justify-center text-white text-[calc(15px*var(--s))] font-bold tabular-nums shadow-[0_6px_14px_-4px_rgba(30,158,106,0.55)]"
                     style={{
                       background: 'linear-gradient(135deg, #1E9E6A 0%, #3DBE93 100%)',
                     }}
@@ -847,19 +860,19 @@ export default function HelpSection() {
                     3
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                      <h3 className="font-heading text-[clamp(26px,2.3vw,44px)] font-semibold leading-[1.08] tracking-[-0.028em] text-[#0B1B22]">
+                    <div className="flex flex-wrap items-center gap-x-[calc(10px*var(--s))] gap-y-[calc(6px*var(--s))]">
+                      <h3 className="font-heading text-[calc(clamp(34px,3.4vw,44px)*var(--s))] font-semibold leading-[1.08] tracking-[-0.028em] text-[#0B1B22]">
                         {card3.title}
                       </h3>
                       {showOptionalTag && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#DDF4EA] text-[#0F4A3E] border border-[#6FD6B0]/60 whitespace-nowrap shrink-0">
+                        <span className="inline-flex items-center px-[calc(11px*var(--s))] py-[calc(2px*var(--s))] rounded-full text-[calc(14px*var(--s))] font-semibold bg-[#DDF4EA] text-[#0F4A3E] border border-[#6FD6B0]/60 whitespace-nowrap shrink-0">
                           {optionalTagLabel}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-                <p className="mt-4 text-[17px] sm:text-[20px] leading-[1.45] text-[#5B666B] font-normal">
+                <p className="mt-[calc(16px*var(--s))] text-[calc(22.5px*var(--s))] leading-[1.45] text-[#5B666B] font-normal">
                   {card3.text}
                 </p>
               </div>

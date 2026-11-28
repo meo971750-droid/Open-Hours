@@ -262,7 +262,7 @@ export default function App() {
               id="compare"
               nextId="proof"
               loadChunk={loadCompare}
-              placeholderClassName="min-h-[1694px] md:min-h-[1660px] lg:min-h-[1293px] bg-white"
+              placeholderClassName="min-h-[1546px] md:min-h-[1416px] lg:min-h-[1129px] bg-white"
             >
               <CompareSection />
             </LazySection>
@@ -300,7 +300,7 @@ export default function App() {
               id="help"
               nextId="reviews"
               loadChunk={loadHelp}
-              placeholderClassName="min-h-[1931px] md:min-h-[1573px] lg:min-h-[1207px] bg-white"
+              placeholderClassName="min-h-[1807px] md:min-h-[1288px] lg:min-h-[1110px] bg-white"
             >
               <HelpSection />
             </LazySection>
